@@ -1,0 +1,38 @@
+services:
+  nginx:
+    container_name: atyors-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/ec2.conf:/etc/nginx/conf.d/default.conf
+
+  api:
+    container_name: atyors-api
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env.ec2
+    environment:
+      - NODE_ENV=production
+    volumes: []
+    command: ["node", "api-server.js"]
+
+  web:
+    container_name: atyors-web
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.ec2
+    environment:
+      - NODE_ENV=production
+    volumes: []
+    command: ["npm", "start"]
+
+  mongodb:
+    profiles:
+      - local-only
+
+  redis:
+    container_name: atyors-redis
+    ports:
+      - "6379:6379"

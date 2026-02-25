@@ -1,0 +1,181 @@
+name: Deploy to Production (EC2)
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+      - '.gitignore'
+      - 'LICENSE'
+      - 'README.md'
+  workflow_dispatch:
+
+env:
+  EC2_HOST: ${{ secrets.EC2_HOST }}
+  EC2_USER: ${{ secrets.EC2_USER || 'ec2-user' }}
+  DEPLOY_PATH: /root/atyors
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[skip tests]')"
+    services:
+      mongodb:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            apps/web/package-lock.json
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install web dependencies
+        working-directory: ./apps/web
+        run: npm ci
+
+      - name: Run API tests
+        run: npm test
+        env:
+          NODE_ENV: test
+          MONGODB_URI: mongodb://admin:password@localhost:27017/atyors_test?authSource=admin
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test-secret-key
+
+      - name: Run web tests
+        working-directory: ./apps/web
+        run: npm test
+        env:
+          NODE_ENV: test
+
+  check-disk:
+    name: Check EC2 Disk Space
+    runs-on: ubuntu-latest
+    needs: [test]
+    if: always() && (needs.test.result == 'success' || needs.test.result == 'skipped')
+    outputs:
+      needs_cleanup: ${{ steps.check.outputs.needs_cleanup }}
+    steps:
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ env.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Check disk space
+        id: check
+        run: |
+          DISK_USAGE=$(ssh -i ~/.ssh/id_rsa ${{ env.EC2_USER }}@${{ env.EC2_HOST }} "df -h / | tail -1 | awk '{print \$5}' | sed 's/%//'")
+          echo "Disk usage: ${DISK_USAGE}%"
+          if [ "$DISK_USAGE" -gt 60 ]; then
+            echo "needs_cleanup=true" >> $GITHUB_OUTPUT
+          else
+            echo "needs_cleanup=false" >> $GITHUB_OUTPUT
+          fi
+
+  cleanup-docker:
+    name: Cleanup Docker
+    runs-on: ubuntu-latest
+    needs: [check-disk]
+    if: needs.check-disk.outputs.needs_cleanup == 'true'
+    steps:
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ env.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Prune Docker
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ env.EC2_USER }}@${{ env.EC2_HOST }} << 'ENDSSH'
+            sudo docker system prune -af --volumes
+            sudo docker image prune -af
+            sudo docker builder prune -af
+          ENDSSH
+
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    needs: [test, check-disk, cleanup-docker]
+    if: always() && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.cleanup-docker.result == 'success' || needs.cleanup-docker.result == 'skipped')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ env.EC2_HOST }} >> ~/.ssh/known_hosts
+          cat >> ~/.ssh/config << 'SSHCONFIG'
+          Host *
+            ServerAliveInterval 30
+            ServerAliveCountMax 10
+            TCPKeepAlive yes
+          SSHCONFIG
+          chmod 600 ~/.ssh/config
+
+      - name: Load secrets and generate .env.ec2
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ env.EC2_USER }}@${{ env.EC2_HOST }} 'sudo bash -c "
+            cd ${{ env.DEPLOY_PATH }}
+            > .env.ec2
+            aws ssm get-parameters-by-path --path /atyors/production --recursive --with-decryption --region us-east-1 --output json | jq -r \".Parameters[] | (.Name | split(\"/\") | .[3:] | join(\"_\") | ascii_upcase) + \"=\" + (.Value | @sh)\" >> .env.ec2
+            echo NODE_ENV=production >> .env.ec2
+            echo AWS_REGION=us-east-1 >> .env.ec2
+          "'
+
+      - name: Pull and deploy
+        run: |
+          ssh -i ~/.ssh/id_rsa -o ServerAliveInterval=30 -o ServerAliveCountMax=10 ${{ env.EC2_USER }}@${{ env.EC2_HOST }} "sudo bash -c '
+            set -e
+            cd ${{ env.DEPLOY_PATH }}
+            git stash || true
+            git fetch origin
+            git checkout main
+            git pull origin main
+            docker compose -f docker-compose.yml -f docker-compose.ec2.yml build
+            docker compose -f docker-compose.yml -f docker-compose.ec2.yml up -d
+            sleep 20
+          '"
+
+      - name: Health check
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ env.EC2_USER }}@${{ env.EC2_HOST }} "curl -sf http://localhost/api/v1/health || curl -sf http://localhost:8080/api/v1/health"
+
+  notify-failure:
+    name: Notify on Failure
+    runs-on: ubuntu-latest
+    needs: [test, check-disk, cleanup-docker, deploy]
+    if: failure()
+    steps:
+      - name: Failure notification
+        run: |
+          echo "Deployment failed. Check workflow logs."

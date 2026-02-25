@@ -1,0 +1,51 @@
+name: Rollback Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: 'Commit SHA to rollback to'
+        required: true
+
+env:
+  EC2_HOST: ${{ secrets.EC2_HOST }}
+  EC2_USER: ${{ secrets.EC2_USER || 'ec2-user' }}
+  DEPLOY_PATH: /root/atyors
+
+jobs:
+  rollback:
+    name: Execute Rollback
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ env.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Backup and rollback
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ env.EC2_USER }}@${{ env.EC2_HOST }} "sudo bash -c '
+            set -e
+            cd ${{ env.DEPLOY_PATH }}
+            git stash
+            git fetch origin
+            git checkout ${{ github.event.inputs.commit_sha }}
+            echo Rolled back to:
+            git log -1 --oneline
+          '"
+
+      - name: Rebuild and restart
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ env.EC2_USER }}@${{ env.EC2_HOST }} "sudo bash -c '
+            set -e
+            cd ${{ env.DEPLOY_PATH }}
+            docker compose -f docker-compose.yml -f docker-compose.ec2.yml build
+            docker compose -f docker-compose.yml -f docker-compose.ec2.yml up -d
+            sleep 20
+          '"
+
+      - name: Health check
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ env.EC2_USER }}@${{ env.EC2_HOST }} "curl -sf http://localhost/api/v1/health || curl -sf http://localhost:8080/api/v1/health"
