@@ -1,14 +1,20 @@
+const http = require('http');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const mongoose = require('mongoose');
 const { createClient } = require('redis');
+const { initSocket } = require('./apps/server/socket');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
 
 app.use(helmet());
 app.use(cors({ origin: (process.env.CORS_ALLOWED_ORIGINS || '').split(','), credentials: true }));
+
+// Stripe webhooks need raw body — mount before JSON parser
+app.use('/api/v1/webhooks', require('./apps/server/routes/webhooks'));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -26,8 +32,14 @@ app.get('/api/v1/health', async (req, res) => {
 });
 
 // --- Mount route modules ---
-// Routes will be added here as features are built
-// e.g. app.use('/api/v1/auth', require('./apps/server/routes/auth'));
+app.use('/api/v1/auth', require('./apps/server/routes/auth'));
+app.use('/api/v1/users', require('./apps/server/routes/users'));
+app.use('/api/v1/addresses', require('./apps/server/routes/addresses'));
+app.use('/api/v1/services', require('./apps/server/routes/services'));
+app.use('/api/v1/bookings', require('./apps/server/routes/bookings'));
+app.use('/api/v1/subscriptions', require('./apps/server/routes/subscriptions'));
+app.use('/api/v1/payments', require('./apps/server/routes/payments'));
+app.use('/api/v1/admin', require('./apps/server/routes/admin'));
 
 // --- 404 handler ---
 app.use((req, res) => {
@@ -55,7 +67,11 @@ async function start() {
     console.log('Redis connected');
     app.locals.redis = redis;
 
-    app.listen(PORT, '0.0.0.0', () => {
+    const server = http.createServer(app);
+    const io = initSocket(server);
+    app.locals.io = io;
+
+    server.listen(PORT, '0.0.0.0', () => {
       console.log(`atyors API running on port ${PORT} [${process.env.NODE_ENV}]`);
     });
   } catch (err) {
