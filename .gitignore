@@ -1,0 +1,14 @@
+node_modules/
+.next/
+.env
+.env.local
+.env.ec2
+*.pem
+dist/
+coverage/
+.DS_Store
+nginx/ssl/*.crt
+nginx/ssl/*.key
+nginx/logs/
+mongodb_data/
+redis_data/
