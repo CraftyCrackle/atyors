@@ -30,4 +30,20 @@ async function checkZone(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { create, list, remove, checkZone };
+async function update(req, res, next) {
+  try {
+    const address = await addressService.update(req.user._id, req.params.id, req.body);
+    res.json({ success: true, data: { address } });
+  } catch (err) { next(err); }
+}
+
+async function uploadPhoto(req, res, next) {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, error: { code: 'NO_FILE', message: 'No photo uploaded' } });
+    const photoUrl = `/uploads/${req.file.filename}`;
+    const address = await addressService.update(req.user._id, req.params.id, { barrelPhotoUrl: photoUrl });
+    res.json({ success: true, data: { address, photoUrl } });
+  } catch (err) { next(err); }
+}
+
+module.exports = { create, list, remove, update, uploadPhoto, checkZone };

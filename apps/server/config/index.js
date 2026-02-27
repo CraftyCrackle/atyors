@@ -3,7 +3,7 @@ module.exports = {
   nodeEnv: process.env.NODE_ENV || 'development',
   mongoUri: process.env.MONGODB_URI || 'mongodb://localhost:27017/atyors',
   redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
-  jwtSecret: process.env.JWT_SECRET || 'dev-secret',
+  jwtSecret: process.env.JWT_SECRET || (process.env.NODE_ENV === 'production' ? (() => { throw new Error('JWT_SECRET must be set in production'); })() : 'dev-secret-local-only'),
   cors: {
     origins: (process.env.CORS_ALLOWED_ORIGINS || 'http://localhost:3000').split(','),
   },

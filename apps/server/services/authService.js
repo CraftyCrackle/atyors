@@ -1,23 +1,38 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const config = require('../config');
 const User = require('../models/User');
+const RefreshToken = require('../models/RefreshToken');
 
 const SALT_ROUNDS = 12;
 const ACCESS_TOKEN_EXPIRY = '1h';
-const REFRESH_TOKEN_EXPIRY = '7d';
+const REFRESH_TOKEN_DAYS = 7;
 
-function generateTokens(user) {
-  const accessToken = jwt.sign(
+function generateAccessToken(user) {
+  return jwt.sign(
     { userId: user._id, email: user.email, role: user.role },
     config.jwtSecret,
     { expiresIn: ACCESS_TOKEN_EXPIRY }
   );
-  const refreshToken = jwt.sign(
-    { userId: user._id, type: 'refresh' },
-    config.jwtSecret,
-    { expiresIn: REFRESH_TOKEN_EXPIRY }
-  );
+}
+
+async function createRefreshToken(user) {
+  const token = crypto.randomBytes(40).toString('hex');
+  const expiresAt = new Date(Date.now() + REFRESH_TOKEN_DAYS * 24 * 60 * 60 * 1000);
+
+  await RefreshToken.create({
+    userId: user._id,
+    token,
+    expiresAt,
+  });
+
+  return token;
+}
+
+async function generateTokens(user) {
+  const accessToken = generateAccessToken(user);
+  const refreshToken = await createRefreshToken(user);
   return { accessToken, refreshToken };
 }
 
@@ -40,7 +55,7 @@ async function register({ email, phone, password, firstName, lastName }) {
     passwordHash,
   });
 
-  const tokens = generateTokens(user);
+  const tokens = await generateTokens(user);
   user.lastLoginAt = new Date();
   await user.save();
 
@@ -64,30 +79,55 @@ async function login({ email, password }) {
     throw err;
   }
 
-  const tokens = generateTokens(user);
+  const tokens = await generateTokens(user);
   user.lastLoginAt = new Date();
   await user.save();
 
   return { user: sanitizeUser(user), ...tokens };
 }
 
-async function refreshAccessToken(refreshToken) {
-  const decoded = jwt.verify(refreshToken, config.jwtSecret);
-  if (decoded.type !== 'refresh') {
-    const err = new Error('Invalid refresh token');
+async function refreshAccessToken(oldToken) {
+  const stored = await RefreshToken.findOne({ token: oldToken, revokedAt: null });
+  if (!stored) {
+    const err = new Error('Invalid or expired refresh token');
     err.status = 401;
+    err.code = 'INVALID_REFRESH_TOKEN';
     throw err;
   }
 
-  const user = await User.findById(decoded.userId);
+  if (stored.expiresAt < new Date()) {
+    stored.revokedAt = new Date();
+    await stored.save();
+    const err = new Error('Refresh token expired');
+    err.status = 401;
+    err.code = 'TOKEN_EXPIRED';
+    throw err;
+  }
+
+  const user = await User.findById(stored.userId);
   if (!user || !user.isActive) {
-    const err = new Error('User not found');
+    stored.revokedAt = new Date();
+    await stored.save();
+    const err = new Error('User not found or inactive');
     err.status = 401;
     throw err;
   }
 
-  const tokens = generateTokens(user);
-  return { user: sanitizeUser(user), ...tokens };
+  const newRefreshToken = await createRefreshToken(user);
+
+  stored.revokedAt = new Date();
+  stored.replacedByToken = newRefreshToken;
+  await stored.save();
+
+  const accessToken = generateAccessToken(user);
+  return { user: sanitizeUser(user), accessToken, refreshToken: newRefreshToken };
+}
+
+async function revokeUserTokens(userId) {
+  await RefreshToken.updateMany(
+    { userId, revokedAt: null },
+    { revokedAt: new Date() }
+  );
 }
 
 function sanitizeUser(user) {
@@ -97,4 +137,4 @@ function sanitizeUser(user) {
   return obj;
 }
 
-module.exports = { register, login, refreshAccessToken, generateTokens };
+module.exports = { register, login, refreshAccessToken, generateTokens, revokeUserTokens };

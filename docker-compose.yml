@@ -50,9 +50,13 @@ services:
       - SKIP_STRIPE=${SKIP_STRIPE:-true}
       - SKIP_TWILIO=${SKIP_TWILIO:-true}
       - LOG_LEVEL=${LOG_LEVEL:-debug}
+      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-BKvDs89OtKGPwo6wSt0-neFvJsU4R2kZWH2GgZRiESG4-iszXn30wtkO0mIO1lktbe7lKwLyjAV_exCeP1JusfI}
+      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY:-8JhnHTywkMJfQ-3EqFY6Aj9pmmAoGs1KGtF9A6z92Tw}
+      - VAPID_SUBJECT=${VAPID_SUBJECT:-mailto:admin@atyors.com}
     volumes:
       - ./apps/server:/app/apps/server
       - ./api-server.js:/app/api-server.js
+      - ./uploads:/app/uploads
       - /app/node_modules
     command: ["node", "--watch", "api-server.js"]
     depends_on:
@@ -82,11 +86,13 @@ services:
       - HOSTNAME=0.0.0.0
       - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
       - NEXT_PUBLIC_APP_URL=http://localhost:3001
+      - NEXT_PUBLIC_SOCKET_URL=http://localhost:8000
       - NEXT_PUBLIC_COGNITO_USER_POOL_ID=${COGNITO_USER_POOL_ID:-}
       - NEXT_PUBLIC_COGNITO_CLIENT_ID=${COGNITO_CLIENT_ID:-}
       - NEXT_PUBLIC_COGNITO_REGION=${AWS_REGION:-us-east-1}
       - NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY:-}
       - NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY:-}
+      - NEXT_PUBLIC_VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-BKvDs89OtKGPwo6wSt0-neFvJsU4R2kZWH2GgZRiESG4-iszXn30wtkO0mIO1lktbe7lKwLyjAV_exCeP1JusfI}
       - WATCHPACK_POLLING=true
     volumes:
       - ./apps/web/src:/app/src

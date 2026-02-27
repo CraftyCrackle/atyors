@@ -17,6 +17,13 @@ async function create(userId, data) {
     zip: data.zip,
     formatted: data.formatted,
     location: { type: 'Point', coordinates: [data.lng, data.lat] },
+    barrelCount: data.barrelCount || 1,
+    barrelLocation: data.barrelLocation,
+    barrelPhotoUrl: data.barrelPhotoUrl,
+    barrelNotes: data.barrelNotes,
+    barrelPlacementInstructions: data.barrelPlacementInstructions,
+    barrelReturnInstructions: data.barrelReturnInstructions,
+    trashDay: data.trashDay,
     isDefault: data.isDefault || false,
     serviceZoneId: zone?._id,
   });
@@ -54,4 +61,20 @@ async function checkZone(lat, lng) {
   return { eligible: !!zone, zone: zone?.name || null };
 }
 
-module.exports = { create, list, remove, checkZone };
+async function update(userId, addressId, data) {
+  const allowed = ['street', 'unit', 'city', 'state', 'zip', 'formatted', 'barrelCount', 'barrelLocation', 'barrelPhotoUrl', 'barrelNotes', 'barrelPlacementInstructions', 'barrelReturnInstructions', 'trashDay', 'isDefault'];
+  const updates = {};
+  for (const key of allowed) {
+    if (data[key] !== undefined) updates[key] = data[key];
+  }
+
+  const address = await Address.findOneAndUpdate({ _id: addressId, userId }, updates, { new: true });
+  if (!address) {
+    const err = new Error('Address not found');
+    err.status = 404;
+    throw err;
+  }
+  return address;
+}
+
+module.exports = { create, list, remove, update, checkZone };

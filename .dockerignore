@@ -1,0 +1,15 @@
+node_modules
+.next
+.git
+.github
+*.md
+!README.md
+.env*
+uploads
+ssl
+docker-compose*.yml
+Makefile
+jest.config.js
+.DS_Store
+apps/server/tests
+coverage

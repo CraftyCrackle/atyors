@@ -28,9 +28,9 @@ async function seed() {
   });
 
   await ServiceType.insertMany([
-    { categoryId: category._id, name: 'Put-Out Only', slug: 'put-out', description: 'We put your barrels out to the curb', basePrice: 15.00, sortOrder: 1 },
-    { categoryId: category._id, name: 'Bring-In Only', slug: 'bring-in', description: 'We bring your barrels back in from the curb', basePrice: 15.00, sortOrder: 2 },
-    { categoryId: category._id, name: 'Both (Put-Out & Bring-In)', slug: 'both', description: 'Full service — we handle both directions', basePrice: 25.00, recurringPrice: 50.00, isDefault: true, sortOrder: 0 },
+    { categoryId: category._id, name: 'Put-Out Only', slug: 'put-out', description: 'We put your barrels out to the curb', basePrice: 1.50, sortOrder: 1 },
+    { categoryId: category._id, name: 'Bring-In Only', slug: 'bring-in', description: 'We bring your barrels back in from the curb', basePrice: 1.50, sortOrder: 2 },
+    { categoryId: category._id, name: 'Both (Put-Out & Bring-In)', slug: 'both', description: 'Full service — we handle both directions', basePrice: 3.00, recurringPrice: 25.00, isDefault: true, sortOrder: 0 },
   ]);
 
   return { seeded: true, message: 'Seed data created' };

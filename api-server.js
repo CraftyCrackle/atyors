@@ -1,7 +1,12 @@
 const http = require('http');
+const crypto = require('crypto');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
+const xss = require('xss-clean');
+const hpp = require('hpp');
+const rateLimit = require('express-rate-limit');
 const mongoose = require('mongoose');
 const { createClient } = require('redis');
 const { initSocket } = require('./apps/server/socket');
@@ -9,14 +14,36 @@ const { initSocket } = require('./apps/server/socket');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+app.set('trust proxy', 1);
 app.use(helmet());
-app.use(cors({ origin: (process.env.CORS_ALLOWED_ORIGINS || '').split(','), credentials: true }));
+app.use((req, res, next) => {
+  req.id = req.headers['x-request-id'] || crypto.randomUUID();
+  res.setHeader('X-Request-Id', req.id);
+  next();
+});
+
+const allowedOrigins = process.env.CORS_ALLOWED_ORIGINS
+  ? process.env.CORS_ALLOWED_ORIGINS.split(',').filter(Boolean)
+  : (process.env.NODE_ENV === 'production' ? [] : ['http://localhost:3000', 'http://localhost:3001']);
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 
 // Stripe webhooks need raw body — mount before JSON parser
 app.use('/api/v1/webhooks', require('./apps/server/routes/webhooks'));
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(mongoSanitize());
+app.use(xss());
+app.use(hpp());
+
+const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many attempts. Please try again later.' } } });
+app.use('/api/v1/auth/login', authLimiter);
+app.use('/api/v1/auth/register', authLimiter);
+
+const apiLimiter = rateLimit({ windowMs: 1 * 60 * 1000, max: 100, message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many requests. Please slow down.' } } });
+app.use('/api/v1', apiLimiter);
+
+app.use('/uploads', express.static(require('path').join(__dirname, 'uploads')));
 
 // --- Health Check ---
 app.get('/api/v1/health', async (req, res) => {
@@ -40,6 +67,9 @@ app.use('/api/v1/bookings', require('./apps/server/routes/bookings'));
 app.use('/api/v1/subscriptions', require('./apps/server/routes/subscriptions'));
 app.use('/api/v1/payments', require('./apps/server/routes/payments'));
 app.use('/api/v1/admin', require('./apps/server/routes/admin'));
+app.use('/api/v1/servicer', require('./apps/server/routes/servicer'));
+app.use('/api/v1/notifications', require('./apps/server/routes/notifications'));
+app.use('/api/v1/push', require('./apps/server/routes/push'));
 
 // --- 404 handler ---
 app.use((req, res) => {
@@ -48,10 +78,16 @@ app.use((req, res) => {
 
 // --- Error handler ---
 app.use((err, req, res, _next) => {
-  console.error('Unhandled error:', err.message);
-  res.status(err.status || 500).json({
+  const status = err.status || 500;
+  const isDev = process.env.NODE_ENV === 'development';
+  if (status >= 500) console.error(`[${req.id}] Unhandled error:`, err.message, isDev ? err.stack : '');
+  res.status(status).json({
     success: false,
-    error: { code: 'INTERNAL_ERROR', message: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error' }
+    error: {
+      code: err.code || (status >= 500 ? 'INTERNAL_ERROR' : 'BAD_REQUEST'),
+      message: status >= 500 && !isDev ? 'Internal server error' : err.message,
+      requestId: req.id,
+    },
   });
 });
 

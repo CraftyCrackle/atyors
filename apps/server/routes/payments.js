@@ -1,19 +1,19 @@
 const router = require('express').Router();
 const { authenticate } = require('../middleware/auth');
 const config = require('../config');
+const stripeService = require('../services/stripeService');
+
+const MOCK_METHODS = [
+  { id: 'pm_mock_visa', brand: 'visa', last4: '4242', expMonth: 12, expYear: 2028, isDefault: true },
+  { id: 'pm_mock_mc', brand: 'mastercard', last4: '8210', expMonth: 6, expYear: 2027, isDefault: false },
+];
 
 router.post('/create-intent', authenticate, async (req, res, next) => {
   try {
     if (config.stripe.skip) {
       return res.json({ success: true, data: { clientSecret: 'dev_mock_secret', paymentIntentId: 'pi_dev_mock' } });
     }
-    const stripe = require('stripe')(config.stripe.secretKey);
-    const intent = await stripe.paymentIntents.create({
-      amount: Math.round(req.body.amount * 100),
-      currency: 'usd',
-      customer: req.user.stripeCustomerId,
-      metadata: { bookingId: req.body.bookingId, userId: req.user._id.toString() },
-    });
+    const intent = await stripeService.createPaymentIntent(req.user, req.body.amount, req.body.bookingId);
     res.json({ success: true, data: { clientSecret: intent.client_secret, paymentIntentId: intent.id } });
   } catch (err) { next(err); }
 });
@@ -23,8 +23,7 @@ router.post('/setup-intent', authenticate, async (req, res, next) => {
     if (config.stripe.skip) {
       return res.json({ success: true, data: { clientSecret: 'dev_mock_setup_secret' } });
     }
-    const stripe = require('stripe')(config.stripe.secretKey);
-    const intent = await stripe.setupIntents.create({ customer: req.user.stripeCustomerId });
+    const intent = await stripeService.createSetupIntent(req.user);
     res.json({ success: true, data: { clientSecret: intent.client_secret } });
   } catch (err) { next(err); }
 });
@@ -32,11 +31,10 @@ router.post('/setup-intent', authenticate, async (req, res, next) => {
 router.get('/methods', authenticate, async (req, res, next) => {
   try {
     if (config.stripe.skip) {
-      return res.json({ success: true, data: { methods: [] } });
+      return res.json({ success: true, data: { methods: MOCK_METHODS } });
     }
-    const stripe = require('stripe')(config.stripe.secretKey);
-    const methods = await stripe.paymentMethods.list({ customer: req.user.stripeCustomerId, type: 'card' });
-    res.json({ success: true, data: { methods: methods.data } });
+    const methods = await stripeService.listPaymentMethods(req.user);
+    res.json({ success: true, data: { methods } });
   } catch (err) { next(err); }
 });
 
@@ -45,9 +43,18 @@ router.delete('/methods/:id', authenticate, async (req, res, next) => {
     if (config.stripe.skip) {
       return res.json({ success: true, data: { message: 'Payment method removed' } });
     }
-    const stripe = require('stripe')(config.stripe.secretKey);
-    await stripe.paymentMethods.detach(req.params.id);
+    await stripeService.removePaymentMethod(req.user, req.params.id);
     res.json({ success: true, data: { message: 'Payment method removed' } });
+  } catch (err) { next(err); }
+});
+
+router.patch('/methods/:id/default', authenticate, async (req, res, next) => {
+  try {
+    if (config.stripe.skip) {
+      return res.json({ success: true, data: { message: 'Default payment method updated' } });
+    }
+    await stripeService.setDefaultPaymentMethod(req.user, req.params.id);
+    res.json({ success: true, data: { message: 'Default payment method updated' } });
   } catch (err) { next(err); }
 });
 
@@ -57,7 +64,8 @@ router.get('/history', authenticate, async (req, res, next) => {
       return res.json({ success: true, data: { charges: [] } });
     }
     const stripe = require('stripe')(config.stripe.secretKey);
-    const charges = await stripe.charges.list({ customer: req.user.stripeCustomerId, limit: 20 });
+    const customerId = await stripeService.ensureCustomer(req.user);
+    const charges = await stripe.charges.list({ customer: customerId, limit: 20 });
     res.json({ success: true, data: { charges: charges.data } });
   } catch (err) { next(err); }
 });

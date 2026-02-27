@@ -3,6 +3,7 @@ const express = require('express');
 const config = require('../config');
 const Booking = require('../models/Booking');
 const Subscription = require('../models/Subscription');
+const ProcessedEvent = require('../models/ProcessedEvent');
 
 router.post('/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
   if (config.stripe.skip) return res.json({ received: true });
@@ -16,22 +17,46 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
     return res.status(400).json({ error: 'Webhook signature verification failed' });
   }
 
+  const existing = await ProcessedEvent.findOne({ eventId: event.id });
+  if (existing) return res.json({ received: true });
+
+  try {
+    await ProcessedEvent.create({ eventId: event.id, type: event.type });
+  } catch (dupErr) {
+    if (dupErr.code === 11000) return res.json({ received: true });
+    throw dupErr;
+  }
+
+  try {
   switch (event.type) {
     case 'payment_intent.succeeded': {
       const { bookingId } = event.data.object.metadata;
       if (bookingId) {
-        await Booking.findByIdAndUpdate(bookingId, {
-          status: 'confirmed',
-          stripePaymentIntentId: event.data.object.id,
-          $push: { statusHistory: { status: 'confirmed', changedAt: new Date() } },
-        });
+        await Booking.updateMany(
+          { $or: [{ _id: bookingId }, { linkedBookingId: bookingId }], paymentStatus: 'pending_payment' },
+          { stripePaymentIntentId: event.data.object.id, paymentStatus: 'paid' },
+        );
       }
       break;
     }
     case 'payment_intent.payment_failed': {
       const { bookingId } = event.data.object.metadata;
       if (bookingId) {
-        await Booking.findByIdAndUpdate(bookingId, { status: 'cancelled', cancelledAt: new Date(), cancellationReason: 'Payment failed' });
+        await Booking.updateMany(
+          { $or: [{ _id: bookingId }, { linkedBookingId: bookingId }] },
+          { paymentStatus: 'failed', status: 'cancelled', cancelledAt: new Date(), cancellationReason: 'Payment failed' },
+        );
+      }
+      break;
+    }
+    case 'invoice.paid': {
+      const subId = event.data.object.subscription;
+      if (subId) {
+        const sub = await Subscription.findOne({ stripeSubscriptionId: subId });
+        if (sub) {
+          const { generateUpcomingBookings } = require('../services/subscriptionService');
+          await generateUpcomingBookings(sub);
+        }
       }
       break;
     }
@@ -52,7 +77,7 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
         sub.cancelledAt = new Date();
         await sub.save();
         await Booking.updateMany(
-          { subscriptionId: sub._id, status: { $in: ['pending', 'confirmed'] }, scheduledDate: { $gte: new Date() } },
+          { subscriptionId: sub._id, status: { $in: ['pending', 'active'] }, scheduledDate: { $gte: new Date() } },
           { status: 'cancelled', cancelledAt: new Date() }
         );
       }
@@ -66,6 +91,9 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
       }
       break;
     }
+  }
+  } catch (processingErr) {
+    console.error(`Webhook processing error for ${event.type}:`, processingErr.message);
   }
 
   res.json({ received: true });

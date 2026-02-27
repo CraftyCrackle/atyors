@@ -12,3 +12,12 @@ nginx/ssl/*.key
 nginx/logs/
 mongodb_data/
 redis_data/
+
+uploads/
+
+# PWA generated files
+apps/web/public/sw.js
+apps/web/public/sw.js.map
+apps/web/public/workbox-*.js
+apps/web/public/workbox-*.js.map
+apps/web/public/swe-worker-*.js

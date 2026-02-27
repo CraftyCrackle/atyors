@@ -4,8 +4,8 @@ const subscriptionService = require('../services/subscriptionService');
 
 router.post('/', authenticate, async (req, res, next) => {
   try {
-    const subscription = await subscriptionService.create(req.user._id, req.body);
-    res.status(201).json({ success: true, data: { subscription } });
+    const { subscription, clientSecret } = await subscriptionService.create(req.user._id, req.body);
+    res.status(201).json({ success: true, data: { subscription, clientSecret } });
   } catch (err) { next(err); }
 });
 

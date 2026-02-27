@@ -161,14 +161,17 @@ jobs:
             git fetch origin
             git checkout main
             git pull origin main
+            set -a
+            source .env.ec2
+            set +a
             docker compose -f docker-compose.yml -f docker-compose.ec2.yml build
             docker compose -f docker-compose.yml -f docker-compose.ec2.yml up -d
-            sleep 20
+            sleep 30
           '"
 
       - name: Health check
         run: |
-          ssh -i ~/.ssh/id_rsa ${{ env.EC2_USER }}@${{ env.EC2_HOST }} "curl -sf http://localhost/api/v1/health || curl -sf http://localhost:8080/api/v1/health"
+          ssh -i ~/.ssh/id_rsa ${{ env.EC2_USER }}@${{ env.EC2_HOST }} "curl -sf https://localhost/api/v1/health || curl -sf http://localhost/api/v1/health || curl -sf http://localhost:8080/api/v1/health"
 
   notify-failure:
     name: Notify on Failure

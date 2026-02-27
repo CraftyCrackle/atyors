@@ -27,13 +27,24 @@ router.get('/bookings', async (req, res, next) => {
 
 router.patch('/bookings/:id/assign', async (req, res, next) => {
   try {
+    if (!req.body.assignedTo) {
+      return res.status(400).json({ success: false, error: { code: 'MISSING_FIELD', message: 'assignedTo is required' } });
+    }
+    const servicer = await User.findById(req.body.assignedTo);
+    if (!servicer || !['servicer', 'admin', 'superadmin'].includes(servicer.role)) {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_SERVICER', message: 'Assigned user must be a servicer' } });
+    }
     const booking = await Booking.findByIdAndUpdate(req.params.id, { assignedTo: req.body.assignedTo }, { new: true }).populate('userId addressId serviceTypeId assignedTo');
+    if (!booking) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Booking not found' } });
     res.json({ success: true, data: { booking } });
   } catch (err) { next(err); }
 });
 
 router.patch('/bookings/:id/status', async (req, res, next) => {
   try {
+    if (!req.body.status) {
+      return res.status(400).json({ success: false, error: { code: 'MISSING_FIELD', message: 'status is required' } });
+    }
     const bookingService = require('../services/bookingService');
     const booking = await bookingService.updateStatus(req.params.id, req.body.status, req.user._id);
     res.json({ success: true, data: { booking } });
@@ -92,7 +103,7 @@ router.get('/reports/summary', async (req, res, next) => {
   try {
     const [totalBookings, activeBookings, completedBookings, totalCustomers] = await Promise.all([
       Booking.countDocuments(),
-      Booking.countDocuments({ status: { $in: ['pending', 'confirmed', 'en-route', 'arrived', 'in-progress'] } }),
+      Booking.countDocuments({ status: { $in: ['pending', 'active', 'en-route', 'arrived', 'in-progress'] } }),
       Booking.countDocuments({ status: 'completed' }),
       User.countDocuments({ role: 'customer' }),
     ]);

@@ -24,4 +24,21 @@ async function updateProfile(req, res, next) {
   }
 }
 
-module.exports = { getProfile, updateProfile };
+async function uploadPhoto(req, res, next) {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: { code: 'NO_FILE', message: 'No photo uploaded' } });
+    }
+    const photoUrl = `/uploads/${req.file.filename}`;
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { profilePhotoUrl: photoUrl },
+      { new: true }
+    ).select('-__v -passwordHash');
+    res.json({ success: true, data: { user, photoUrl } });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { getProfile, updateProfile, uploadPhoto };

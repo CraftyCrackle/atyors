@@ -12,6 +12,13 @@ const addressSchema = new mongoose.Schema({
     type: { type: String, enum: ['Point'], default: 'Point' },
     coordinates: { type: [Number], default: [0, 0] },
   },
+  barrelCount: { type: Number, default: 1, min: 1 },
+  barrelLocation: { type: String, trim: true },
+  barrelPhotoUrl: { type: String, trim: true },
+  barrelNotes: { type: String, trim: true },
+  barrelPlacementInstructions: { type: String, trim: true },
+  barrelReturnInstructions: { type: String, trim: true },
+  trashDay: { type: String, enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'], trim: true },
   isDefault: { type: Boolean, default: false },
   serviceZoneId: { type: mongoose.Schema.Types.ObjectId, ref: 'ServiceZone' },
 }, {
