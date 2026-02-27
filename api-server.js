@@ -97,6 +97,14 @@ async function start() {
     await mongoose.connect(process.env.MONGODB_URI);
     console.log('MongoDB connected');
 
+    const { seed } = require('./apps/server/services/serviceService');
+    try {
+      const result = await seed();
+      if (result.seeded) console.log('Service types seeded');
+    } catch (seedErr) {
+      console.warn('Seed check failed (non-fatal):', seedErr.message);
+    }
+
     const redis = createClient({ url: process.env.REDIS_URL });
     redis.on('error', (err) => console.error('Redis error:', err));
     await redis.connect();
