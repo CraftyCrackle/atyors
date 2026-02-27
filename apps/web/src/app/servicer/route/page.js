@@ -152,7 +152,7 @@ export default function ServicerRoutePage() {
 
   if (authLoading || !user) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-900">
+      <div className="flex min-h-screen-safe items-center justify-center bg-gray-900">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
       </div>
     );
@@ -162,8 +162,8 @@ export default function ServicerRoutePage() {
   const completedJobs = jobs.filter((b) => b.status === 'completed');
 
   return (
-    <div className="min-h-screen bg-gray-900 pb-6">
-      <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-gray-800 bg-gray-900 px-4 py-3">
+    <div className="min-h-screen-safe bg-gray-900 pb-6">
+      <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-gray-800 bg-gray-900 px-4 pb-3 pt-sticky-safe">
         <button onClick={() => router.push('/servicer/dashboard')} className="rounded-lg p-2 text-gray-400 hover:bg-gray-800">
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
         </button>

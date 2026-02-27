@@ -210,7 +210,7 @@ export default function ServicerDashboard() {
 
   if (authLoading || !user) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-900">
+      <div className="flex min-h-screen-safe items-center justify-center bg-gray-900">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
       </div>
     );
@@ -223,8 +223,8 @@ export default function ServicerDashboard() {
   const tabData = tab === 'available' ? available : tab === 'active' ? activeJobs : completedJobs;
 
   return (
-    <div className="min-h-screen bg-gray-900 pb-6">
-      <header className="border-b border-gray-800 bg-gray-900 px-6 pb-4 pt-12">
+    <div className="min-h-screen-safe bg-gray-900 pb-6">
+      <header className="border-b border-gray-800 bg-gray-900 px-6 pb-4 pt-header-safe">
         <div className="mb-3 flex items-center gap-2">
           <svg className="h-6 w-6" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="10" fill="#1b70f5"/><path d="M20 10l-10 8h3v10h5v-6h4v6h5V18h3L20 10z" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
           <span className="text-sm font-bold tracking-tight text-white">atyors<span className="text-brand-400">.com</span></span>

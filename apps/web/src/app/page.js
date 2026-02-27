@@ -46,7 +46,7 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-white">
+      <div className="flex min-h-screen-safe items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-4">
           <Logo size="md" variant="icon" />
           <div className="h-1 w-24 overflow-hidden rounded-full bg-brand-100">
@@ -58,9 +58,9 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-white">
+    <main className="min-h-screen-safe bg-white">
       {/* Nav */}
-      <nav className="flex items-center justify-between px-6 py-4">
+      <nav className="flex items-center justify-between px-6 pb-4 pt-sticky-safe">
         <Logo size="sm" variant="wordmark" />
         <div className="flex items-center gap-3">
           <Link href="/login" className="text-sm font-medium text-gray-600 hover:text-gray-900">Sign In</Link>

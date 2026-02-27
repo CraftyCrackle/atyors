@@ -36,7 +36,7 @@ export default function ServicerEarningsPage() {
 
   if (authLoading || !user || loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-900">
+      <div className="flex min-h-screen-safe items-center justify-center bg-gray-900">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
       </div>
     );
@@ -44,7 +44,7 @@ export default function ServicerEarningsPage() {
 
   if (!stats) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 px-6">
+      <div className="flex min-h-screen-safe flex-col items-center justify-center bg-gray-900 px-6">
         <p className="text-gray-400">Unable to load earnings.</p>
         <button onClick={() => router.push('/servicer/dashboard')} className="mt-4 text-sm text-brand-400">Back to Dashboard</button>
       </div>
@@ -55,8 +55,8 @@ export default function ServicerEarningsPage() {
   const maxDaily = Math.max(...dailyBreakdown.map((d) => d.total), 1);
 
   return (
-    <div className="min-h-screen bg-gray-900 pb-8">
-      <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-gray-800 bg-gray-900 px-4 py-3">
+    <div className="min-h-screen-safe bg-gray-900 pb-8">
+      <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-gray-800 bg-gray-900 px-4 pb-3 pt-sticky-safe">
         <button onClick={() => router.push('/servicer/dashboard')} className="rounded-lg p-2 text-gray-400 hover:bg-gray-800">
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
         </button>

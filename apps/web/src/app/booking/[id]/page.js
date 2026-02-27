@@ -48,7 +48,7 @@ export default function BookingSummaryPage() {
   if (loading) {
     return (
       <AuthGuard>
-        <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="flex min-h-screen-safe items-center justify-center bg-gray-50">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
         </div>
       </AuthGuard>
@@ -58,7 +58,7 @@ export default function BookingSummaryPage() {
   if (!booking) {
     return (
       <AuthGuard>
-        <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-6">
+        <div className="flex min-h-screen-safe flex-col items-center justify-center bg-gray-50 px-6">
           <p className="text-gray-400">Booking not found</p>
           <button onClick={() => router.push('/dashboard')} className="mt-4 text-sm font-medium text-brand-600">Back to Dashboard</button>
         </div>
@@ -73,8 +73,8 @@ export default function BookingSummaryPage() {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-gray-50">
-        <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-gray-200 bg-white px-4 py-3">
+      <div className="min-h-screen-safe bg-gray-50">
+        <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-gray-200 bg-white px-4 pb-3 pt-sticky-safe">
           <button onClick={() => router.push('/dashboard')} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100">
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
           </button>

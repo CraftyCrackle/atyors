@@ -7,8 +7,8 @@ const LAST_UPDATED = 'February 25, 2026';
 
 export default function TermsPage() {
   return (
-    <main className="min-h-screen bg-white">
-      <nav className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+    <main className="min-h-screen-safe bg-white">
+      <nav className="flex items-center justify-between border-b border-gray-100 px-6 pb-4 pt-sticky-safe">
         <Link href="/">
           <Logo size="sm" variant="wordmark" />
         </Link>

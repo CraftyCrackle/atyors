@@ -132,7 +132,7 @@ export default function ChatPage() {
   if (loading) {
     return (
       <AuthGuard>
-        <div className={`flex min-h-screen items-center justify-center ${bg}`}>
+        <div className={`flex min-h-screen-safe items-center justify-center ${bg}`}>
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
         </div>
       </AuthGuard>
@@ -143,9 +143,9 @@ export default function ChatPage() {
 
   return (
     <AuthGuard>
-      <div className={`flex h-screen flex-col ${bg}`}>
+      <div className={`flex h-screen-safe flex-col ${bg}`}>
         {/* Header */}
-        <header className={`sticky top-0 z-10 flex items-center gap-3 px-4 py-3 shadow-sm ${dark ? 'bg-gray-900 border-b border-gray-800' : 'bg-white border-b border-gray-200'}`}>
+        <header className={`sticky top-0 z-10 flex items-center gap-3 px-4 pb-3 pt-sticky-safe shadow-sm ${dark ? 'bg-gray-900 border-b border-gray-800' : 'bg-white border-b border-gray-200'}`}>
           <button onClick={() => router.back()} className={`rounded-lg p-2 transition ${dark ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-600'}`}>
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
           </button>
