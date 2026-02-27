@@ -17,6 +17,24 @@ services:
       - .env.ec2
     environment:
       - NODE_ENV=production
+      - PORT=${PORT:-8080}
+      - MONGODB_URI=${MONGODB_URI}
+      - REDIS_URL=${REDIS_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
+      - SKIP_STRIPE=${SKIP_STRIPE:-false}
+      - SKIP_TWILIO=${SKIP_TWILIO:-false}
+      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY}
+      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY}
+      - VAPID_SUBJECT=${VAPID_SUBJECT:-mailto:admin@atyors.com}
+      - FROM_EMAIL=${FROM_EMAIL:-noreply@atyors.com}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
+      - STRIPE_MONTHLY_PRICE_ID=${STRIPE_MONTHLY_PRICE_ID:-}
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID:-}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN:-}
+      - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER:-}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
     volumes:
       - uploads:/app/uploads
     command: ["node", "api-server.js"]
@@ -42,6 +60,8 @@ services:
       - .env.ec2
     environment:
       - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
     volumes: []
     command: ["node", "server.js"]
 
