@@ -35,6 +35,7 @@ async function sendToUser(userId, { title, body, data }) {
     data: data || {},
     silent: false,
     requireInteraction: true,
+    actions: [{ action: 'view', title: 'View' }],
   });
 
   const results = await Promise.allSettled(
