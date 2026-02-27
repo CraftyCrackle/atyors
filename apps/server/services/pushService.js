@@ -33,6 +33,8 @@ async function sendToUser(userId, { title, body, data }) {
     icon: '/icons/icon-192.png',
     badge: '/icons/icon-192.png',
     data: data || {},
+    silent: false,
+    requireInteraction: true,
   });
 
   const results = await Promise.allSettled(
@@ -40,7 +42,7 @@ async function sendToUser(userId, { title, body, data }) {
       webPush.sendNotification(
         { endpoint: sub.endpoint, keys: sub.keys },
         payload,
-        { TTL: 60 * 60 }
+        { TTL: 24 * 60 * 60, urgency: 'high' }
       )
     )
   );
