@@ -19,8 +19,11 @@ export default function LoginPage() {
     setError('');
     setSubmitting(true);
     try {
-      await login(email, password);
-      router.push('/dashboard');
+      const data = await login(email, password);
+      const role = data.user?.role;
+      if (['admin', 'superadmin'].includes(role)) router.push('/admin/dashboard');
+      else if (role === 'servicer') router.push('/servicer/dashboard');
+      else router.push('/dashboard');
     } catch (err) {
       setError(err.message);
     } finally {

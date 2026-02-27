@@ -99,6 +99,15 @@ router.delete('/zones/:id', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+router.get('/servicers', async (req, res, next) => {
+  try {
+    const servicers = await User.find({ role: { $in: ['servicer', 'admin', 'superadmin'] }, isActive: true })
+      .select('firstName lastName email role averageRating totalReviews')
+      .sort({ firstName: 1 });
+    res.json({ success: true, data: { servicers } });
+  } catch (err) { next(err); }
+});
+
 router.get('/reports/summary', async (req, res, next) => {
   try {
     const [totalBookings, activeBookings, completedBookings, totalCustomers] = await Promise.all([

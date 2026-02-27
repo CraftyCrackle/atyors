@@ -40,7 +40,9 @@ export default function Home() {
   useEffect(() => { init(); }, [init]);
   useEffect(() => {
     if (!loading && user) {
-      router.push(user.role === 'servicer' ? '/servicer/dashboard' : '/dashboard');
+      if (['admin', 'superadmin'].includes(user.role)) router.push('/admin/dashboard');
+      else if (user.role === 'servicer') router.push('/servicer/dashboard');
+      else router.push('/dashboard');
     }
   }, [loading, user, router]);
 
