@@ -18,14 +18,14 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=${PORT:-8080}
-      - MONGODB_URI=${MONGODB_URI}
-      - REDIS_URL=${REDIS_URL}
-      - JWT_SECRET=${JWT_SECRET}
-      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
+      - MONGODB_URI=${MONGODB_URI:-mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASS:-changeme_in_production}@mongodb:27017/atyors?authSource=admin}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+      - JWT_SECRET=${JWT_SECRET:-atyors-prod-default-jwt-secret-replace-via-ssm}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-https://atyors.com,https://www.atyors.com}
       - SKIP_STRIPE=${SKIP_STRIPE:-false}
       - SKIP_TWILIO=${SKIP_TWILIO:-false}
-      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY}
-      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY}
+      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-BKvDs89OtKGPwo6wSt0-neFvJsU4R2kZWH2GgZRiESG4-iszXn30wtkO0mIO1lktbe7lKwLyjAV_exCeP1JusfI}
+      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY:-8JhnHTywkMJfQ-3EqFY6Aj9pmmAoGs1KGtF9A6z92Tw}
       - VAPID_SUBJECT=${VAPID_SUBJECT:-mailto:admin@atyors.com}
       - FROM_EMAIL=${FROM_EMAIL:-noreply@atyors.com}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}

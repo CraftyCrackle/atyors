@@ -147,9 +147,21 @@ jobs:
           ssh -i ~/.ssh/id_rsa ${{ env.EC2_USER }}@${{ env.EC2_HOST }} 'sudo bash -c "
             cd ${{ env.DEPLOY_PATH }}
             > .env.ec2
-            aws ssm get-parameters-by-path --path /atyors/production --recursive --with-decryption --region us-east-1 --output json | jq -r \".Parameters[] | (.Name | split(\"/\") | .[3:] | join(\"_\") | ascii_upcase) + \"=\" + (.Value | @sh)\" >> .env.ec2
             echo NODE_ENV=production >> .env.ec2
             echo AWS_REGION=us-east-1 >> .env.ec2
+            if command -v aws &>/dev/null && command -v jq &>/dev/null; then
+              SSM_OUT=\$(aws ssm get-parameters-by-path --path /atyors/production --recursive --with-decryption --region us-east-1 --output json 2>/dev/null || echo \"{}\")
+              PARAM_COUNT=\$(echo \"\$SSM_OUT\" | jq -r \".Parameters // [] | length\")
+              if [ \"\$PARAM_COUNT\" -gt 0 ]; then
+                echo \"\$SSM_OUT\" | jq -r \".Parameters[] | (.Name | split(\\\"/\\\") | .[3:] | join(\\\"_\\\") | ascii_upcase) + \\\"=\\\" + (.Value | @sh)\" >> .env.ec2
+                echo \"Loaded \$PARAM_COUNT parameters from SSM\"
+              else
+                echo \"No SSM parameters found at /atyors/production — using compose defaults\"
+              fi
+            else
+              echo \"aws-cli or jq not installed — using compose defaults\"
+            fi
+            echo \"Generated .env.ec2 with \$(wc -l < .env.ec2) lines\"
           "'
 
       - name: Pull and deploy
