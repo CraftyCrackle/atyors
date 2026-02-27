@@ -7,7 +7,7 @@ RUN npm ci --omit=dev
 
 COPY api-server.js ./
 COPY apps/server ./apps/server
-RUN mkdir -p /app/uploads
+RUN mkdir -p /app/uploads && chown node:node /app/uploads
 
 EXPOSE 8080
 
