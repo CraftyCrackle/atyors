@@ -97,10 +97,11 @@ async function start() {
     await mongoose.connect(process.env.MONGODB_URI);
     console.log('MongoDB connected');
 
-    const { seed } = require('./apps/server/services/serviceService');
+    const { seedAll } = require('./apps/server/services/seedService');
     try {
-      const result = await seed();
-      if (result.seeded) console.log('Service types seeded');
+      const result = await seedAll();
+      if (result.services?.seeded) console.log('Service types seeded');
+      if (result.users.length > 0) console.log('Demo accounts seeded:', result.users.map(u => u.email).join(', '));
     } catch (seedErr) {
       console.warn('Seed check failed (non-fatal):', seedErr.message);
     }
