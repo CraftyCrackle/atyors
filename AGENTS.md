@@ -633,12 +633,78 @@ atyors.com is configured as a Progressive Web App, enabling "Add to Home Screen"
 
 ### Deployment Requirement
 - HTTPS is mandatory for service worker, push, and install prompt to work
-- Use AWS CloudFront with ACM certificate for SSL termination in production
+- Production uses Let's Encrypt via Certbot with auto-renewal
 - `localhost` is exempt from HTTPS requirement for development
 
 ---
 
-## 15. Quick Reference Commands
+## 15. AWS EC2 Production Deployment
+
+### Infrastructure Overview
+- **Instance**: t3.medium (2 vCPU, 4GB RAM), Amazon Linux 2023, 30GB gp3 EBS
+- **Elastic IP**: `54.81.247.176` (static, survives reboots)
+- **Domain**: `atyors.com` + `www.atyors.com` A records via Route 53
+- **SSL**: Let's Encrypt via Certbot container with auto-renewal every 12 hours
+- **Security Group**: `atyors-ec2-sg` — ports 22, 80, 443 inbound
+- **IAM Role**: `AmazonSSMRoleForInstancesQuickSetup` with SSM parameter read access
+
+### Docker Compose Production Stack
+All services run via `docker compose -f docker-compose.yml -f docker-compose.ec2.yml`:
+- **Nginx** — reverse proxy, SSL termination, static caching, HTTP-to-HTTPS redirect
+- **API** (Express) — port 8080 internal, runs `node api-server.js`
+- **Web** (Next.js standalone) — port 3000 internal, runs `node server.js`
+- **MongoDB** — port 27017, authenticated, data persisted in `mongo-prod-data` volume
+- **Redis** — port 6379, AOF persistence in `redis_data` volume
+- **Certbot** — auto-renews SSL certificates, shares volumes with Nginx
+
+### Secrets Management
+- All secrets stored in AWS SSM Parameter Store under `/atyors/production/`
+- Deploy workflow generates `.env.ec2` from SSM at deploy time
+- `.env.ec2` is in `.gitignore` — never committed
+- EC2 instance has IAM role policy `AtyorsSSMParameterAccess` for SSM read access
+
+### CI/CD Pipeline (`.github/workflows/deploy-production.yml`)
+Triggers on push to `main` or manual dispatch:
+1. **Test** — runs API and web test suites with service containers
+2. **Check Disk** — alerts if EC2 disk > 60% usage
+3. **Cleanup Docker** — prunes if disk threshold exceeded
+4. **Deploy** — SSH to EC2, pull code, source `.env.ec2`, build and restart containers
+5. **Health Check** — verifies `/api/v1/health` responds
+
+### Key Files
+- `docker-compose.ec2.yml` — production overrides (env vars, MongoDB auth, Certbot, SSL volumes)
+- `nginx/ec2.conf` — HTTPS server block with security headers, SSL, proxy rules
+- `nginx/ec2-init.conf` — HTTP-only config used during initial SSL cert acquisition
+- `Dockerfile.api` — production API image (`npm ci --omit=dev`, runs as `node` user)
+- `apps/web/Dockerfile` — multi-stage build (deps → build → standalone runner as `nextjs` user)
+- `scripts/init-ssl.sh` — one-time script for initial SSL certificate setup
+- `.dockerignore` — excludes tests, docs, node_modules from Docker context
+
+### Build Args for Next.js
+`NEXT_PUBLIC_*` variables are baked at build time. The `docker-compose.ec2.yml` passes them as build args sourced from shell environment (which comes from `.env.ec2`). Always `source .env.ec2` before `docker compose build`.
+
+### MongoDB on EC2
+- Running as a Docker container (not Atlas) for simplicity
+- Authenticated with credentials from SSM (`MONGO_ROOT_USER`, `MONGO_ROOT_PASS`)
+- Data persisted in `mongo-prod-data` Docker volume
+- Daily backup at 3 AM via `/root/backup-mongo.sh` cron job
+- Backups kept for 7 days in `/root/backups/`
+
+### Manual SSH Access
+```bash
+ssh -i ~/.ssh/atyors-ec2-key.pem ec2-user@54.81.247.176
+sudo bash -c 'cd /root/atyors && docker compose -f docker-compose.yml -f docker-compose.ec2.yml ps'
+```
+
+### Rollback
+Use the GitHub Actions "rollback" workflow with a specific commit SHA, or manually:
+```bash
+sudo bash -c 'cd /root/atyors && git checkout <commit-sha> && set -a && source .env.ec2 && set +a && docker compose -f docker-compose.yml -f docker-compose.ec2.yml build && docker compose -f docker-compose.yml -f docker-compose.ec2.yml up -d'
+```
+
+---
+
+## 16. Quick Reference Commands
 
 ```bash
 # Clone and setup
@@ -659,7 +725,12 @@ cd apps/web && npm run test:e2e    # E2E tests
 # Deployment
 git push origin main               # Triggers auto-deploy via GitHub Actions
 
+# Production monitoring
+ssh -i ~/.ssh/atyors-ec2-key.pem ec2-user@54.81.247.176
+sudo docker compose -f docker-compose.yml -f docker-compose.ec2.yml logs -f api
+curl https://atyors.com/api/v1/health
+
 # Emergency
 # Manual rollback via GitHub Actions "rollback" workflow
-# Manual SSH: ssh -i ~/.ssh/<key>.pem ec2-user@<host>
+# Manual SSH: ssh -i ~/.ssh/atyors-ec2-key.pem ec2-user@54.81.247.176
 ```
