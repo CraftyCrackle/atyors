@@ -79,8 +79,8 @@ app.use((req, res) => {
 // --- Error handler ---
 app.use((err, req, res, _next) => {
   const status = err.status || 500;
+  if (status >= 500) console.error(`[${req.id}] ${req.method} ${req.path}:`, err.message, err.stack);
   const isDev = process.env.NODE_ENV === 'development';
-  if (status >= 500) console.error(`[${req.id}] Unhandled error:`, err.message, isDev ? err.stack : '');
   res.status(status).json({
     success: false,
     error: {

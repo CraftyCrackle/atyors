@@ -28,6 +28,7 @@ export default function ServicerJobPage() {
   const [completionPhoto, setCompletionPhoto] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [completionNotes, setCompletionNotes] = useState('');
+  const [completeError, setCompleteError] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraError, setCameraError] = useState(null);
@@ -126,6 +127,7 @@ export default function ServicerJobPage() {
   async function handleComplete() {
     if (!completionPhoto) return;
     setUploading(true);
+    setCompleteError(null);
     try {
       const formData = new FormData();
       formData.append('photo', completionPhoto);
@@ -137,12 +139,18 @@ export default function ServicerJobPage() {
         body: formData,
       });
       const data = await res.json();
-      if (data.success) {
-        setBooking(data.data.booking);
-        setCompletionPhoto(null);
-        setPhotoPreview(null);
+      if (!res.ok || !data.success) {
+        setCompleteError(data.error?.message || data.message || 'Failed to complete job. Please try again.');
+        setUploading(false);
+        return;
       }
-    } catch { }
+      setBooking(data.data.booking);
+      setCompletionPhoto(null);
+      setPhotoPreview(null);
+      setCompletionNotes('');
+    } catch (err) {
+      setCompleteError('Network error. Please check your connection and try again.');
+    }
     setUploading(false);
   }
 
@@ -351,6 +359,12 @@ export default function ServicerJobPage() {
                 className="mt-1 w-full rounded-lg border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-brand-500 focus:outline-none"
               />
             </div>
+
+            {completeError && (
+              <div className="rounded-lg border border-red-800/50 bg-red-900/30 p-3">
+                <p className="text-sm text-red-300">{completeError}</p>
+              </div>
+            )}
 
             <button onClick={handleComplete} disabled={!completionPhoto || uploading}
               className="w-full rounded-xl bg-green-600 py-4 text-center font-semibold text-white shadow-lg transition hover:bg-green-700 active:scale-[0.98] disabled:opacity-50">

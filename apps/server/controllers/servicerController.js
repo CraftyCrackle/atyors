@@ -109,30 +109,35 @@ async function completeWithPhoto(req, res, next) {
     const completionNotes = req.body.notes || '';
     const booking = await servicerService.completeWithPhoto(req.params.id, req.user._id, photoUrl, completionNotes);
 
+    const customerId = booking.userId?._id || booking.userId;
     const svcName = booking.serviceTypeId?.name || 'Service';
     const msg = `Your ${svcName} has been completed! Tap to view the summary.`;
 
-    await notificationService.create({
-      userId: booking.userId,
-      type: 'booking:completed',
-      title: 'Job Completed',
-      body: msg,
-      bookingId: booking._id,
-      meta: { status: 'completed', hasPhoto: true },
-    });
+    try {
+      await notificationService.create({
+        userId: customerId,
+        type: 'booking:completed',
+        title: 'Job Completed',
+        body: msg,
+        bookingId: booking._id,
+        meta: { status: 'completed', hasPhoto: true },
+      });
 
-    const io = req.app.locals.io;
-    if (io) {
-      io.of('/notifications').to(`user:${booking.userId}`).emit('booking:status', {
-        bookingId: booking._id,
-        status: 'completed',
-        message: msg,
-      });
-      io.of('/tracking').to(`booking:${booking._id}`).emit('status:update', {
-        bookingId: booking._id,
-        status: 'completed',
-        timestamp: Date.now(),
-      });
+      const io = req.app.locals.io;
+      if (io) {
+        io.of('/notifications').to(`user:${customerId}`).emit('booking:status', {
+          bookingId: booking._id,
+          status: 'completed',
+          message: msg,
+        });
+        io.of('/tracking').to(`booking:${booking._id}`).emit('status:update', {
+          bookingId: booking._id,
+          status: 'completed',
+          timestamp: Date.now(),
+        });
+      }
+    } catch (notifyErr) {
+      console.error(`Post-completion notification failed for booking ${req.params.id}:`, notifyErr.message);
     }
 
     res.json({ success: true, data: { booking } });

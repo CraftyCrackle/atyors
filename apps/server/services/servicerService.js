@@ -217,7 +217,11 @@ async function completeWithPhoto(bookingId, servicerId, photoUrl, completionNote
   booking.completedAt = new Date();
   booking.statusHistory.push({ status: 'completed', changedAt: new Date(), changedBy: servicerId });
   await booking.save();
-  await syncRouteStop(booking);
+
+  try { await syncRouteStop(booking); } catch (e) {
+    console.error(`syncRouteStop failed for booking ${bookingId}:`, e.message);
+  }
+
   await booking.populate('addressId serviceTypeId userId');
   return booking;
 }

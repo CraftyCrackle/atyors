@@ -7,7 +7,11 @@ export const metadata = {
   title: 'atyors — At Your Service',
   description: 'Curbside trash barrel services — we put them out and bring them back in, so you don\'t have to.',
   manifest: '/manifest.json',
-  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'atyors' },
+  other: {
+    'mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-status-bar-style': 'default',
+    'apple-mobile-web-app-title': 'atyors',
+  },
   icons: {
     icon: [
       { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
