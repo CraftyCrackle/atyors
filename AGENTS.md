@@ -734,3 +734,96 @@ curl https://atyors.com/api/v1/health
 # Manual rollback via GitHub Actions "rollback" workflow
 # Manual SSH: ssh -i ~/.ssh/atyors-ec2-key.pem ec2-user@54.81.247.176
 ```
+
+---
+
+## 17. iOS App Store Publishing (Capacitor) — Parked
+
+> **Status:** Phase 1 complete and deployed. Phase 2 scaffolded but **blocked** on Apple Developer account enrollment.
+
+### Background
+
+Safari does not support `beforeinstallprompt`. The only way for iPhone users to install a PWA is the manual Share > Add to Home Screen flow (3 taps). Because the target market (Boston area) skews heavily toward iPhones, two phases were planned:
+
+| Phase | Scope | Status |
+|-------|-------|--------|
+| **1 — Enhanced PWA Install Guide** | Full-screen animated iOS overlay, manifest screenshots, persistent "Get the App" buttons on dashboards/profile | **Deployed** |
+| **2 — Capacitor App Store Wrapper** | Wrap the live site in a native iOS shell, use APNs for push, submit to App Store | **Scaffolded, not submitted** |
+
+### What Was Completed (Phase 1)
+
+- `apps/web/src/components/InstallContext.js` — shared React context for install state (`canInstall`, `isIos`, `isStandalone`, `triggerInstall`, iOS guide visibility)
+- `apps/web/src/components/InstallPrompt.js` — full-screen animated iOS guide with Safari Share icon, step-by-step visuals, and a "Maybe Later" dismissal
+- `apps/web/src/app/globals.css` — `animate-ios-overlay-in`, `animate-ios-card-in`, `animate-ios-arrow-bounce` keyframes
+- `apps/web/public/manifest.json` — added `screenshots` array and richer `description`
+- "Download the App" / "Get the App" buttons added to landing page, client dashboard, servicer dashboard, and profile page (all conditional on `canInstall && !isStandalone`)
+
+### What Was Scaffolded (Phase 2 — Blocked)
+
+All files below exist in the repo and are ready to use once an Apple Developer account is active.
+
+| File | Purpose |
+|------|---------|
+| `apps/web/capacitor.config.json` | Capacitor config — `appId: com.atyors.app`, loads `https://atyors.com` in WKWebView, PushNotifications plugin pre-configured |
+| `apps/web/src/services/capacitorPush.js` | Bridge for native APNs — detects Capacitor runtime, requests permissions, registers for push, handles notification taps |
+| `.gitignore` additions | Ignores `apps/web/out/`, `apps/web/ios/App/Pods/`, `apps/web/ios/App/App/public/` |
+
+### Steps to Resume (When Ready)
+
+1. **Enroll in the Apple Developer Program** — <https://developer.apple.com/programs/> ($99/year). Approval takes 24–48 hours.
+
+2. **Install dependencies** (already in `package.json`, just need native platform):
+   ```bash
+   cd apps/web
+   npx cap add ios          # generates apps/web/ios/ Xcode project
+   npx cap sync ios         # copies web assets + plugin configs
+   ```
+
+3. **Open in Xcode**:
+   ```bash
+   npx cap open ios
+   ```
+
+4. **Configure signing in Xcode**:
+   - Select the `App` target > Signing & Capabilities
+   - Set Team to your Apple Developer account
+   - Bundle Identifier: `com.atyors.app`
+   - Enable "Push Notifications" capability
+   - Enable "Background Modes" > Remote notifications
+
+5. **Register an APNs key** in the Apple Developer portal:
+   - Certificates, Identifiers & Profiles > Keys > + > Apple Push Notifications service (APNs)
+   - Download the `.p8` key file — you will need the Key ID and Team ID
+   - Store the `.p8` file securely (add to SSM or `.env.ec2`)
+   - Update `apps/server/services/pushService.js` to send via APNs when the subscription type is native (currently only sends Web Push)
+
+6. **Test on a real device**: Simulators do not support push notifications. Connect an iPhone via USB, select it in Xcode, and run.
+
+7. **Archive and submit**:
+   - Product > Archive in Xcode
+   - Upload to App Store Connect
+   - Fill in App Store listing (screenshots, description, privacy policy URL)
+   - Submit for review (typically 1–3 days)
+
+### Apple App Store Review Notes (Guideline 4.2)
+
+Apple rejects "thin wrapper" apps. The atyors app should pass review because it uses native capabilities beyond what Safari offers:
+
+- **Push notifications** via APNs (Capacitor Push plugin)
+- **Camera capture** for servicer completion photos
+- **GPS/live tracking** for real-time servicer location
+- **Offline support** via service worker caching
+
+If Apple requests changes during review, common fixes include:
+- Adding a native splash screen (Capacitor generates one automatically)
+- Ensuring the app works offline (service worker already handles this)
+- Adding a native settings/about screen
+
+### Related Files (Already Deployed, No Changes Needed to Resume)
+
+- `apps/web/src/components/InstallContext.js`
+- `apps/web/src/components/InstallPrompt.js`
+- `apps/web/src/app/layout.js` (wraps app in `InstallProvider`)
+- `apps/web/public/manifest.json`
+- `apps/web/worker/index.js` / `apps/web/public/push-sw.js` (badge + notification enhancements)
+- `nginx/ec2.conf` (service worker headers)
