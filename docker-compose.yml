@@ -93,13 +93,7 @@ services:
       - NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY:-}
       - NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY:-}
       - NEXT_PUBLIC_VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-BKvDs89OtKGPwo6wSt0-neFvJsU4R2kZWH2GgZRiESG4-iszXn30wtkO0mIO1lktbe7lKwLyjAV_exCeP1JusfI}
-      - WATCHPACK_POLLING=true
-    volumes:
-      - ./apps/web/src:/app/src
-      - ./apps/web/public:/app/public
-      - /app/node_modules
-      - /app/.next
-    command: ["npm", "run", "dev"]
+    command: ["node", "server.js"]
     depends_on:
       api:
         condition: service_healthy

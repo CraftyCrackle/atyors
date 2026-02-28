@@ -1,0 +1,10 @@
+services:
+  web:
+    volumes:
+      - ./apps/web/src:/app/src
+      - ./apps/web/public:/app/public
+      - /app/node_modules
+      - /app/.next
+    command: ["npm", "run", "dev"]
+    environment:
+      - WATCHPACK_POLLING=true

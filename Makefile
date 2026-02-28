@@ -30,7 +30,7 @@ help:
 
 dev: ssl-setup
 	@echo "Starting atyors dev environment..."
-	@docker compose up --build -d
+	@docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d
 	@echo ""
 	@echo "Services:"
 	@echo "  App (via Nginx): http://localhost:8000"
