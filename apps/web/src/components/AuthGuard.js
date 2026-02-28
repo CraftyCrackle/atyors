@@ -1,18 +1,32 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '../stores/authStore';
 
 export default function AuthGuard({ children }) {
   const { user, loading, init } = useAuthStore();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => { init(); }, [init]);
 
   useEffect(() => {
-    if (!loading && !user) router.push('/login');
-  }, [loading, user, router]);
+    if (loading) return;
+    if (!user) { router.push('/login'); return; }
+
+    const role = user.role;
+    const onServicer = pathname.startsWith('/servicer');
+    const onAdmin = pathname.startsWith('/admin');
+
+    if (role === 'servicer' && !onServicer && !onAdmin) {
+      router.replace('/servicer/dashboard');
+    } else if (['admin', 'superadmin'].includes(role) && !onAdmin) {
+      router.replace('/admin/dashboard');
+    } else if (!['servicer', 'admin', 'superadmin'].includes(role) && onServicer) {
+      router.replace('/dashboard');
+    }
+  }, [loading, user, router, pathname]);
 
   if (loading) {
     return (
