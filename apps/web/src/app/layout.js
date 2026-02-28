@@ -1,6 +1,7 @@
 import './globals.css';
 import NotificationProvider from '../components/NotificationProvider';
 import GpsBroadcaster from '../components/GpsBroadcaster';
+import InstallProvider from '../components/InstallContext';
 import InstallPrompt from '../components/InstallPrompt';
 
 export const metadata = {
@@ -34,10 +35,12 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className="bg-gray-50 text-gray-900 antialiased">
-        <NotificationProvider>
-          <GpsBroadcaster>{children}</GpsBroadcaster>
-          <InstallPrompt />
-        </NotificationProvider>
+        <InstallProvider>
+          <NotificationProvider>
+            <GpsBroadcaster>{children}</GpsBroadcaster>
+            <InstallPrompt />
+          </NotificationProvider>
+        </InstallProvider>
       </body>
     </html>
   );

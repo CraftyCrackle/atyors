@@ -7,6 +7,7 @@ import { useAuthStore } from '../../../stores/authStore';
 import { api } from '../../../services/api';
 import ReviewModal from '../../../components/ReviewModal';
 import { useNotifications } from '../../../components/NotificationProvider';
+import { useInstall } from '../../../components/InstallContext';
 
 const STATUS_COLORS = {
   pending: 'bg-yellow-100 text-yellow-800',
@@ -135,6 +136,7 @@ export default function ServicerDashboard() {
   const { user, loading: authLoading, init, logout } = useAuthStore();
   const router = useRouter();
   const { unreadBump } = useNotifications();
+  const { canInstall, isStandalone, triggerInstall } = useInstall();
   const [tab, setTab] = useState('available');
   const [available, setAvailable] = useState([]);
   const [myJobs, setMyJobs] = useState([]);
@@ -268,6 +270,13 @@ export default function ServicerDashboard() {
           </div>
         </div>
       </header>
+
+      {canInstall && !isStandalone && (
+        <button onClick={triggerInstall} className="mx-4 mt-3 flex w-[calc(100%-2rem)] items-center justify-center gap-2 rounded-xl bg-brand-600 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 active:scale-[0.98]">
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+          Download the App
+        </button>
+      )}
 
       <div className="mx-4 mt-4 flex gap-3">
         {activeJobs.length > 0 && (

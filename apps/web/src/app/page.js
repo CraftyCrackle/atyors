@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '../stores/authStore';
 import Logo from '../components/Logo';
+import { useInstall } from '../components/InstallContext';
 
 const FEATURES = [
   {
@@ -36,6 +37,7 @@ const STEPS = [
 export default function Home() {
   const { user, loading, init } = useAuthStore();
   const router = useRouter();
+  const { canInstall, isStandalone, triggerInstall } = useInstall();
 
   useEffect(() => { init(); }, [init]);
   useEffect(() => {
@@ -99,6 +101,18 @@ export default function Home() {
               I already have an account
             </Link>
           </div>
+
+          {canInstall && !isStandalone && (
+            <button
+              onClick={triggerInstall}
+              className="mt-4 inline-flex items-center gap-2 rounded-full bg-gray-900 px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-gray-800 active:scale-[0.98]"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Download the App
+            </button>
+          )}
         </div>
       </section>
 
