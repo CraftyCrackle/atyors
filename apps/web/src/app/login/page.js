@@ -21,8 +21,12 @@ export default function LoginPage() {
     try {
       const data = await login(email, password);
       const role = data.user?.role;
+      if (role === 'servicer') {
+        useAuthStore.getState().logout();
+        setError('Servicer accounts must sign in through the Servicer Portal.');
+        return;
+      }
       if (['admin', 'superadmin'].includes(role)) router.push('/admin/dashboard');
-      else if (role === 'servicer') router.push('/servicer/dashboard');
       else router.push('/dashboard');
     } catch (err) {
       setError(err.message);

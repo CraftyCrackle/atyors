@@ -27,7 +27,6 @@ export default function SignupPage() {
       const data = await register({ firstName: form.firstName, lastName: form.lastName, email: form.email, phone: form.phone, password: form.password });
       const role = data.user?.role;
       if (['admin', 'superadmin'].includes(role)) router.push('/admin/dashboard');
-      else if (role === 'servicer') router.push('/servicer/dashboard');
       else router.push('/dashboard');
     } catch (err) {
       setError(err.message);

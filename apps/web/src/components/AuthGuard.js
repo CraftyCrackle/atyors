@@ -13,7 +13,11 @@ export default function AuthGuard({ children }) {
 
   useEffect(() => {
     if (loading) return;
-    if (!user) { router.push('/login'); return; }
+    if (!user) {
+      const dest = pathname.startsWith('/servicer') ? '/servicer/login' : '/login';
+      router.push(dest);
+      return;
+    }
 
     const role = user.role;
     const onServicer = pathname.startsWith('/servicer');
