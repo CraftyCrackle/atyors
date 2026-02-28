@@ -196,6 +196,13 @@ async function cancel(bookingId, userId, reason) {
     throw err;
   }
 
+  if (booking.subscriptionId) {
+    const err = new Error('Subscription services cannot be individually cancelled. To stop future services, cancel your subscription from your profile.');
+    err.status = 400;
+    err.code = 'SUBSCRIPTION_NO_CANCEL';
+    throw err;
+  }
+
   if (!booking.canTransitionTo('cancelled')) {
     const err = new Error('Booking cannot be cancelled in current state');
     err.status = 400;

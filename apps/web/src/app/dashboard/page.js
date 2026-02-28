@@ -112,7 +112,7 @@ function BookingCard({ booking, onRate, alreadyRated, onCancel, cancelling }) {
   const servicer = booking.assignedTo;
   const graceLeft = useGraceCountdown(booking.createdAt);
   const inGrace = booking.status === 'pending' && !booking.assignedTo && graceLeft > 0;
-  const canCancel = booking.status === 'pending' && !booking.assignedTo;
+  const canCancel = booking.status === 'pending' && !booking.assignedTo && !booking.subscriptionId;
 
   return (
     <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">

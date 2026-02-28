@@ -483,11 +483,41 @@ export default function BookPage() {
               <h2 className="text-lg font-bold">Confirm Booking</h2>
               <p className="mt-1 text-sm text-gray-500">Review your service details</p>
 
-              {isBoth() && (
+              {selected.bookingType === 'subscription' ? (
+                <div className="mt-4 space-y-2">
+                  <div className="rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+                    <strong>Monthly Subscription — 4 Services</strong>
+                    <p className="mt-1 text-xs text-green-700">
+                      Your subscription includes 4 weekly services starting{' '}
+                      {selected.date && new Date(selected.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}.
+                      All 4 appointments are automatically scheduled and cannot be individually cancelled.
+                      {isBoth() && ' Each week creates 2 jobs — one for Put-Out and one for Bring-In.'}
+                    </p>
+                  </div>
+                  {selected.date && (
+                    <div className="rounded-xl border border-gray-200 bg-white p-3">
+                      <p className="text-xs font-semibold text-gray-500 uppercase">Scheduled Services</p>
+                      <div className="mt-2 space-y-1.5">
+                        {[0, 1, 2, 3].map((i) => {
+                          const d = new Date(selected.date + 'T12:00:00');
+                          d.setDate(d.getDate() + i * 7);
+                          return (
+                            <div key={i} className="flex items-center gap-2 text-sm">
+                              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-100 text-[10px] font-bold text-brand-600">{i + 1}</div>
+                              <span className="text-gray-700">{d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</span>
+                              {i === 0 && <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[10px] font-semibold text-brand-600">Starts</span>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : isBoth() ? (
                 <div className="mt-4 rounded-xl border border-brand-200 bg-brand-50 p-3 text-sm text-brand-700">
                   <strong>Note:</strong> This will create 2 independent jobs — one for Put-Out and one for Bring-In. Each can be accepted by any servicer separately.
                 </div>
-              )}
+              ) : null}
 
               <div className="mt-4 space-y-3 rounded-xl bg-gray-50 p-4">
                 <div className="flex justify-between">
