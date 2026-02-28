@@ -12,10 +12,10 @@ import { api } from '../../services/api';
 const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
 const stripePromise = stripeKey ? loadStripe(stripeKey) : null;
 
-const STEPS = ['service', 'address', 'details', 'week', 'confirm', 'payment'];
+const STEPS = ['service', 'address', 'details', 'confirm', 'payment'];
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const PUT_OUT_OPTIONS = ['Before 6 AM', 'Before 7 AM', 'Before 8 AM', 'Night before'];
-const BRING_IN_OPTIONS = ['Between 12–4 PM', 'Anytime 4–9 PM'];
+const PUT_OUT_OPTIONS = ['5–7 PM (Afternoon)', '7–9 PM (Evening)', '9–11 PM (Night)'];
+const BRING_IN_OPTIONS = ['12–4 PM (Afternoon)', '4–9 PM (Evening)'];
 
 export default function BookPage() {
   const router = useRouter();
@@ -108,7 +108,6 @@ export default function BookPage() {
       barrelCount: addr.barrelCount || prev.barrelCount || 1,
       trashDay: addr.trashDay || prev.trashDay || '',
     }));
-    next();
   }
 
   async function handleConfirm() {
@@ -268,6 +267,22 @@ export default function BookPage() {
                   <AddAddressForm onAdded={(addr) => { setAddresses([...addresses, addr]); selectAddress(addr); }} />
                 </div>
               )}
+
+              {selected.addressId && (
+                <CascadingDatePicker
+                  key={selected.addressId}
+                  trashDay={selected.trashDay}
+                  selectedDate={selected.date}
+                  onChange={(dateStr, dow) => setSelected((prev) => ({ ...prev, date: dateStr, trashDay: dow }))}
+                />
+              )}
+
+              {selected.addressId && selected.date && (
+                <button onClick={next}
+                  className="mt-6 w-full rounded-xl bg-brand-600 py-3.5 font-semibold text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700 active:scale-[0.98]">
+                  Continue
+                </button>
+              )}
             </div>
           )}
 
@@ -380,18 +395,20 @@ export default function BookPage() {
                 )}
               </div>
 
-              {/* Trash day */}
+              {/* Selected date (read-only from previous step) */}
               <div className="mt-5">
-                <label className="text-sm font-medium text-gray-700">Your Trash Day</label>
-                <p className="text-xs text-gray-400">What day does your trash get picked up?</p>
-                <div className="mt-2 grid grid-cols-3 gap-2">
-                  {DAYS_OF_WEEK.map((day) => (
-                    <button key={day} onClick={() => setSelected({ ...selected, trashDay: day })}
-                      className={`rounded-lg border-2 py-2 text-sm font-medium transition ${selected.trashDay === day ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-gray-100 text-gray-500'}`}>
-                      {day.slice(0, 3)}
-                    </button>
-                  ))}
-                </div>
+                <label className="text-sm font-bold text-gray-900">Trash pickup day</label>
+                <p className="mt-0.5 text-xs text-gray-500">What day should barrel(s) be placed on the curb?</p>
+                {selected.date && (
+                  <div className="mt-2 flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3">
+                    <svg className="h-5 w-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                    </svg>
+                    <p className="font-semibold text-brand-700">
+                      {new Date(selected.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Put-out / Bring-in times */}
@@ -412,6 +429,15 @@ export default function BookPage() {
               {needsBringIn() && (
                 <div className="mt-5">
                   <label className="text-sm font-medium text-gray-700">When should barrels be brought back in?</label>
+                  {selected.date && (
+                    <p className="mt-1 text-sm font-semibold text-brand-700">
+                      Next Day [{(() => {
+                        const d = new Date(selected.date + 'T12:00:00');
+                        d.setDate(d.getDate() + 1);
+                        return d.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+                      })()}]
+                    </p>
+                  )}
                   <div className="mt-2 grid grid-cols-2 gap-2">
                     {BRING_IN_OPTIONS.map((opt) => (
                       <button key={opt} onClick={() => setSelected({ ...selected, bringInTime: opt })}
@@ -430,19 +456,8 @@ export default function BookPage() {
             </div>
           )}
 
-          {/* Step 4: Pick a Week */}
+          {/* Step 4: Confirm */}
           {step === 3 && (
-            <PickWeekStep
-              trashDay={selected.trashDay}
-              bookingType={selected.bookingType}
-              selectedDate={selected.date}
-              onSelect={(dateStr) => setSelected({ ...selected, date: dateStr })}
-              onContinue={next}
-            />
-          )}
-
-          {/* Step 5: Confirm */}
-          {step === 4 && (
             <div>
               <h2 className="text-lg font-bold">Confirm Booking</h2>
               <p className="mt-1 text-sm text-gray-500">Review your service details</p>
@@ -512,8 +527,8 @@ export default function BookPage() {
             </div>
           )}
 
-          {/* Step 6: Payment */}
-          {step === 5 && clientSecret && (
+          {/* Step 5: Payment */}
+          {step === 4 && clientSecret && (
             <div>
               {clientSecret === 'mock' ? (
                 <div className="flex flex-col items-center py-12 text-center">
@@ -569,81 +584,100 @@ export default function BookPage() {
   );
 }
 
-function getUpcomingDates(trashDayName, count = 4) {
-  const dayMap = { Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6 };
-  const targetDay = dayMap[trashDayName];
-  if (targetDay == null) return [];
-
-  const dates = [];
+function CascadingDatePicker({ trashDay, selectedDate, onChange }) {
   const now = new Date();
-  const cursor = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
-  const daysUntil = (targetDay - cursor.getDay() + 7) % 7;
-  cursor.setDate(cursor.getDate() + daysUntil);
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
 
-  for (let i = 0; i < count; i++) {
-    dates.push(new Date(cursor));
-    cursor.setDate(cursor.getDate() + 7);
+  const dayMap = { Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6, Sunday: 0 };
+  const targetDow = dayMap[trashDay];
+
+  const [month, setMonth] = useState(() => {
+    if (selectedDate) return new Date(selectedDate + 'T12:00:00').getMonth();
+    return currentMonth;
+  });
+
+  function getDaysForMonth(m) {
+    if (targetDow == null) return [];
+    const days = [];
+    const d = new Date(currentYear, m, 1, 12, 0, 0);
+    while (d.getDay() !== targetDow) d.setDate(d.getDate() + 1);
+    while (d.getMonth() === m) {
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      if (d >= today) days.push(new Date(d));
+      d.setDate(d.getDate() + 7);
+    }
+    return days;
   }
-  return dates;
-}
 
-function PickWeekStep({ trashDay, bookingType, selectedDate, onSelect, onContinue }) {
-  const upcoming = useMemo(() => getUpcomingDates(trashDay, 4), [trashDay]);
+  const availableDays = useMemo(() => getDaysForMonth(month), [month, trashDay]);
+
+  const months = useMemo(() => {
+    const list = [];
+    for (let m = currentMonth; m <= 11; m++) list.push(m);
+    return list;
+  }, []);
+
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
   function toDateStr(d) {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
 
-  function weekLabel(d, i) {
-    const now = new Date();
-    const isToday = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
-    if (isToday) return 'Today';
-    if (i === 0) return 'This week';
-    if (i === 1) return 'Next week';
-    return `In ${i} weeks`;
+  function handleMonthChange(newMonth) {
+    setMonth(newMonth);
+    const days = getDaysForMonth(newMonth);
+    if (days.length > 0) {
+      const ds = toDateStr(days[0]);
+      onChange(ds, trashDay);
+    } else {
+      onChange('', trashDay);
+    }
   }
+
+  function handleDayChange(dateStr) {
+    onChange(dateStr, trashDay);
+  }
+
+  useEffect(() => {
+    if (!trashDay || targetDow == null) return;
+    if (selectedDate) return;
+    const days = getDaysForMonth(month);
+    if (days.length > 0) onChange(toDateStr(days[0]), trashDay);
+  }, [trashDay]);
+
+  if (!trashDay) return null;
 
   return (
-    <div>
-      <h2 className="text-lg font-bold">Pick a Week</h2>
-      <p className="mt-1 text-sm text-gray-500">
-        {bookingType === 'subscription'
-          ? `Your weekly service starts on ${trashDay}. Choose which week to begin.`
-          : `Service will be on ${trashDay}. Choose which week.`}
-      </p>
-
-      <div className="mt-5 space-y-2">
-        {upcoming.map((d, i) => {
-          const ds = toDateStr(d);
-          const isSelected = selectedDate === ds;
-          return (
-            <button key={ds} onClick={() => onSelect(ds)}
-              className={`w-full rounded-xl border-2 px-4 py-4 text-left transition active:scale-[0.98] ${isSelected ? 'border-brand-600 bg-brand-50' : 'border-gray-100 hover:border-gray-200'}`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-semibold text-gray-900">
-                    {d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                  </p>
-                  <p className="mt-0.5 text-xs text-gray-400">{weekLabel(d, i)}</p>
-                </div>
-                {isSelected && (
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-600">
-                    <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                  </div>
-                )}
-              </div>
-            </button>
-          );
-        })}
+    <div className="mt-5">
+      <label className="text-sm font-bold text-gray-900">Service date</label>
+      <p className="mt-0.5 text-xs text-gray-500">Pick the {trashDay} you&apos;d like service</p>
+      <div className="mt-2 flex gap-2">
+        <select
+          value={month}
+          onChange={(e) => handleMonthChange(Number(e.target.value))}
+          className="flex-1 rounded-lg border border-gray-200 bg-brand-50 px-3 py-2.5 text-sm font-medium text-brand-700 focus:border-brand-500 focus:outline-none"
+        >
+          {months.map((m) => (
+            <option key={m} value={m}>{monthNames[m]}</option>
+          ))}
+        </select>
+        <select
+          value={selectedDate || ''}
+          onChange={(e) => handleDayChange(e.target.value)}
+          className="flex-1 rounded-lg border border-gray-200 bg-brand-50 px-3 py-2.5 text-sm font-medium text-brand-700 focus:border-brand-500 focus:outline-none"
+        >
+          {availableDays.length === 0 && <option value="">No dates</option>}
+          {availableDays.map((d) => (
+            <option key={toDateStr(d)} value={toDateStr(d)}>
+              {d.toLocaleDateString('en-US', { weekday: 'short' })} {d.getDate()}
+            </option>
+          ))}
+        </select>
+        <div className="rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5 text-sm font-medium text-gray-500">
+          {currentYear}
+        </div>
       </div>
-
-      <button onClick={onContinue} disabled={!selectedDate}
-        className="mt-6 w-full rounded-xl bg-brand-600 py-3.5 font-semibold text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700 active:scale-[0.98] disabled:opacity-40">
-        Continue
-      </button>
     </div>
   );
 }
@@ -733,7 +767,8 @@ function AddAddressForm({ onAdded }) {
       <input type="text" placeholder='Where to return barrels (e.g. "Back by garage door")' value={form.barrelReturnInstructions} onChange={update('barrelReturnInstructions')} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
 
       <div>
-        <label className="text-xs text-gray-500">Trash pickup day</label>
+        <label className="text-sm font-bold text-gray-900">Trash pickup day</label>
+        <p className="mt-0.5 text-xs text-gray-500">What day should barrel(s) be placed on the curb?</p>
         <select value={form.trashDay} onChange={update('trashDay')} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none">
           <option value="">Select day</option>
           {['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].map((d) => <option key={d} value={d}>{d}</option>)}
