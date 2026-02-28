@@ -317,12 +317,15 @@ export default function BookPage() {
               <div className="mt-5">
                 <label className="text-sm font-medium text-gray-700">Service Plan</label>
                 <div className="mt-2 flex gap-2">
-                  {[['one-time', 'One-Time'], ['subscription', 'Monthly']].map(([type, label]) => (
-                    <button key={type} onClick={() => setSelected({ ...selected, bookingType: type })}
-                      className={`flex-1 rounded-xl border-2 py-3 text-sm font-medium transition ${selected.bookingType === type ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-gray-100 text-gray-500'}`}>
-                      {label}
-                    </button>
-                  ))}
+                  <button onClick={() => setSelected({ ...selected, bookingType: 'one-time' })}
+                    className={`flex-1 rounded-xl border-2 py-3 text-sm font-medium transition ${selected.bookingType === 'one-time' ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-gray-100 text-gray-500'}`}>
+                    One-Time
+                  </button>
+                  <button onClick={() => setSelected({ ...selected, bookingType: 'subscription' })}
+                    className={`relative flex-1 rounded-xl border-2 py-3 text-sm font-medium transition ${selected.bookingType === 'subscription' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-100 text-gray-500'}`}>
+                    <span className="absolute -top-2.5 right-2 rounded-full bg-green-500 px-2 py-0.5 text-[10px] font-bold text-white">SAVE</span>
+                    Monthly
+                  </button>
                 </div>
               </div>
 
@@ -374,7 +377,7 @@ export default function BookPage() {
                 ) : (
                   <div className="space-y-1">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Base ({monthlyIncluded} barrels included)</span>
+                      <span className="text-gray-600">Base ({monthlyIncluded} barrels included weekly)</span>
                       <span className="font-medium">${isBoth() ? monthlyBaseBoth : monthlyBase}/mo</span>
                     </div>
                     {selected.barrelCount > monthlyIncluded && (
@@ -386,8 +389,24 @@ export default function BookPage() {
                     <hr className="border-brand-200" />
                     <div className="flex items-baseline justify-between">
                       <span className="font-semibold text-gray-700">Monthly total</span>
-                      <span className="text-xl font-bold text-brand-600">${monthlyPrice()}/mo</span>
+                      <span className="text-xl font-bold text-green-600">${monthlyPrice()}/mo</span>
                     </div>
+                    {(() => {
+                      const weeklyOneTime = oneTimePrice();
+                      const monthlyOneTimeEquiv = weeklyOneTime * 4;
+                      const savings = monthlyOneTimeEquiv - monthlyPrice();
+                      if (savings > 0) return (
+                        <div className="mt-2 flex items-center gap-1.5 rounded-lg bg-green-100 px-3 py-2">
+                          <svg className="h-4 w-4 flex-shrink-0 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span className="text-xs font-semibold text-green-700">
+                            You save ${savings.toFixed(2)}/mo vs. 4 one-time services (${monthlyOneTimeEquiv.toFixed(2)})
+                          </span>
+                        </div>
+                      );
+                      return null;
+                    })()}
                     {isBoth() && (
                       <p className="mt-1 text-xs text-brand-600">Each week generates 2 independent jobs</p>
                     )}
