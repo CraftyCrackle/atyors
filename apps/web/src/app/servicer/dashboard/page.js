@@ -213,7 +213,7 @@ export default function ServicerDashboard() {
 
   if (authLoading || !user) {
     return (
-      <div className="flex min-h-screen-safe items-center justify-center bg-gray-900">
+      <div className="flex min-h-[100dvh] min-h-[100vh] items-center justify-center bg-gray-900">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
       </div>
     );
@@ -226,7 +226,7 @@ export default function ServicerDashboard() {
   const tabData = tab === 'available' ? available : tab === 'active' ? activeJobs : completedJobs;
 
   return (
-    <div className="min-h-screen-safe bg-gray-900 pb-6">
+    <div className="flex min-h-[100dvh] min-h-[100vh] flex-col bg-gray-900 pb-6">
       <header className="bg-gradient-to-b from-gray-800 to-gray-900 px-5 pb-5 pt-header-safe">
         <div className="flex items-center justify-between">
           <Logo size="sm" variant="wordmark" dark />
@@ -311,7 +311,7 @@ export default function ServicerDashboard() {
         </div>
       )}
 
-      <div className="mt-3 space-y-3 px-4">
+      <div className="mt-3 flex-1 space-y-3 px-4">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-16">
             <div className="h-8 w-8 animate-spin rounded-full border-3 border-brand-600 border-t-transparent" />
