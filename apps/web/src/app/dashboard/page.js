@@ -10,6 +10,7 @@ import { useAuthStore } from '../../stores/authStore';
 import { api } from '../../services/api';
 import { useNotifications } from '../../components/NotificationProvider';
 import { useInstall } from '../../components/InstallContext';
+import Logo from '../../components/Logo';
 
 const STATUS_COLORS = {
   pending: 'bg-yellow-100 text-yellow-800',
@@ -309,9 +310,8 @@ export default function DashboardPage() {
     <AuthGuard>
       <div className="min-h-screen-safe bg-gray-50 pb-20">
         <header className="bg-white px-6 pb-4 pt-header-safe shadow-sm">
-          <div className="mb-3 flex items-center gap-2">
-            <svg className="h-6 w-6" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="10" fill="#1b70f5"/><path d="M20 10l-10 8h3v10h5v-6h4v6h5V18h3L20 10z" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
-            <span className="text-sm font-bold tracking-tight text-gray-900">atyors<span className="text-brand-600">.com</span></span>
+          <div className="mb-3">
+            <Logo size="sm" variant="wordmark" />
           </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
