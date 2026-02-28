@@ -588,14 +588,10 @@ function CascadingDatePicker({ trashDay, selectedDate, onChange }) {
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth();
+  const today = new Date(currentYear, currentMonth, now.getDate());
 
   const dayMap = { Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6, Sunday: 0 };
   const targetDow = dayMap[trashDay];
-
-  const [month, setMonth] = useState(() => {
-    if (selectedDate) return new Date(selectedDate + 'T12:00:00').getMonth();
-    return currentMonth;
-  });
 
   function getDaysForMonth(m) {
     if (targetDow == null) return [];
@@ -603,12 +599,23 @@ function CascadingDatePicker({ trashDay, selectedDate, onChange }) {
     const d = new Date(currentYear, m, 1, 12, 0, 0);
     while (d.getDay() !== targetDow) d.setDate(d.getDate() + 1);
     while (d.getMonth() === m) {
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       if (d >= today) days.push(new Date(d));
       d.setDate(d.getDate() + 7);
     }
     return days;
   }
+
+  function firstMonthWithDates() {
+    for (let m = currentMonth; m <= 11; m++) {
+      if (getDaysForMonth(m).length > 0) return m;
+    }
+    return currentMonth;
+  }
+
+  const [month, setMonth] = useState(() => {
+    if (selectedDate) return new Date(selectedDate + 'T12:00:00').getMonth();
+    return firstMonthWithDates();
+  });
 
   const availableDays = useMemo(() => getDaysForMonth(month), [month, trashDay]);
 
@@ -628,8 +635,7 @@ function CascadingDatePicker({ trashDay, selectedDate, onChange }) {
     setMonth(newMonth);
     const days = getDaysForMonth(newMonth);
     if (days.length > 0) {
-      const ds = toDateStr(days[0]);
-      onChange(ds, trashDay);
+      onChange(toDateStr(days[0]), trashDay);
     } else {
       onChange('', trashDay);
     }
@@ -642,7 +648,9 @@ function CascadingDatePicker({ trashDay, selectedDate, onChange }) {
   useEffect(() => {
     if (!trashDay || targetDow == null) return;
     if (selectedDate) return;
-    const days = getDaysForMonth(month);
+    const startMonth = firstMonthWithDates();
+    setMonth(startMonth);
+    const days = getDaysForMonth(startMonth);
     if (days.length > 0) onChange(toDateStr(days[0]), trashDay);
   }, [trashDay]);
 
@@ -658,9 +666,14 @@ function CascadingDatePicker({ trashDay, selectedDate, onChange }) {
           onChange={(e) => handleMonthChange(Number(e.target.value))}
           className="flex-1 rounded-lg border border-gray-200 bg-brand-50 px-3 py-2.5 text-sm font-medium text-brand-700 focus:border-brand-500 focus:outline-none"
         >
-          {months.map((m) => (
-            <option key={m} value={m}>{monthNames[m]}</option>
-          ))}
+          {months.map((m) => {
+            const hasDates = getDaysForMonth(m).length > 0;
+            return (
+              <option key={m} value={m} disabled={!hasDates}>
+                {monthNames[m]}{!hasDates ? ' (no dates)' : ''}
+              </option>
+            );
+          })}
         </select>
         <select
           value={selectedDate || ''}
