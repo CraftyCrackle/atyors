@@ -1,0 +1,20 @@
+{
+  "appId": "com.atyors.app",
+  "appName": "atyors",
+  "webDir": "out",
+  "server": {
+    "url": "https://atyors.com",
+    "cleartext": false
+  },
+  "ios": {
+    "contentInset": "automatic",
+    "preferredContentMode": "mobile",
+    "allowsLinkPreview": false,
+    "scheme": "atyors"
+  },
+  "plugins": {
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    }
+  }
+}

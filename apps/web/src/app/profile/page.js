@@ -5,9 +5,11 @@ import AuthGuard from '../../components/AuthGuard';
 import BottomNav from '../../components/BottomNav';
 import { useAuthStore } from '../../stores/authStore';
 import { api } from '../../services/api';
+import { useInstall } from '../../components/InstallContext';
 
 export default function ProfilePage() {
   const { user, logout, updateUser } = useAuthStore();
+  const { canInstall, isStandalone, triggerInstall } = useInstall();
   const [addresses, setAddresses] = useState([]);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ firstName: '', lastName: '', phone: '' });
@@ -140,6 +142,18 @@ export default function ProfilePage() {
           </div>
 
           {isCustomer && <PaymentMethodsSection />}
+
+          {canInstall && !isStandalone && (
+            <button
+              onClick={triggerInstall}
+              className={`mt-4 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-semibold transition active:scale-[0.98] ${dark ? 'border border-brand-500/30 bg-brand-500/10 text-brand-400 hover:bg-brand-500/20' : 'bg-brand-50 text-brand-600 hover:bg-brand-100'}`}
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Get the App
+            </button>
+          )}
 
           <button onClick={logout} className={`mt-6 w-full rounded-xl border py-3 text-sm font-semibold transition ${dark ? 'border-red-500/30 text-red-400 hover:bg-red-500/10' : 'border-red-200 text-red-500 hover:bg-red-50'}`}>
             Sign Out

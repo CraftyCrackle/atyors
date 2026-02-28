@@ -15,6 +15,11 @@ redis_data/
 
 uploads/
 
+# Capacitor build artifacts
+apps/web/out/
+apps/web/ios/App/Pods/
+apps/web/ios/App/App/public/
+
 # PWA generated files
 apps/web/public/sw.js
 apps/web/public/sw.js.map

@@ -1,7 +1,7 @@
 {
   "name": "atyors — At Your Service",
   "short_name": "atyors",
-  "description": "Schedule curbside barrel services with ease. Put-out, bring-in, and more — at your service.",
+  "description": "Schedule curbside barrel services with ease. Pick a day, track your servicer live, and pay per barrel or subscribe monthly. We put your trash barrels out and bring them back in, so you don't have to.",
   "start_url": "/dashboard",
   "display": "standalone",
   "orientation": "portrait",
@@ -32,6 +32,22 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/screenshot-home.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Book a curbside barrel service in seconds"
+    },
+    {
+      "src": "/screenshots/screenshot-tracking.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Track your servicer live on a map"
     }
   ]
 }
