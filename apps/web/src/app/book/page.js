@@ -229,9 +229,6 @@ export default function BookPage() {
                         <p className="text-xs text-gray-400">{isBothSvc(svc) ? '2 jobs created' : 'per service'}</p>
                       </div>
                     </div>
-                    <div className="mt-2 rounded-lg bg-green-50 px-3 py-1.5 text-xs text-green-700">
-                      Subscribe from ${isBothSvc(svc) ? monthlyBaseBoth : monthlyBase}/mo — up to {monthlyIncluded} barrels included weekly
-                    </div>
                   </button>
                 ))}
               </div>
