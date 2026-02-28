@@ -118,11 +118,36 @@ async function start() {
 
     server.listen(PORT, '0.0.0.0', () => {
       console.log(`atyors API running on port ${PORT} [${process.env.NODE_ENV}]`);
+      startSubscriptionScheduler();
     });
   } catch (err) {
     console.error('Startup failed:', err);
     process.exit(1);
   }
+}
+
+function startSubscriptionScheduler() {
+  const SIX_HOURS = 6 * 60 * 60 * 1000;
+
+  async function refreshSubscriptionBookings() {
+    try {
+      const Subscription = require('./apps/server/models/Subscription');
+      const { generateUpcomingBookings } = require('./apps/server/services/subscriptionService');
+      const activeSubs = await Subscription.find({ status: 'active' });
+      let generated = 0;
+      for (const sub of activeSubs) {
+        const bookings = await generateUpcomingBookings(sub);
+        generated += bookings.length;
+      }
+      if (generated > 0) console.log(`[Scheduler] Generated ${generated} upcoming bookings for ${activeSubs.length} active subscriptions`);
+    } catch (err) {
+      console.error('[Scheduler] Subscription booking refresh failed:', err.message);
+    }
+  }
+
+  refreshSubscriptionBookings();
+  setInterval(refreshSubscriptionBookings, SIX_HOURS);
+  console.log('[Scheduler] Subscription booking forecaster running (every 6h)');
 }
 
 start();

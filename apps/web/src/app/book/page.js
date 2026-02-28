@@ -124,6 +124,8 @@ export default function BookPage() {
           serviceTypeId: selected.serviceType._id,
           dayOfWeek,
           barrelCount: selected.barrelCount,
+          putOutTime: selected.putOutTime,
+          bringInTime: selected.bringInTime,
         });
         secret = res.data.clientSecret;
       } else {

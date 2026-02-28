@@ -13,6 +13,8 @@ const subscriptionSchema = new mongoose.Schema({
   },
   dayOfWeek: { type: Number, min: 0, max: 6, required: true },
   barrelCount: { type: Number, default: 1, min: 1 },
+  putOutTime: { type: String, trim: true },
+  bringInTime: { type: String, trim: true },
   monthlyPrice: { type: Number, default: 20.00 },
   currentPeriodStart: { type: Date },
   currentPeriodEnd: { type: Date },
