@@ -41,9 +41,13 @@ async function getMyJobs(servicerId, { status, page = 1, limit = 20, sortBy } = 
 function getEarliestAcceptDate(booking) {
   const scheduled = new Date(booking.scheduledDate);
   scheduled.setHours(0, 0, 0, 0);
+
   const pot = (booking.putOutTime || '').toLowerCase();
-  const isEveningBefore = pot.includes('night before') || pot.includes('pm');
-  if (isEveningBefore) {
+  const svcName = (booking.serviceTypeId?.name || booking.serviceTypeId?.slug || '').toLowerCase();
+  const isPutOut = svcName.includes('put-out') || svcName.includes('put out');
+  const hasEveningTime = pot.includes('night before') || pot.includes('pm');
+
+  if (isPutOut || hasEveningTime) {
     const dayBefore = new Date(scheduled);
     dayBefore.setDate(dayBefore.getDate() - 1);
     return dayBefore;
