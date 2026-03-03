@@ -179,7 +179,7 @@ export default function ServicerJobPage() {
   const isActive = ['active', 'en-route', 'arrived'].includes(booking.status);
 
   return (
-    <div className="min-h-screen-safe bg-gray-900">
+    <div className="flex min-h-[100dvh] min-h-[100vh] flex-col bg-gray-900">
       <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-gray-800 bg-gray-900 px-4 pb-3 pt-sticky-safe">
         <button onClick={() => router.push('/servicer/dashboard')} className="rounded-lg p-2 text-gray-400 hover:bg-gray-800">
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>

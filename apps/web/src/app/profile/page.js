@@ -66,7 +66,7 @@ export default function ProfilePage() {
 
   return (
     <AuthGuard>
-      <div className={`min-h-screen-safe pb-24 ${dark ? 'bg-gray-900 text-white' : 'bg-gray-50'}`}>
+      <div className={`min-h-[100dvh] min-h-[100vh] pb-24 ${dark ? 'bg-gray-900 text-white' : 'bg-gray-50'}`}>
         <header className={`px-6 pb-6 pt-header-safe ${dark ? 'border-b border-gray-800 bg-gray-900' : 'bg-white shadow-sm'}`}>
           {dark && (
             <a href="/servicer/dashboard" className="mb-3 inline-flex items-center gap-1 text-sm text-gray-400 hover:text-white">

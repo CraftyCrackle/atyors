@@ -41,7 +41,9 @@ async function getMyJobs(servicerId, { status, page = 1, limit = 20, sortBy } = 
 function getEarliestAcceptDate(booking) {
   const scheduled = new Date(booking.scheduledDate);
   scheduled.setHours(0, 0, 0, 0);
-  if (booking.putOutTime === 'Night before') {
+  const pot = (booking.putOutTime || '').toLowerCase();
+  const isEveningBefore = pot.includes('night before') || pot.includes('pm');
+  if (isEveningBefore) {
     const dayBefore = new Date(scheduled);
     dayBefore.setDate(dayBefore.getDate() - 1);
     return dayBefore;

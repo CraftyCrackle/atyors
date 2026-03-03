@@ -81,7 +81,7 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className={`min-h-screen-safe pb-6 ${isServicer ? 'bg-gray-900' : 'bg-gray-50'}`}>
+    <div className={`min-h-[100dvh] min-h-[100vh] pb-6 ${isServicer ? 'bg-gray-900' : 'bg-gray-50'}`}>
       <header className={`sticky top-0 z-10 flex items-center gap-3 border-b px-4 pb-3 pt-sticky-safe ${isServicer ? 'border-gray-800 bg-gray-900' : 'border-gray-200 bg-white'}`}>
         <button onClick={() => router.back()} className={`rounded-lg p-2 ${isServicer ? 'text-gray-400 hover:bg-gray-800' : 'text-gray-500 hover:bg-gray-100'}`}>
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>

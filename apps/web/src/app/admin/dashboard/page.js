@@ -67,7 +67,7 @@ export default function AdminDashboardPage() {
 
   return (
     <AdminGuard>
-      <div className="min-h-screen-safe bg-gray-900">
+      <div className="flex min-h-[100dvh] min-h-[100vh] flex-col bg-gray-900">
         <header className="border-b border-gray-800 bg-gray-900 px-6 pb-4 pt-header-safe">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
