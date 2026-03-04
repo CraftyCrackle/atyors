@@ -1,10 +1,16 @@
 'use client';
 
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { Capacitor } from '@capacitor/core';
-import { registerPlugin } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 
 const GPS_INTERVAL_MS = 4000;
+
+let BackgroundGeolocation;
+try {
+  BackgroundGeolocation = registerPlugin('BackgroundGeolocation');
+} catch {
+  BackgroundGeolocation = null;
+}
 
 function isNative() {
   try {
@@ -18,20 +24,21 @@ export default function useGpsTracking({ bookingId, routeId, active }) {
   const socketRef = useRef(null);
   const watchIdRef = useRef(null);
   const lastEmitRef = useRef(0);
+  const nativeRef = useRef(false);
   const [status, setStatus] = useState('idle');
 
   const cleanup = useCallback(() => {
     if (watchIdRef.current != null) {
-      if (isNative()) {
+      if (nativeRef.current && BackgroundGeolocation) {
         try {
-          const BackgroundGeolocation = registerPlugin('BackgroundGeolocation');
           BackgroundGeolocation.removeWatcher({ id: watchIdRef.current });
         } catch {}
-      } else {
+      } else if (typeof navigator !== 'undefined' && navigator.geolocation) {
         navigator.geolocation.clearWatch(watchIdRef.current);
       }
       watchIdRef.current = null;
     }
+    nativeRef.current = false;
     if (socketRef.current) {
       socketRef.current.disconnect();
       socketRef.current = null;
@@ -47,12 +54,6 @@ export default function useGpsTracking({ bookingId, routeId, active }) {
 
     let disposed = false;
     setStatus('connecting');
-
-    if (isNative()) {
-      startNativeTracking();
-    } else {
-      startWebTracking();
-    }
 
     async function sendLocationHttp(lat, lng, heading, speed) {
       try {
@@ -71,7 +72,10 @@ export default function useGpsTracking({ bookingId, routeId, active }) {
     }
 
     async function startNativeTracking() {
-      const BackgroundGeolocation = registerPlugin('BackgroundGeolocation');
+      if (!BackgroundGeolocation) {
+        console.warn('[GPS] BackgroundGeolocation plugin not available, falling back to web');
+        return false;
+      }
 
       try {
         const watcherId = await BackgroundGeolocation.addWatcher(
@@ -86,11 +90,9 @@ export default function useGpsTracking({ bookingId, routeId, active }) {
             if (disposed) return;
 
             if (error) {
+              console.error('[GPS] Native error:', error.code, error.message);
               if (error.code === 'NOT_AUTHORIZED') {
                 setStatus('denied');
-              } else {
-                console.error('[GPS] Native error:', error);
-                setStatus('gps-error');
               }
               return;
             }
@@ -106,16 +108,43 @@ export default function useGpsTracking({ bookingId, routeId, active }) {
         );
 
         watchIdRef.current = watcherId;
+        nativeRef.current = true;
         if (!disposed) setStatus('waiting-gps');
+        console.log('[GPS] Native background tracking started');
+        return true;
       } catch (err) {
-        console.error('[GPS] Failed to start native tracking:', err);
-        if (!disposed) setStatus('gps-error');
+        console.error('[GPS] Native tracking failed, falling back to web:', err.message || err);
+        return false;
       }
     }
 
     async function startWebTracking() {
-      if (!navigator.geolocation) {
+      if (typeof navigator === 'undefined' || !navigator.geolocation) {
         setStatus('unsupported');
+        return;
+      }
+
+      if (isNative()) {
+        if (!disposed) setStatus('waiting-gps');
+        watchIdRef.current = navigator.geolocation.watchPosition(
+          (pos) => {
+            if (!disposed) setStatus('tracking');
+
+            const now = Date.now();
+            if (now - lastEmitRef.current < GPS_INTERVAL_MS) return;
+            lastEmitRef.current = now;
+
+            sendLocationHttp(pos.coords.latitude, pos.coords.longitude, pos.coords.heading, pos.coords.speed);
+          },
+          (err) => {
+            console.error('[GPS] Watch error:', err.code, err.message);
+            if (disposed) return;
+            if (err.code === 1) setStatus('denied');
+            else if (err.code === 2) setStatus('unavailable');
+            else setStatus('gps-error');
+          },
+          { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+        );
         return;
       }
 
@@ -150,11 +179,8 @@ export default function useGpsTracking({ bookingId, routeId, active }) {
             speed: pos.coords.speed,
           };
 
-          if (routeId) {
-            payload.routeId = routeId;
-          } else {
-            payload.bookingId = bookingId;
-          }
+          if (routeId) payload.routeId = routeId;
+          else payload.bookingId = bookingId;
 
           socket.emit('location:update', payload);
         },
@@ -165,9 +191,22 @@ export default function useGpsTracking({ bookingId, routeId, active }) {
           else if (err.code === 2) setStatus('unavailable');
           else setStatus('gps-error');
         },
-        { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
+        { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
       );
     }
+
+    async function init() {
+      if (isNative()) {
+        const nativeOk = await startNativeTracking();
+        if (!nativeOk && !disposed) {
+          await startWebTracking();
+        }
+      } else {
+        await startWebTracking();
+      }
+    }
+
+    init();
 
     return () => {
       disposed = true;
