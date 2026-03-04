@@ -31,14 +31,25 @@ export default function NotificationProvider({ children }) {
   useEffect(() => {
     if (!userId) return;
 
+    let retryTimer;
+
     (async () => {
       try {
-        const { isNativeApp, registerNativePush } = await import('../services/capacitorPush');
+        const { isNativeApp, registerNativePush, isPushRegistered } = await import('../services/capacitorPush');
         if (isNativeApp()) {
           await registerNativePush();
+
+          if (!isPushRegistered()) {
+            retryTimer = setTimeout(async () => {
+              console.log('[Push] Retrying registration after delay...');
+              try { await registerNativePush(); } catch (e) { console.error('[Push] Retry failed:', e); }
+            }, 5000);
+          }
           return;
         }
-      } catch (_) {}
+      } catch (err) {
+        console.error('[Push] Native push setup error:', err);
+      }
 
       if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
       navigator.serviceWorker.ready.then(async (reg) => {
@@ -61,9 +72,13 @@ export default function NotificationProvider({ children }) {
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({ subscription: sub.toJSON() }),
           });
-        } catch (_) {}
+        } catch (err) {
+          console.error('[Push] Web push subscription error:', err);
+        }
       });
     })();
+
+    return () => { if (retryTimer) clearTimeout(retryTimer); };
   }, [userId]);
 
   useEffect(() => {
