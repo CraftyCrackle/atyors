@@ -33,6 +33,7 @@ router.patch('/jobs/:id/status', servicerController.updateJobStatus);
 router.post('/jobs/:id/complete', upload.single('photo'), validateUpload, servicerController.completeWithPhoto);
 
 router.get('/earnings', servicerController.getEarnings);
+router.post('/location', servicerController.updateLocation);
 
 router.post('/routes', routeController.createRoute);
 router.get('/routes/active', routeController.getActiveRoute);

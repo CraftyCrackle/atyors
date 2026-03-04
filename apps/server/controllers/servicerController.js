@@ -151,4 +151,45 @@ async function getEarnings(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { getAvailableJobs, getMyJobs, getJobDetail, acceptJob, updateJobStatus, completeWithPhoto, getEarnings };
+async function updateLocation(req, res, next) {
+  try {
+    const { lat, lng, heading, speed, bookingId, routeId } = req.body;
+    if (lat == null || lng == null) {
+      return res.status(400).json({ success: false, error: { message: 'lat and lng required' } });
+    }
+
+    const io = req.app.locals.io;
+    const routeService = require('../services/routeService');
+    const Route = require('../models/Route');
+    const { setLiveLocation } = require('../socket');
+    const payload = { lat, lng, heading, speed, timestamp: Date.now(), providerId: req.user._id.toString() };
+
+    if (routeId) {
+      const route = await Route.findById(routeId);
+      if (route && route.status === 'in-progress' && route.servicerId.toString() === req.user._id.toString()) {
+        await routeService.updateLocation(route._id, lat, lng);
+        const idx = route.currentStopIndex;
+        if (idx >= 0 && idx < route.stops.length) {
+          const currentStop = route.stops[idx];
+          if (io) io.of('/tracking').to(`booking:${currentStop.bookingId}`).emit('location:update', payload);
+
+          route.stops.forEach((stop, i) => {
+            if (i <= idx || stop.status === 'completed' || stop.status === 'skipped') return;
+            const remaining = route.stops.filter((s, si) => si >= idx && s.status !== 'completed' && s.status !== 'skipped');
+            const pos = remaining.findIndex((s) => s.bookingId.toString() === stop.bookingId.toString());
+            if (pos > 0 && io) {
+              io.of('/tracking').to(`booking:${stop.bookingId}`).emit('queue:position', { bookingId: stop.bookingId, position: pos + 1, total: remaining.length });
+            }
+          });
+        }
+      }
+    } else if (bookingId) {
+      setLiveLocation(bookingId, payload);
+      if (io) io.of('/tracking').to(`booking:${bookingId}`).emit('location:update', payload);
+    }
+
+    res.json({ success: true });
+  } catch (err) { next(err); }
+}
+
+module.exports = { getAvailableJobs, getMyJobs, getJobDetail, acceptJob, updateJobStatus, completeWithPhoto, getEarnings, updateLocation };
