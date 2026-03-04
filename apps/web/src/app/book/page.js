@@ -636,12 +636,23 @@ export default function BookPage() {
 }
 
 function CascadingDatePicker({ trashDay: initialTrashDay, selectedDate, onChange }) {
-  const [activeDay, setActiveDay] = useState(initialTrashDay);
-
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth();
   const today = new Date(currentYear, currentMonth, now.getDate());
+
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const todayDow = dayNames[today.getDay()];
+
+  function toDateStr(d) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  const todayStr = toDateStr(today);
+  const isSunday = today.getDay() === 0;
+
+  const [mode, setMode] = useState('future');
+  const [activeDay, setActiveDay] = useState(initialTrashDay);
 
   const dayMap = { Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6, Sunday: 0 };
   const targetDow = dayMap[activeDay];
@@ -653,7 +664,7 @@ function CascadingDatePicker({ trashDay: initialTrashDay, selectedDate, onChange
     const d = new Date(currentYear, m, 1, 12, 0, 0);
     while (d.getDay() !== d_ow) d.setDate(d.getDate() + 1);
     while (d.getMonth() === m) {
-      if (d >= today) days.push(new Date(d));
+      if (d > today) days.push(new Date(d));
       d.setDate(d.getDate() + 7);
     }
     return days;
@@ -667,7 +678,7 @@ function CascadingDatePicker({ trashDay: initialTrashDay, selectedDate, onChange
   }
 
   const [month, setMonth] = useState(() => {
-    if (selectedDate) return new Date(selectedDate + 'T12:00:00').getMonth();
+    if (selectedDate && selectedDate !== todayStr) return new Date(selectedDate + 'T12:00:00').getMonth();
     return firstMonthWithDates();
   });
 
@@ -681,8 +692,21 @@ function CascadingDatePicker({ trashDay: initialTrashDay, selectedDate, onChange
 
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-  function toDateStr(d) {
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  function selectToday() {
+    setMode('today');
+    onChange(todayStr, todayDow);
+  }
+
+  function selectFuture() {
+    setMode('future');
+    const startMonth = firstMonthWithDates();
+    setMonth(startMonth);
+    const days = getDaysForMonth(startMonth);
+    if (days.length > 0) {
+      onChange(toDateStr(days[0]), activeDay);
+    } else {
+      onChange('', activeDay);
+    }
   }
 
   function handleTrashDayChange(newDay) {
@@ -713,8 +737,9 @@ function CascadingDatePicker({ trashDay: initialTrashDay, selectedDate, onChange
   }
 
   useEffect(() => {
+    if (mode === 'today') return;
     if (!activeDay || targetDow == null) return;
-    if (selectedDate) return;
+    if (selectedDate && selectedDate !== todayStr) return;
     const startMonth = firstMonthWithDates();
     setMonth(startMonth);
     const days = getDaysForMonth(startMonth);
@@ -726,52 +751,88 @@ function CascadingDatePicker({ trashDay: initialTrashDay, selectedDate, onChange
   return (
     <div className="mt-5">
       <label className="text-sm font-bold text-gray-900">Service date</label>
-      <p className="mt-0.5 text-xs text-gray-500">Pick the day and date you&apos;d like service</p>
+      <p className="mt-0.5 text-xs text-gray-500">Need service today or on a future date?</p>
 
-      <div className="mt-2">
-        <label className="text-xs font-medium text-gray-500">Trash day</label>
-        <select
-          value={activeDay}
-          onChange={(e) => handleTrashDayChange(e.target.value)}
-          className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-700 focus:border-brand-500 focus:outline-none"
+      <div className="mt-3 flex gap-2">
+        {!isSunday && (
+          <button
+            type="button"
+            onClick={selectToday}
+            className={`flex-1 rounded-xl border-2 py-3 text-sm font-medium transition ${mode === 'today' ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-gray-100 text-gray-500 hover:border-gray-200'}`}
+          >
+            <span className="block text-base font-semibold">Today</span>
+            <span className="block text-xs mt-0.5 opacity-70">{todayDow}</span>
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={selectFuture}
+          className={`flex-1 rounded-xl border-2 py-3 text-sm font-medium transition ${mode === 'future' ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-gray-100 text-gray-500 hover:border-gray-200'}`}
         >
-          {DAYS_OF_WEEK.map((d) => (
-            <option key={d} value={d}>{d}</option>
-          ))}
-        </select>
+          <span className="block text-base font-semibold">Future date</span>
+          <span className="block text-xs mt-0.5 opacity-70">Pick a day</span>
+        </button>
       </div>
 
-      <div className="mt-2 flex gap-2">
-        <select
-          value={month}
-          onChange={(e) => handleMonthChange(Number(e.target.value))}
-          className="flex-1 rounded-lg border border-gray-200 bg-brand-50 px-3 py-2.5 text-sm font-medium text-brand-700 focus:border-brand-500 focus:outline-none"
-        >
-          {months.map((m) => {
-            const hasDates = getDaysForMonth(m).length > 0;
-            return (
-              <option key={m} value={m} disabled={!hasDates}>
-                {monthNames[m]}{!hasDates ? ' (no dates)' : ''}
-              </option>
-            );
-          })}
-        </select>
-        <select
-          value={selectedDate || ''}
-          onChange={(e) => handleDayChange(e.target.value)}
-          className="flex-1 rounded-lg border border-gray-200 bg-brand-50 px-3 py-2.5 text-sm font-medium text-brand-700 focus:border-brand-500 focus:outline-none"
-        >
-          {availableDays.length === 0 && <option value="">No dates</option>}
-          {availableDays.map((d) => (
-            <option key={toDateStr(d)} value={toDateStr(d)}>
-              {d.toLocaleDateString('en-US', { weekday: 'short' })} {d.getDate()}
-            </option>
-          ))}
-        </select>
-        <div className="rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5 text-sm font-medium text-gray-500">
-          {currentYear}
+      {mode === 'today' && (
+        <div className="mt-3 flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3">
+          <svg className="h-5 w-5 text-brand-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+          </svg>
+          <p className="font-semibold text-brand-700">
+            {today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+          </p>
         </div>
-      </div>
+      )}
+
+      {mode === 'future' && (
+        <>
+          <div className="mt-3">
+            <label className="text-xs font-medium text-gray-500">Trash day</label>
+            <select
+              value={activeDay}
+              onChange={(e) => handleTrashDayChange(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-700 focus:border-brand-500 focus:outline-none"
+            >
+              {DAYS_OF_WEEK.map((d) => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="mt-2 flex gap-2">
+            <select
+              value={month}
+              onChange={(e) => handleMonthChange(Number(e.target.value))}
+              className="flex-1 rounded-lg border border-gray-200 bg-brand-50 px-3 py-2.5 text-sm font-medium text-brand-700 focus:border-brand-500 focus:outline-none"
+            >
+              {months.map((m) => {
+                const hasDates = getDaysForMonth(m).length > 0;
+                return (
+                  <option key={m} value={m} disabled={!hasDates}>
+                    {monthNames[m]}{!hasDates ? ' (no dates)' : ''}
+                  </option>
+                );
+              })}
+            </select>
+            <select
+              value={selectedDate || ''}
+              onChange={(e) => handleDayChange(e.target.value)}
+              className="flex-1 rounded-lg border border-gray-200 bg-brand-50 px-3 py-2.5 text-sm font-medium text-brand-700 focus:border-brand-500 focus:outline-none"
+            >
+              {availableDays.length === 0 && <option value="">No dates</option>}
+              {availableDays.map((d) => (
+                <option key={toDateStr(d)} value={toDateStr(d)}>
+                  {d.toLocaleDateString('en-US', { weekday: 'short' })} {d.getDate()}
+                </option>
+              ))}
+            </select>
+            <div className="rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5 text-sm font-medium text-gray-500">
+              {currentYear}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
