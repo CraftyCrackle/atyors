@@ -24,6 +24,7 @@ async function unsubscribe(userId, endpoint) {
 }
 
 async function registerDevice(userId, token, platform = 'ios') {
+  console.log(`[Push] Registering device for user ${userId} (platform: ${platform}, token: ${token.substring(0, 16)}...)`);
   return NativeDevice.findOneAndUpdate(
     { token },
     { userId, token, platform },
@@ -36,11 +37,10 @@ async function unregisterDevice(userId, token) {
 }
 
 async function sendToUser(userId, { title, body, data }) {
-  const promises = [];
-
   if (VAPID_PUBLIC && VAPID_PRIVATE) {
     const subs = await PushSubscription.find({ userId }).lean();
     if (subs.length) {
+      console.log(`[Push] Sending web push to ${subs.length} subscription(s) for user ${userId}`);
       const payload = JSON.stringify({
         title,
         body,
@@ -75,9 +75,18 @@ async function sendToUser(userId, { title, body, data }) {
   if (apns.isConfigured()) {
     const devices = await NativeDevice.find({ userId }).lean();
     if (devices.length) {
+      console.log(`[Push] Sending APNs to ${devices.length} device(s) for user ${userId}`);
       const nativeResults = await Promise.allSettled(
         devices.map((d) => apns.sendNotification(d.token, { title, body, data }))
       );
+
+      nativeResults.forEach((r, i) => {
+        if (r.status === 'fulfilled') {
+          console.log(`[Push] APNs sent OK to device ${devices[i].token.substring(0, 16)}...`);
+        } else {
+          console.error(`[Push] APNs failed for device ${devices[i].token.substring(0, 16)}...: ${r.reason?.message}`);
+        }
+      });
 
       const stale = nativeResults
         .map((r, i) => {
@@ -91,7 +100,11 @@ async function sendToUser(userId, { title, body, data }) {
       if (stale.length) {
         await NativeDevice.deleteMany({ _id: { $in: stale } });
       }
+    } else {
+      console.log(`[Push] No native devices registered for user ${userId}`);
     }
+  } else {
+    console.log('[Push] APNs not configured, skipping native push');
   }
 }
 
