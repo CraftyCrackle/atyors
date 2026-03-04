@@ -1,3 +1,8 @@
+---
+description: 
+alwaysApply: true
+---
+
 # AGENTS.md — atyors.com Development Guide
 
 > **Project:** atyors.com ("At Your Service")
@@ -737,9 +742,9 @@ curl https://atyors.com/api/v1/health
 
 ---
 
-## 17. iOS App Store Publishing (Capacitor) — Waiting on Apple
+## 17. iOS App Store Publishing (Capacitor) — UAT In Progress
 
-> **Status:** Phase 1 deployed. Phase 2 Xcode project generated and ready. **Blocked** on Apple Developer Program enrollment approval (submitted Feb 28 2026, expected by ~Mar 2 2026).
+> **Status:** Apple Developer Program approved. App built, signed, and running on a physical device. **Currently in UAT (User Acceptance Testing) on iPhone.**
 
 ### Background
 
@@ -747,49 +752,48 @@ Safari does not support `beforeinstallprompt`. The only way for iPhone users to 
 
 | Phase | Scope | Status |
 |-------|-------|--------|
-| **1 — Enhanced PWA Install Guide** | Full-screen animated iOS overlay, manifest screenshots, persistent "Get the App" buttons on dashboards/profile | **Deployed** |
-| **2 — Capacitor App Store Wrapper** | Wrap the live site in a native iOS shell, use APNs for push, submit to App Store | **Scaffolded, not submitted** |
+| **1 — Enhanced PWA Install Guide** | Full-screen animated iOS overlay, manifest screenshots | **Deployed** (install prompt disabled during UAT) |
+| **2 — Capacitor App Store Wrapper** | Wrap the live site in a native iOS shell, use APNs for push, submit to App Store | **UAT in progress** |
 
-### What Was Completed (Phase 1)
+### What Was Completed
 
+#### Phase 1 — PWA Install Guide
 - `apps/web/src/components/InstallContext.js` — shared React context for install state (`canInstall`, `isIos`, `isStandalone`, `triggerInstall`, iOS guide visibility)
 - `apps/web/src/components/InstallPrompt.js` — full-screen animated iOS guide with Safari Share icon, step-by-step visuals, and a "Maybe Later" dismissal
 - `apps/web/src/app/globals.css` — `animate-ios-overlay-in`, `animate-ios-card-in`, `animate-ios-arrow-bounce` keyframes
 - `apps/web/public/manifest.json` — added `screenshots` array and richer `description`
-- "Download the App" / "Get the App" buttons added to landing page, client dashboard, servicer dashboard, and profile page (all conditional on `canInstall && !isStandalone`)
+- **Note:** `InstallPrompt` component is currently removed from `layout.js` to avoid showing install overlays during native app testing. Re-add when PWA install guide is needed for web users.
 
-### What Was Scaffolded (Phase 2 — Blocked)
+#### Phase 2 — Capacitor Native App
 
-All files below exist in the repo and are ready to use once an Apple Developer account is active.
-
-| File | Purpose |
-|------|---------|
-| `apps/web/capacitor.config.json` | Capacitor config — `appId: com.atyors.app`, loads `https://atyors.com` in WKWebView, PushNotifications plugin pre-configured |
-| `apps/web/src/services/capacitorPush.js` | Bridge for native APNs — detects Capacitor runtime, requests permissions, registers for push, handles notification taps |
-| `.gitignore` additions | Ignores `apps/web/out/`, `apps/web/ios/App/Pods/`, `apps/web/ios/App/App/public/` |
-
-### Steps to Resume (When Enrollment Approved)
-
-> The Xcode project is already generated and synced. Steps 1–3 below are **done**.
-
-1. ~~Enroll in Apple Developer Program~~ — **Done** (awaiting approval)
-2. ~~Generate Xcode project~~ — **Done** (`npx cap add ios` + `npx cap sync ios` completed)
+**Xcode project setup (all complete):**
+1. ~~Enroll in Apple Developer Program~~ — **Done** (approved)
+2. ~~Generate Xcode project~~ — **Done** (`npx cap add ios` + `npx cap sync ios`)
 3. ~~Open in Xcode~~ — **Done** (`npx cap open ios`, app icon set to atyors house-A)
+4. ~~Configure signing in Xcode~~ — **Done** (paid team selected, `com.atyors.app`, Push Notifications + Background Modes > Remote notifications enabled)
+5. ~~Register APNs key~~ — **Done** (`.p8` key stored in SSM, server sends native push via APNs)
+6. ~~Deploy to physical device for testing~~ — **Done** (running on iPhone via Xcode)
 
-4. **Configure signing in Xcode** (resume here):
-   - Select the `App` target > Signing & Capabilities
-   - Set Team to your **paid** Apple Developer Program team (not "Personal Team")
-   - Bundle Identifier: `com.atyors.app`
-   - Enable "Push Notifications" capability
-   - Enable "Background Modes" > Remote notifications
+**Native capabilities configured:**
+- `NSCameraUsageDescription` — camera access for servicer completion photos
+- `NSMicrophoneUsageDescription` — required by iOS for `getUserMedia` video capture
+- Push Notifications via APNs (Capacitor Push plugin)
+- Background Modes > Remote notifications
+- GPS/live tracking via `navigator.geolocation`
 
-5. **Register an APNs key** in the Apple Developer portal:
-   - Certificates, Identifiers & Profiles > Keys > + > Apple Push Notifications service (APNs)
-   - Download the `.p8` key file — you will need the Key ID and Team ID
-   - Store the `.p8` file securely (add to SSM or `.env.ec2`)
-   - Update `apps/server/services/pushService.js` to send via APNs when the subscription type is native (currently only sends Web Push)
+**Landing page behavior:**
+- The landing page (`apps/web/src/app/page.js`) detects Capacitor via `window.Capacitor.isNativePlatform()`
+- **Native app:** Shows a clean branded screen with logo, tagline, and Get Started / Sign In buttons
+- **Web browser:** Shows the full marketing page with hero, How It Works, Features, and CTA sections
+- **Unified login:** `/login` accepts all user roles (customer, servicer, admin) and routes each to the correct dashboard. Servicers land in the dark-themed servicer portal automatically.
 
-6. **Test on a real device**: Simulators do not support push notifications. Connect an iPhone via USB, select it in Xcode, and run.
+**Camera permissions (lessons learned):**
+- `NSCameraUsageDescription` must be non-empty or iOS silently blocks access without ever prompting
+- `NSMicrophoneUsageDescription` should also be present for `getUserMedia` compatibility
+- If the app was installed with an empty usage description, deleting the app and doing a clean install from Xcode is required to trigger the permission prompt
+- The camera error UI (`apps/web/src/app/servicer/job/[id]/page.js`) shows step-by-step instructions guiding servicers to Settings > atyors > Camera if access is denied
+
+### Steps Remaining (After UAT)
 
 7. **Archive and submit**:
    - Product > Archive in Xcode
@@ -811,11 +815,15 @@ If Apple requests changes during review, common fixes include:
 - Ensuring the app works offline (service worker already handles this)
 - Adding a native settings/about screen
 
-### Related Files (Already Deployed, No Changes Needed to Resume)
+### Key Files
 
-- `apps/web/src/components/InstallContext.js`
-- `apps/web/src/components/InstallPrompt.js`
-- `apps/web/src/app/layout.js` (wraps app in `InstallProvider`)
-- `apps/web/public/manifest.json`
-- `apps/web/worker/index.js` / `apps/web/public/push-sw.js` (badge + notification enhancements)
-- `nginx/ec2.conf` (service worker headers)
+| File | Purpose |
+|------|---------|
+| `apps/web/capacitor.config.json` | Capacitor config — `appId: com.atyors.app`, loads `https://atyors.com` in WKWebView |
+| `apps/web/ios/App/App/Info.plist` | iOS permissions (camera, microphone, push, background modes) |
+| `apps/web/src/services/capacitorPush.js` | Bridge for native APNs — detects Capacitor runtime, requests permissions, registers for push |
+| `apps/web/src/app/page.js` | Landing page with native vs web detection |
+| `apps/web/src/app/login/page.js` | Unified login — routes all roles to correct dashboard |
+| `apps/web/src/components/InstallContext.js` | PWA install state context (active but `InstallPrompt` disabled in layout) |
+| `apps/web/src/components/InstallPrompt.js` | PWA install overlay (not rendered during UAT) |
+| `nginx/ec2.conf` | Service worker headers, SSL, proxy rules |

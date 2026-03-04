@@ -27,18 +27,6 @@ export default function Logo({ size = 'md', variant = 'full', dark = false }) {
     return <HouseIcon className={iconCls[size] || iconCls.md} size={size} />;
   }
 
-  if (dark) {
-    const textSize = { sm: 'text-lg', md: 'text-2xl', lg: 'text-3xl', xl: 'text-4xl' };
-    return (
-      <div className="flex items-center gap-2">
-        <HouseIcon className={iconCls[size] || iconCls.md} size={size} />
-        <span className={`${textSize[size] || textSize.md} font-extrabold tracking-tight text-white`}>
-          atyors
-        </span>
-      </div>
-    );
-  }
-
   const logoHeights = { sm: 28, md: 36, lg: 48, xl: 64 };
   const h = logoHeights[size] || logoHeights.md;
   return (
@@ -46,6 +34,7 @@ export default function Logo({ size = 'md', variant = 'full', dark = false }) {
       src="/logo.png"
       alt="atyors — At Your Service"
       height={h}
+      className={dark ? 'brightness-0 invert' : ''}
       style={{ height: h, width: 'auto' }}
     />
   );

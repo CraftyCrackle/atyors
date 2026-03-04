@@ -24,6 +24,10 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>atyors uses the camera to take photos when completing service jobs.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>atyors may need microphone access for camera features.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
