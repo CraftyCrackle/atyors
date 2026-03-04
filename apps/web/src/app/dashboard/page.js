@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import AuthGuard from '../../components/AuthGuard';
 import BottomNav from '../../components/BottomNav';
 import ReviewModal from '../../components/ReviewModal';
@@ -11,6 +12,8 @@ import { api } from '../../services/api';
 import { useNotifications } from '../../components/NotificationProvider';
 import { useInstall } from '../../components/InstallContext';
 import Logo from '../../components/Logo';
+
+const TrackingMap = dynamic(() => import('../../components/TrackingMap'), { ssr: false });
 
 const STATUS_COLORS = {
   pending: 'bg-yellow-100 text-yellow-800',
@@ -46,38 +49,97 @@ const LIVE_COLORS = {
   'in-progress': 'bg-orange-500',
 };
 
-function LiveBookingBanner({ booking }) {
+function LiveTrackingCard({ booking }) {
   const status = booking.status;
   const svc = booking.serviceTypeId;
   const servicer = booking.assignedTo;
-  const color = LIVE_COLORS[status] || 'bg-brand-600';
   const isMoving = status === 'en-route';
+  const [servicerPos, setServicerPos] = useState(null);
+  const socketRef = useRef(null);
+
+  const customerCoords = booking.addressId?.location?.coordinates;
+  const customerPos = customerCoords ? { lat: customerCoords[1], lng: customerCoords[0] } : null;
+
+  useEffect(() => {
+    let disposed = false;
+
+    async function fetchInitialPosition() {
+      try {
+        const res = await api.get(`/bookings/${booking._id}/queue`);
+        const q = res.data?.queue;
+        if (q?.servicerLocation && !disposed) {
+          setServicerPos({ lat: q.servicerLocation.lat, lng: q.servicerLocation.lng });
+        }
+      } catch {}
+    }
+
+    async function connectSocket() {
+      const { createSocket } = await import('../../services/socket');
+      if (disposed) return;
+      const token = localStorage.getItem('accessToken');
+      const socket = createSocket('/tracking', token);
+      socketRef.current = socket;
+
+      socket.on('connect', () => {
+        socket.emit('join:booking', booking._id);
+      });
+
+      socket.on('location:update', (data) => {
+        if (!disposed) setServicerPos({ lat: data.lat, lng: data.lng });
+      });
+    }
+
+    fetchInitialPosition();
+    connectSocket();
+
+    return () => {
+      disposed = true;
+      if (socketRef.current) {
+        socketRef.current.emit('leave:booking', booking._id);
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+    };
+  }, [booking._id]);
 
   return (
-    <Link href={`/tracking/${booking._id}`} className={`block rounded-xl ${color} p-4 text-white shadow-lg transition active:scale-[0.99]`}>
-      <div className="flex items-center gap-3">
-        <div className="relative flex h-11 w-11 items-center justify-center rounded-full bg-white/20">
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          {isMoving && <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-green-400 animate-pulse" />}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold">{svc?.name || 'Service'} — {STATUS_LABELS[status]}</p>
-          <p className="text-sm text-white/80 truncate">
-            {servicer ? `${servicer.firstName} ${servicer.lastName}` : 'Servicer assigned'}
-            {status === 'en-route' && ' is on the way'}
-            {status === 'arrived' && ' has arrived'}
-            {status === 'in-progress' && ' is working'}
-          </p>
-        </div>
-        <div className="flex flex-col items-center gap-0.5">
-          <svg className="h-5 w-5 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-          <span className="text-[10px] text-white/50">Track</span>
+    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+      <div className="relative h-48 bg-gray-100">
+        {servicerPos ? (
+          <TrackingMap servicerPos={servicerPos} customerPos={customerPos} />
+        ) : (
+          <div className="flex h-full items-center justify-center">
+            <div className="text-center">
+              <div className="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
+              <p className="mt-2 text-xs text-gray-400">Loading map...</p>
+            </div>
+          </div>
+        )}
+        <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 shadow-md backdrop-blur">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+          </span>
+          <span className="text-xs font-semibold text-gray-800">Live</span>
         </div>
       </div>
-    </Link>
+
+      <div className="px-4 py-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-semibold text-gray-900">{svc?.name || 'Service'} — {STATUS_LABELS[status]}</p>
+            <p className="mt-0.5 text-sm text-gray-500">
+              {servicer ? `${servicer.firstName} ${servicer.lastName}` : 'Servicer assigned'}
+              {isMoving && ' is on the way'}
+              {status === 'arrived' && ' has arrived'}
+            </p>
+          </div>
+          <Link href={`/tracking/${booking._id}`} className="rounded-lg bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-600 transition hover:bg-brand-100">
+            Details
+          </Link>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -359,7 +421,7 @@ export default function DashboardPage() {
         {liveBookings.length > 0 && (
           <div className="mx-4 mt-4 space-y-3">
             {liveBookings.map((b) => (
-              <LiveBookingBanner key={b._id} booking={b} />
+              <LiveTrackingCard key={b._id} booking={b} />
             ))}
           </div>
         )}
