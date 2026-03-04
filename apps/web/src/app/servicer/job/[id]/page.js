@@ -90,12 +90,7 @@ export default function ServicerJobPage() {
         videoRef.current.srcObject = stream;
       }
     } catch (err) {
-      const msg = err.name === 'NotAllowedError'
-        ? 'Camera access denied. Please allow camera permissions in your browser settings.'
-        : err.name === 'NotFoundError'
-          ? 'No camera found on this device.'
-          : 'Could not access camera. Please check your permissions.';
-      setCameraError(msg);
+      setCameraError(err.name === 'NotFoundError' ? 'no-camera' : 'denied');
     }
   }
 
@@ -394,27 +389,73 @@ export default function ServicerJobPage() {
       {/* Full-screen camera overlay */}
       {cameraOpen && (
         <div className="fixed inset-0 z-50 flex flex-col bg-black">
-          <div className="flex items-center justify-between px-4 py-3">
-            <h2 className="text-sm font-semibold text-white">Take Completion Photo</h2>
+          <div className="flex items-center justify-between px-4 pb-3 pt-sticky-safe">
+            <h2 className="text-sm font-semibold text-white">Completion Photo</h2>
             <button onClick={closeCamera} className="rounded-full bg-white/10 p-2 text-white hover:bg-white/20">
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
           </div>
 
           {cameraError ? (
-            <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
-              <svg className="h-12 w-12 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-              </svg>
-              <p className="mt-4 text-sm text-red-300">{cameraError}</p>
-              <button onClick={closeCamera} className="mt-6 rounded-lg bg-gray-800 px-6 py-2 text-sm text-white">Close</button>
+            <div className="flex flex-1 flex-col items-center justify-center px-6">
+              <div className="w-full max-w-sm">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-900/30">
+                  <svg className="h-8 w-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
+                  </svg>
+                </div>
+
+                {cameraError === 'no-camera' ? (
+                  <div className="mt-5 text-center">
+                    <h3 className="text-lg font-bold text-white">No Camera Found</h3>
+                    <p className="mt-2 text-sm text-gray-400">
+                      This device does not appear to have a camera available.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="mt-5 text-center">
+                      <h3 className="text-lg font-bold text-white">Camera Access Required</h3>
+                      <p className="mt-2 text-sm text-gray-400">
+                        atyors needs camera access to take completion photos. Enable it in your device settings.
+                      </p>
+                    </div>
+
+                    <div className="mt-6 space-y-2">
+                      {[
+                        ['1', <>Open your device <span className="font-semibold text-white">Settings</span></>],
+                        ['2', <>Scroll down and tap <span className="font-semibold text-white">atyors</span></>],
+                        ['3', <>Toggle <span className="font-semibold text-white">Camera</span> to on</>],
+                        ['4', <>Return here and tap <span className="font-semibold text-white">Try Again</span></>],
+                      ].map(([num, text]) => (
+                        <div key={num} className="flex items-center gap-3 rounded-xl bg-white/5 px-4 py-3">
+                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white">{num}</span>
+                          <p className="text-sm text-gray-300">{text}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                <div className="mt-8 space-y-3">
+                  <button onClick={() => { closeCamera(); setTimeout(openCamera, 300); }}
+                    className="w-full rounded-xl bg-brand-600 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700 active:scale-[0.98]">
+                    Try Again
+                  </button>
+                  <button onClick={closeCamera}
+                    className="w-full rounded-xl py-3 text-sm font-medium text-gray-500 transition hover:text-gray-300">
+                    Close
+                  </button>
+                </div>
+              </div>
             </div>
           ) : (
             <>
               <div className="flex flex-1 items-center justify-center overflow-hidden">
                 <video ref={videoRef} autoPlay playsInline muted className="h-full w-full object-cover" />
               </div>
-              <div className="flex items-center justify-center py-6">
+              <div className="flex items-center justify-center pb-safe py-6">
                 <button onClick={capturePhoto}
                   className="flex h-18 w-18 items-center justify-center rounded-full border-4 border-white bg-white/20 transition active:scale-90">
                   <div className="h-14 w-14 rounded-full bg-white" />
