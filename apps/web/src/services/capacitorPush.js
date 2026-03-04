@@ -1,11 +1,12 @@
 import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
+import { api } from './api';
 
 export function isNativeApp() {
   return Capacitor.isNativePlatform();
 }
 
-export async function registerNativePush(onToken) {
+export async function registerNativePush() {
   if (!isNativeApp()) return;
 
   const permResult = await PushNotifications.requestPermissions();
@@ -13,8 +14,15 @@ export async function registerNativePush(onToken) {
 
   await PushNotifications.register();
 
-  PushNotifications.addListener('registration', (token) => {
-    if (onToken) onToken(token.value);
+  PushNotifications.addListener('registration', async (token) => {
+    try {
+      await api.post('/push/device/register', {
+        token: token.value,
+        platform: Capacitor.getPlatform(),
+      });
+    } catch (err) {
+      console.error('Failed to register device token:', err);
+    }
   });
 
   PushNotifications.addListener('registrationError', (err) => {

@@ -8,5 +8,7 @@ const pushLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 30, message: { su
 router.get('/vapid-key', pushLimiter, pushController.vapidPublicKey);
 router.post('/subscribe', authenticate, pushLimiter, pushController.subscribe);
 router.post('/unsubscribe', authenticate, pushController.unsubscribe);
+router.post('/device/register', authenticate, pushLimiter, pushController.registerDevice);
+router.post('/device/unregister', authenticate, pushController.unregisterDevice);
 
 module.exports = router;

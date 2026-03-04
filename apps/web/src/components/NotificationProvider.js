@@ -30,30 +30,40 @@ export default function NotificationProvider({ children }) {
 
   useEffect(() => {
     if (!userId) return;
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 
-    navigator.serviceWorker.ready.then(async (reg) => {
+    (async () => {
       try {
-        const existing = await reg.pushManager.getSubscription();
-        if (existing) return;
-        const perm = await Notification.requestPermission();
-        if (perm !== 'granted') return;
-        const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-        if (!vapidKey) return;
-        const padding = '='.repeat((4 - (vapidKey.length % 4)) % 4);
-        const b64 = (vapidKey + padding).replace(/-/g, '+').replace(/_/g, '/');
-        const raw = atob(b64);
-        const arr = new Uint8Array(raw.length);
-        for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
-        const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: arr });
-        const token = localStorage.getItem('accessToken');
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api/v1'}/push/subscribe`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ subscription: sub.toJSON() }),
-        });
+        const { isNativeApp, registerNativePush } = await import('../services/capacitorPush');
+        if (isNativeApp()) {
+          await registerNativePush();
+          return;
+        }
       } catch (_) {}
-    });
+
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+      navigator.serviceWorker.ready.then(async (reg) => {
+        try {
+          const existing = await reg.pushManager.getSubscription();
+          if (existing) return;
+          const perm = await Notification.requestPermission();
+          if (perm !== 'granted') return;
+          const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+          if (!vapidKey) return;
+          const padding = '='.repeat((4 - (vapidKey.length % 4)) % 4);
+          const b64 = (vapidKey + padding).replace(/-/g, '+').replace(/_/g, '/');
+          const raw = atob(b64);
+          const arr = new Uint8Array(raw.length);
+          for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+          const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: arr });
+          const token = localStorage.getItem('accessToken');
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api/v1'}/push/subscribe`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ subscription: sub.toJSON() }),
+          });
+        } catch (_) {}
+      });
+    })();
   }, [userId]);
 
   useEffect(() => {

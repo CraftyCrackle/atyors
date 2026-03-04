@@ -737,9 +737,9 @@ curl https://atyors.com/api/v1/health
 
 ---
 
-## 17. iOS App Store Publishing (Capacitor) — Parked
+## 17. iOS App Store Publishing (Capacitor) — Waiting on Apple
 
-> **Status:** Phase 1 complete and deployed. Phase 2 scaffolded but **blocked** on Apple Developer account enrollment.
+> **Status:** Phase 1 deployed. Phase 2 Xcode project generated and ready. **Blocked** on Apple Developer Program enrollment approval (submitted Feb 28 2026, expected by ~Mar 2 2026).
 
 ### Background
 
@@ -768,25 +768,17 @@ All files below exist in the repo and are ready to use once an Apple Developer a
 | `apps/web/src/services/capacitorPush.js` | Bridge for native APNs — detects Capacitor runtime, requests permissions, registers for push, handles notification taps |
 | `.gitignore` additions | Ignores `apps/web/out/`, `apps/web/ios/App/Pods/`, `apps/web/ios/App/App/public/` |
 
-### Steps to Resume (When Ready)
+### Steps to Resume (When Enrollment Approved)
 
-1. **Enroll in the Apple Developer Program** — <https://developer.apple.com/programs/> ($99/year). Approval takes 24–48 hours.
+> The Xcode project is already generated and synced. Steps 1–3 below are **done**.
 
-2. **Install dependencies** (already in `package.json`, just need native platform):
-   ```bash
-   cd apps/web
-   npx cap add ios          # generates apps/web/ios/ Xcode project
-   npx cap sync ios         # copies web assets + plugin configs
-   ```
+1. ~~Enroll in Apple Developer Program~~ — **Done** (awaiting approval)
+2. ~~Generate Xcode project~~ — **Done** (`npx cap add ios` + `npx cap sync ios` completed)
+3. ~~Open in Xcode~~ — **Done** (`npx cap open ios`, app icon set to atyors house-A)
 
-3. **Open in Xcode**:
-   ```bash
-   npx cap open ios
-   ```
-
-4. **Configure signing in Xcode**:
+4. **Configure signing in Xcode** (resume here):
    - Select the `App` target > Signing & Capabilities
-   - Set Team to your Apple Developer account
+   - Set Team to your **paid** Apple Developer Program team (not "Personal Team")
    - Bundle Identifier: `com.atyors.app`
    - Enable "Push Notifications" capability
    - Enable "Background Modes" > Remote notifications

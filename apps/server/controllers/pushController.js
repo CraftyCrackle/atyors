@@ -24,6 +24,28 @@ exports.unsubscribe = async (req, res, next) => {
   }
 };
 
+exports.registerDevice = async (req, res, next) => {
+  try {
+    const { token, platform } = req.body;
+    if (!token) return res.status(400).json({ error: 'Device token required' });
+    await pushService.registerDevice(req.user._id, token, platform || 'ios');
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.unregisterDevice = async (req, res, next) => {
+  try {
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ error: 'Device token required' });
+    await pushService.unregisterDevice(req.user._id, token);
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.vapidPublicKey = (req, res) => {
   res.json({ publicKey: process.env.VAPID_PUBLIC_KEY || '' });
 };

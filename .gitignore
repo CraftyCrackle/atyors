@@ -4,6 +4,7 @@ node_modules/
 .env.local
 .env.ec2
 *.pem
+*.p8
 dist/
 coverage/
 .DS_Store
