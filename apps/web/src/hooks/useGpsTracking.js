@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 
 const GPS_INTERVAL_MS = 4000;
 
@@ -8,6 +8,7 @@ export default function useGpsTracking({ bookingId, routeId, active }) {
   const socketRef = useRef(null);
   const watchIdRef = useRef(null);
   const lastEmitRef = useRef(0);
+  const [status, setStatus] = useState('idle');
 
   const cleanup = useCallback(() => {
     if (watchIdRef.current != null) {
@@ -23,15 +24,17 @@ export default function useGpsTracking({ bookingId, routeId, active }) {
   useEffect(() => {
     if (!active || (!bookingId && !routeId)) {
       cleanup();
+      setStatus('idle');
       return;
     }
 
     if (!navigator.geolocation) {
-      console.warn('[GPS] Geolocation not supported');
+      setStatus('unsupported');
       return;
     }
 
     let disposed = false;
+    setStatus('connecting');
 
     async function start() {
       const { createSocket } = await import('../services/socket');
@@ -42,15 +45,18 @@ export default function useGpsTracking({ bookingId, routeId, active }) {
       socketRef.current = socket;
 
       socket.on('connect', () => {
-        console.log('[GPS] Tracking socket connected');
+        if (!disposed) setStatus('waiting-gps');
       });
 
       socket.on('connect_error', (err) => {
         console.error('[GPS] Tracking socket error:', err.message);
+        if (!disposed) setStatus('socket-error');
       });
 
       watchIdRef.current = navigator.geolocation.watchPosition(
         (pos) => {
+          if (!disposed) setStatus('tracking');
+
           const now = Date.now();
           if (now - lastEmitRef.current < GPS_INTERVAL_MS) return;
           lastEmitRef.current = now;
@@ -71,7 +77,15 @@ export default function useGpsTracking({ bookingId, routeId, active }) {
           socket.emit('location:update', payload);
         },
         (err) => {
-          console.error('[GPS] Watch error:', err.message);
+          console.error('[GPS] Watch error:', err.code, err.message);
+          if (disposed) return;
+          if (err.code === 1) {
+            setStatus('denied');
+          } else if (err.code === 2) {
+            setStatus('unavailable');
+          } else {
+            setStatus('gps-error');
+          }
         },
         { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
       );
@@ -84,4 +98,6 @@ export default function useGpsTracking({ bookingId, routeId, active }) {
       cleanup();
     };
   }, [active, bookingId, routeId, cleanup]);
+
+  return status;
 }

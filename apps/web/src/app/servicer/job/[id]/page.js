@@ -38,7 +38,7 @@ export default function ServicerJobPage() {
   const streamRef = useRef(null);
 
   const isTracking = ['en-route', 'arrived'].includes(booking?.status);
-  useGpsTracking({
+  const gpsStatus = useGpsTracking({
     bookingId: id,
     routeId: booking?.routeId,
     active: isTracking,
@@ -309,13 +309,45 @@ export default function ServicerJobPage() {
           </div>
         </div>
 
-        {isTracking && (
+        {isTracking && gpsStatus === 'tracking' && (
           <div className="flex items-center gap-2 rounded-xl border border-green-800/50 bg-green-900/30 px-4 py-3">
             <span className="relative flex h-3 w-3">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
               <span className="relative inline-flex h-3 w-3 rounded-full bg-green-500" />
             </span>
             <p className="text-sm font-medium text-green-400">Sharing live location with customer</p>
+          </div>
+        )}
+
+        {isTracking && (gpsStatus === 'connecting' || gpsStatus === 'waiting-gps') && (
+          <div className="flex items-center gap-2 rounded-xl border border-yellow-800/50 bg-yellow-900/30 px-4 py-3">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-yellow-400 border-t-transparent" />
+            <p className="text-sm font-medium text-yellow-400">Acquiring GPS signal...</p>
+          </div>
+        )}
+
+        {isTracking && gpsStatus === 'denied' && (
+          <div className="rounded-xl border border-red-800/50 bg-red-900/30 px-4 py-3">
+            <div className="flex items-center gap-2">
+              <svg className="h-5 w-5 shrink-0 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+              </svg>
+              <p className="text-sm font-medium text-red-400">Location access denied</p>
+            </div>
+            <p className="mt-2 text-xs text-gray-400">
+              Customers can't see your live location. Open <span className="font-semibold text-white">Settings → atyors → Location</span> and set to <span className="font-semibold text-white">While Using</span>, then return here.
+            </p>
+          </div>
+        )}
+
+        {isTracking && (gpsStatus === 'unavailable' || gpsStatus === 'gps-error' || gpsStatus === 'socket-error') && (
+          <div className="flex items-center gap-2 rounded-xl border border-yellow-800/50 bg-yellow-900/30 px-4 py-3">
+            <svg className="h-5 w-5 shrink-0 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 15.75h.007v.008H12v-.008z" />
+            </svg>
+            <p className="text-sm font-medium text-yellow-400">GPS signal lost. Trying to reconnect...</p>
           </div>
         )}
 

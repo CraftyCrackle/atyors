@@ -132,19 +132,21 @@ export default function TrackingPage() {
               <p className="text-lg font-bold text-brand-600">You're next!</p>
             </div>
           </div>
-        ) : isNext && !servicerPos ? (
+        ) : isNext ? (
           <div className="bg-green-50 px-6 py-8 text-center">
             <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
-              <svg className="h-10 w-10 text-green-600 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+              <svg className="h-10 w-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
               </svg>
             </div>
-            <p className="mt-4 text-lg font-semibold text-gray-900">You're next!</p>
-            <p className="mt-1 text-sm text-gray-500">Your servicer is on the way. The live map will appear as soon as we receive their GPS signal.</p>
-            <div className="mx-auto mt-4 h-1 w-32 overflow-hidden rounded-full bg-green-200">
-              <div className="h-full w-8 animate-[slide_1.5s_ease-in-out_infinite] rounded-full bg-green-500" />
-            </div>
+            <p className="mt-4 text-lg font-semibold text-gray-900">
+              {booking.status === 'arrived' ? 'Your servicer has arrived!' : 'Your servicer is on the way!'}
+            </p>
+            <p className="mt-1 text-sm text-gray-500">
+              {booking.status === 'arrived'
+                ? 'They are at your address now.'
+                : 'You are next on the route.'}
+            </p>
           </div>
         ) : queue?.inRoute && queue?.routeStatus === 'in-progress' && queue?.position && !isNext ? (
           <div className="bg-brand-50 px-6 py-8 text-center">
