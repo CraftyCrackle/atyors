@@ -1,23 +1,44 @@
+const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
 const config = require('../config');
 
+function buildSesClient() {
+  const region = process.env.SES_REGION || process.env.AWS_REGION || 'us-east-1';
+  const opts = { region };
+  if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+    opts.credentials = {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    };
+  }
+  return new SESClient(opts);
+}
+
 async function send({ to, subject, text, html }) {
-  if (process.env.SES_REGION) {
-    const { SESv2Client, SendEmailCommand } = require('@aws-sdk/client-sesv2');
-    const client = new SESv2Client({ region: process.env.SES_REGION });
+  const from = config.email.from;
+
+  if (process.env.SES_REGION || process.env.AWS_ACCESS_KEY_ID) {
+    const client = buildSesClient();
     const command = new SendEmailCommand({
-      FromEmailAddress: config.email.from,
+      Source: from,
       Destination: { ToAddresses: [to] },
-      Content: {
-        Simple: {
-          Subject: { Data: subject, Charset: 'UTF-8' },
-          Body: {
-            ...(text ? { Text: { Data: text, Charset: 'UTF-8' } } : {}),
-            ...(html ? { Html: { Data: html, Charset: 'UTF-8' } } : {}),
-          },
+      Message: {
+        Subject: { Data: subject, Charset: 'UTF-8' },
+        Body: {
+          ...(html ? { Html: { Data: html, Charset: 'UTF-8' } } : {}),
+          ...(text ? { Text: { Data: text, Charset: 'UTF-8' } } : {}),
         },
       },
     });
-    return client.send(command);
+
+    try {
+      console.log(`[EMAIL SENDING] To: ${to} | Subject: ${subject} | From: ${from}`);
+      const result = await client.send(command);
+      console.log(`[EMAIL SENT] To: ${to} | MessageId: ${result.MessageId}`);
+      return { success: true, messageId: result.MessageId };
+    } catch (error) {
+      console.error(`[EMAIL FAILED] To: ${to} | Error: ${error.message} | Code: ${error.code || 'Unknown'}`);
+      throw error;
+    }
   }
 
   if (process.env.SMTP_HOST) {
@@ -28,7 +49,10 @@ async function send({ to, subject, text, html }) {
       secure: process.env.SMTP_SECURE === 'true',
       auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
     });
-    return transporter.sendMail({ from: config.email.from, to, subject, text, html });
+    console.log(`[EMAIL SENDING via SMTP] To: ${to} | Subject: ${subject}`);
+    const result = await transporter.sendMail({ from, to, subject, text, html });
+    console.log(`[EMAIL SENT via SMTP] To: ${to} | MessageId: ${result.messageId}`);
+    return result;
   }
 
   console.log('--- EMAIL (dev, no SMTP/SES configured) ---');
