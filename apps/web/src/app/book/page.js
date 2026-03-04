@@ -635,20 +635,23 @@ export default function BookPage() {
   );
 }
 
-function CascadingDatePicker({ trashDay, selectedDate, onChange }) {
+function CascadingDatePicker({ trashDay: initialTrashDay, selectedDate, onChange }) {
+  const [activeDay, setActiveDay] = useState(initialTrashDay);
+
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth();
   const today = new Date(currentYear, currentMonth, now.getDate());
 
   const dayMap = { Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6, Sunday: 0 };
-  const targetDow = dayMap[trashDay];
+  const targetDow = dayMap[activeDay];
 
-  function getDaysForMonth(m) {
-    if (targetDow == null) return [];
+  function getDaysForMonth(m, dow) {
+    const d_ow = dow ?? targetDow;
+    if (d_ow == null) return [];
     const days = [];
     const d = new Date(currentYear, m, 1, 12, 0, 0);
-    while (d.getDay() !== targetDow) d.setDate(d.getDate() + 1);
+    while (d.getDay() !== d_ow) d.setDate(d.getDate() + 1);
     while (d.getMonth() === m) {
       if (d >= today) days.push(new Date(d));
       d.setDate(d.getDate() + 7);
@@ -656,9 +659,9 @@ function CascadingDatePicker({ trashDay, selectedDate, onChange }) {
     return days;
   }
 
-  function firstMonthWithDates() {
+  function firstMonthWithDates(dow) {
     for (let m = currentMonth; m <= 11; m++) {
-      if (getDaysForMonth(m).length > 0) return m;
+      if (getDaysForMonth(m, dow).length > 0) return m;
     }
     return currentMonth;
   }
@@ -668,7 +671,7 @@ function CascadingDatePicker({ trashDay, selectedDate, onChange }) {
     return firstMonthWithDates();
   });
 
-  const availableDays = useMemo(() => getDaysForMonth(month), [month, trashDay]);
+  const availableDays = useMemo(() => getDaysForMonth(month), [month, activeDay]);
 
   const months = useMemo(() => {
     const list = [];
@@ -682,35 +685,62 @@ function CascadingDatePicker({ trashDay, selectedDate, onChange }) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
 
+  function handleTrashDayChange(newDay) {
+    setActiveDay(newDay);
+    const dow = dayMap[newDay];
+    const startMonth = firstMonthWithDates(dow);
+    setMonth(startMonth);
+    const days = getDaysForMonth(startMonth, dow);
+    if (days.length > 0) {
+      onChange(toDateStr(days[0]), newDay);
+    } else {
+      onChange('', newDay);
+    }
+  }
+
   function handleMonthChange(newMonth) {
     setMonth(newMonth);
     const days = getDaysForMonth(newMonth);
     if (days.length > 0) {
-      onChange(toDateStr(days[0]), trashDay);
+      onChange(toDateStr(days[0]), activeDay);
     } else {
-      onChange('', trashDay);
+      onChange('', activeDay);
     }
   }
 
   function handleDayChange(dateStr) {
-    onChange(dateStr, trashDay);
+    onChange(dateStr, activeDay);
   }
 
   useEffect(() => {
-    if (!trashDay || targetDow == null) return;
+    if (!activeDay || targetDow == null) return;
     if (selectedDate) return;
     const startMonth = firstMonthWithDates();
     setMonth(startMonth);
     const days = getDaysForMonth(startMonth);
-    if (days.length > 0) onChange(toDateStr(days[0]), trashDay);
-  }, [trashDay]);
+    if (days.length > 0) onChange(toDateStr(days[0]), activeDay);
+  }, [activeDay]);
 
-  if (!trashDay) return null;
+  if (!activeDay) return null;
 
   return (
     <div className="mt-5">
       <label className="text-sm font-bold text-gray-900">Service date</label>
-      <p className="mt-0.5 text-xs text-gray-500">Pick the {trashDay} you&apos;d like service</p>
+      <p className="mt-0.5 text-xs text-gray-500">Pick the day and date you&apos;d like service</p>
+
+      <div className="mt-2">
+        <label className="text-xs font-medium text-gray-500">Trash day</label>
+        <select
+          value={activeDay}
+          onChange={(e) => handleTrashDayChange(e.target.value)}
+          className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm font-medium text-gray-700 focus:border-brand-500 focus:outline-none"
+        >
+          {DAYS_OF_WEEK.map((d) => (
+            <option key={d} value={d}>{d}</option>
+          ))}
+        </select>
+      </div>
+
       <div className="mt-2 flex gap-2">
         <select
           value={month}
