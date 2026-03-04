@@ -298,8 +298,9 @@ export default function DashboardPage() {
     if (unreadBump > 0) loadUnreadCount();
   }, [unreadBump]);
 
-  const upcoming = bookings.filter((b) => ['pending'].includes(b.status));
-  const active = bookings.filter((b) => ACTIVE_STATUSES.includes(b.status));
+  const byLastModified = (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt);
+  const upcoming = bookings.filter((b) => ['pending'].includes(b.status)).sort(byLastModified);
+  const active = bookings.filter((b) => ACTIVE_STATUSES.includes(b.status)).sort(byLastModified);
   const liveBookings = active.filter((b) => ['en-route', 'arrived'].includes(b.status));
   const past = bookings
     .filter((b) => ['completed', 'cancelled', 'no-show'].includes(b.status))
