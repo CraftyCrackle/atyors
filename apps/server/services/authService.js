@@ -156,18 +156,60 @@ async function forgotPassword(email) {
 
   await emailService.send({
     to: user.email,
-    subject: 'Reset your atyors password',
-    text: `Hi ${user.firstName},\n\nYou requested a password reset. Use this link to set a new password (expires in 1 hour):\n\n${resetUrl}\n\nIf you didn't request this, you can safely ignore this email.\n\natyors`,
+    subject: 'Password reset',
+    text: `Password reset\n\nSomeone requested that the password be reset for your account.\n\nTo reset your password, visit the following address:\n${resetUrl}\n\nYour email: ${user.email}\n\nIf this was a mistake, just ignore this email and nothing will happen.\n\natyors — At Your Service`,
     html: `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px;">
-        <h2 style="color: #111827; margin-bottom: 8px;">Reset your password</h2>
-        <p style="color: #6b7280; font-size: 15px;">Hi ${user.firstName},</p>
-        <p style="color: #6b7280; font-size: 15px;">You requested a password reset for your atyors account. Click the button below to set a new password. This link expires in 1 hour.</p>
-        <a href="${resetUrl}" style="display: inline-block; margin: 24px 0; padding: 14px 28px; background: #1b70f5; color: #fff; font-weight: 600; font-size: 15px; text-decoration: none; border-radius: 12px;">Reset Password</a>
-        <p style="color: #9ca3af; font-size: 13px;">If you didn't request this, you can safely ignore this email.</p>
-        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
-        <p style="color: #9ca3af; font-size: 12px;">atyors &middot; At Your Service</p>
-      </div>
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:40px 20px;">
+<tr><td align="center">
+<table width="480" cellpadding="0" cellspacing="0" style="max-width:480px;width:100%;">
+
+<tr><td align="center" style="padding-bottom:24px;">
+  <img src="${baseUrl}/icons/favicon-48x48.png" alt="atyors" width="48" height="48" style="display:block;" />
+</td></tr>
+
+<tr><td align="center" style="padding-bottom:32px;">
+  <h1 style="margin:0;font-size:28px;font-weight:700;color:#111827;">Password reset</h1>
+</td></tr>
+
+<tr><td>
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;padding:32px 28px;">
+<tr><td>
+  <p style="margin:0 0 8px;font-size:16px;font-weight:600;color:#111827;text-align:center;">
+    Someone requested that the password be reset for the following account:
+  </p>
+  <p style="margin:16px 0 0;font-size:15px;color:#6b7280;text-align:center;">
+    To reset your password, click the button below:
+  </p>
+</td></tr>
+<tr><td align="center" style="padding:24px 0;">
+  <a href="${resetUrl}" style="display:inline-block;padding:14px 32px;background:#4472c4;color:#ffffff;font-weight:600;font-size:15px;text-decoration:none;border-radius:8px;">
+    Click here to reset your password
+  </a>
+</td></tr>
+<tr><td>
+  <p style="margin:0 0 16px;font-size:14px;color:#6b7280;text-align:center;">
+    Your email: <a href="mailto:${user.email}" style="color:#4472c4;text-decoration:none;">${user.email}</a>
+  </p>
+  <p style="margin:0;font-size:14px;color:#6b7280;text-align:center;">
+    If this was a mistake, just ignore this email and nothing will happen.
+  </p>
+</td></tr>
+</table>
+</td></tr>
+
+<tr><td align="center" style="padding-top:32px;">
+  <p style="margin:0;font-size:12px;color:#9ca3af;">
+    &copy; ${new Date().getFullYear()} <strong>atyors</strong>. At Your Service.
+  </p>
+</td></tr>
+
+</table>
+</td></tr>
+</table>
+</body></html>
     `,
   });
 }

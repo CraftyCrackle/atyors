@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Logo from '../../components/Logo';
 import { api } from '../../services/api';
@@ -15,6 +15,23 @@ function ResetForm() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [countdown, setCountdown] = useState(5);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!success) return;
+    const timer = setInterval(() => {
+      setCountdown((c) => {
+        if (c <= 1) {
+          clearInterval(timer);
+          router.push('/login');
+          return 0;
+        }
+        return c - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [success, router]);
 
   if (!token) {
     return (
@@ -60,10 +77,10 @@ function ResetForm() {
           </svg>
         </div>
         <h1 className="mt-4 text-2xl font-bold">Password updated</h1>
-        <p className="mt-2 text-sm text-gray-500">Your password has been reset. You can now sign in with your new password.</p>
+        <p className="mt-2 text-sm text-gray-500">Your password has been reset. Redirecting you to sign in{countdown > 0 ? ` in ${countdown}s` : ''}...</p>
         <Link href="/login"
           className="mt-6 flex w-full items-center justify-center rounded-xl bg-brand-600 py-3.5 font-semibold text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700 active:scale-[0.98]">
-          Sign In
+          Sign In Now
         </Link>
       </div>
     );

@@ -48,7 +48,7 @@ describe('Password Reset', () => {
       expect(emailService.send).toHaveBeenCalledWith(
         expect.objectContaining({
           to: 'teresa@example.com',
-          subject: 'Reset your atyors password',
+          subject: 'Password reset',
         })
       );
     });
