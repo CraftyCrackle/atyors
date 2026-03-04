@@ -273,7 +273,7 @@ export default function ServicerDashboard() {
         {activeJobs.length > 0 && (
           <Link href="/servicer/route" className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-accent-500 to-accent-600 py-3.5 font-semibold text-white shadow-lg shadow-accent-600/25 transition hover:from-accent-600 hover:to-accent-700 active:scale-[0.98]">
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
-            Plan Today&apos;s Route ({activeJobs.length})
+            Manage Jobs ({activeJobs.length})
           </Link>
         )}
 

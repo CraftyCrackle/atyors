@@ -99,14 +99,6 @@ function JobCard({ booking, onRate, alreadyRated }) {
   );
 }
 
-function isSameLocalDay(dateStr) {
-  const d = new Date(dateStr);
-  const now = new Date();
-  return d.getFullYear() === now.getFullYear() &&
-    d.getMonth() === now.getMonth() &&
-    d.getDate() === now.getDate();
-}
-
 export default function ServicerRoutePage() {
   const { user, loading: authLoading, init } = useAuthStore();
   const router = useRouter();
@@ -135,8 +127,7 @@ export default function ServicerRoutePage() {
   async function loadJobs() {
     try {
       const res = await api.get('/servicer/jobs/mine?limit=100');
-      const todayJobs = (res.data.bookings || []).filter((b) => isSameLocalDay(b.scheduledDate));
-      setJobs(todayJobs);
+      setJobs(res.data.bookings || []);
     } catch { }
     setLoading(false);
   }
@@ -167,18 +158,16 @@ export default function ServicerRoutePage() {
         <button onClick={() => router.push('/servicer/dashboard')} className="rounded-lg p-2 text-gray-400 hover:bg-gray-800">
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
         </button>
-        <h1 className="font-semibold text-white">Today's Jobs</h1>
-        <span className="ml-auto rounded-full bg-gray-800 px-3 py-1 text-xs text-gray-400">
-          {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-        </span>
+        <h1 className="font-semibold text-white">My Jobs</h1>
       </header>
 
       <div className="px-4 py-4 space-y-3">
         {loading ? (
-          <div className="py-16 text-center text-sm text-gray-500">Loading today's jobs...</div>
+          <div className="py-16 text-center text-sm text-gray-500">Loading jobs...</div>
         ) : jobs.length === 0 ? (
           <div className="py-16 text-center">
-            <p className="text-gray-400">No jobs scheduled for today.</p>
+            <p className="text-gray-400">No active jobs.</p>
+            <p className="mt-1 text-xs text-gray-600">Accept jobs from the dashboard to get started.</p>
             <button onClick={() => router.push('/servicer/dashboard')} className="mt-4 text-sm font-medium text-brand-400">Back to Dashboard</button>
           </div>
         ) : (
