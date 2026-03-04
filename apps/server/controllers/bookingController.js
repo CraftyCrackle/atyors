@@ -1,5 +1,6 @@
 const bookingService = require('../services/bookingService');
 const stripeService = require('../services/stripeService');
+const notificationService = require('../services/notificationService');
 const config = require('../config');
 const Booking = require('../models/Booking');
 
@@ -28,6 +29,15 @@ async function create(req, res, next) {
         }
       }
     }
+
+    const io = req.app.locals.io;
+    const primary = Array.isArray(result) ? result[0] : result;
+    notificationService.notifyServicers({
+      title: 'New job available',
+      body: 'A new job is available for pickup.',
+      bookingId: primary._id,
+      io,
+    }).catch(() => {});
 
     if (Array.isArray(result)) {
       return res.status(201).json({ success: true, data: { bookings: result, clientSecret } });

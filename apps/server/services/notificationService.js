@@ -1,4 +1,5 @@
 const Notification = require('../models/Notification');
+const User = require('../models/User');
 const pushService = require('./pushService');
 
 async function create({ userId, type, title, body, bookingId, meta }) {
@@ -9,6 +10,23 @@ async function create({ userId, type, title, body, bookingId, meta }) {
     .catch(() => {});
 
   return notification;
+}
+
+async function notifyServicers({ title, body, bookingId, io }) {
+  const servicers = await User.find({ role: { $in: ['servicer', 'admin', 'superadmin'] }, isActive: true }).select('_id').lean();
+
+  for (const svc of servicers) {
+    create({ userId: svc._id, type: 'job:available', title, body, bookingId }).catch(() => {});
+  }
+
+  if (io) {
+    for (const svc of servicers) {
+      io.of('/notifications').to(`user:${svc._id}`).emit('job:available', {
+        bookingId: bookingId?.toString(),
+        message: body,
+      });
+    }
+  }
 }
 
 async function listByUser(userId, { page = 1, limit = 30 } = {}) {
@@ -37,4 +55,4 @@ async function getUnreadCount(userId) {
   return Notification.countDocuments({ userId, readAt: null });
 }
 
-module.exports = { create, listByUser, markRead, markAllRead, getUnreadCount };
+module.exports = { create, notifyServicers, listByUser, markRead, markAllRead, getUnreadCount };

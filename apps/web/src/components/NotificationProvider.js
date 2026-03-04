@@ -85,6 +85,7 @@ export default function NotificationProvider({ children }) {
 
       socket.on('booking:accepted', (data) => pushNotif('success', data.message, data));
       socket.on('booking:status', (data) => pushNotif('info', data.message, data));
+      socket.on('job:available', (data) => pushNotif('info', data.message || 'A new job is available', data));
       socket.on('message:new', (data) => {
         const name = data.senderName || 'Someone';
         const body = data.body?.length > 60 ? data.body.slice(0, 60) + '…' : data.body;
