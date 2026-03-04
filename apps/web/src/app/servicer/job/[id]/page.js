@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '../../../../stores/authStore';
 import { api } from '../../../../services/api';
+import useGpsTracking from '../../../../hooks/useGpsTracking';
 
 const STATUS_FLOW = {
   active: { next: 'en-route', label: 'Start Route', color: 'bg-purple-600 hover:bg-purple-700' },
@@ -35,6 +36,13 @@ export default function ServicerJobPage() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
+
+  const isTracking = ['en-route', 'arrived'].includes(booking?.status);
+  useGpsTracking({
+    bookingId: id,
+    routeId: booking?.routeId,
+    active: isTracking,
+  });
 
   useEffect(() => { init(); }, [init]);
 
@@ -300,6 +308,16 @@ export default function ServicerJobPage() {
             })}
           </div>
         </div>
+
+        {isTracking && (
+          <div className="flex items-center gap-2 rounded-xl border border-green-800/50 bg-green-900/30 px-4 py-3">
+            <span className="relative flex h-3 w-3">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+              <span className="relative inline-flex h-3 w-3 rounded-full bg-green-500" />
+            </span>
+            <p className="text-sm font-medium text-green-400">Sharing live location with customer</p>
+          </div>
+        )}
 
         {/* Status advance button (active → en-route, en-route → arrived) */}
         {flow && (
