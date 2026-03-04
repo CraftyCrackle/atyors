@@ -21,6 +21,8 @@ const userSchema = new mongoose.Schema({
   profilePhotoUrl: { type: String, trim: true },
   averageRating: { type: Number, default: 0 },
   totalReviews: { type: Number, default: 0 },
+  passwordResetToken: { type: String, select: false },
+  passwordResetExpires: { type: Date, select: false },
   isActive: { type: Boolean, default: true },
   lastLoginAt: { type: Date },
 }, {
