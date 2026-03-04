@@ -49,3 +49,39 @@ exports.unregisterDevice = async (req, res, next) => {
 exports.vapidPublicKey = (req, res) => {
   res.json({ publicKey: process.env.VAPID_PUBLIC_KEY || '' });
 };
+
+exports.pushStatus = async (req, res, next) => {
+  try {
+    const NativeDevice = require('../models/NativeDevice');
+    const PushSubscription = require('../models/PushSubscription');
+    const apns = require('../services/apnsService');
+
+    const devices = await NativeDevice.find({ userId: req.user._id }).lean();
+    const webSubs = await PushSubscription.find({ userId: req.user._id }).lean();
+
+    res.json({
+      apnsConfigured: apns.isConfigured(),
+      nativeDevices: devices.map((d) => ({
+        platform: d.platform,
+        tokenPrefix: d.token?.substring(0, 12),
+        createdAt: d.createdAt,
+      })),
+      webSubscriptions: webSubs.length,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.testPush = async (req, res, next) => {
+  try {
+    await pushService.sendToUser(req.user._id, {
+      title: 'atyors Test',
+      body: 'Push notifications are working!',
+      data: { type: 'test' },
+    });
+    res.json({ ok: true, message: 'Test notification sent' });
+  } catch (err) {
+    next(err);
+  }
+};
