@@ -15,9 +15,9 @@ function getTransporter() {
         auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
       });
     } else {
-      const { SESClient } = require('@aws-sdk/client-ses');
+      const { SESClient } = require('@aws-sdk/client-sesv2');
       const ses = new SESClient({ region: process.env.SES_REGION || 'us-east-1' });
-      transporter = nodemailer.createTransport({ SES: { ses, aws: require('@aws-sdk/client-ses') } });
+      transporter = nodemailer.createTransport({ SES: { ses, aws: require('@aws-sdk/client-sesv2') } });
     }
   } else {
     transporter = {
