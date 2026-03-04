@@ -30,7 +30,7 @@ services:
       - APNS_KEY_ID=${APNS_KEY_ID:-FB84XXH3HQ}
       - APNS_TEAM_ID=${APNS_TEAM_ID:-T5TAYRAJRK}
       - APNS_BUNDLE_ID=${APNS_BUNDLE_ID:-com.atyors.app}
-      - APNS_KEY_PATH=/app/config/apns-key.p8
+      - APNS_KEY_PATH=/app/config/AuthKey_FB84XXH3HQ.p8
       - APNS_SANDBOX=${APNS_SANDBOX:-false}
       - FROM_EMAIL=${FROM_EMAIL:-noreply@atyors.com}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
@@ -42,7 +42,7 @@ services:
       - AWS_REGION=${AWS_REGION:-us-east-1}
     volumes:
       - uploads:/app/uploads
-      - ./apps/server/config/AuthKey_FB84XXH3HQ.p8:/app/config/apns-key.p8:ro
+      - ./apps/server/config:/app/config:ro
     command: ["node", "api-server.js"]
 
   web:
