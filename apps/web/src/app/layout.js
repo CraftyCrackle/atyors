@@ -2,7 +2,6 @@ import './globals.css';
 import NotificationProvider from '../components/NotificationProvider';
 import GpsBroadcaster from '../components/GpsBroadcaster';
 import InstallProvider from '../components/InstallContext';
-import InstallPrompt from '../components/InstallPrompt';
 
 export const metadata = {
   title: 'atyors — At Your Service',
@@ -40,7 +39,6 @@ export default function RootLayout({ children }) {
         <InstallProvider>
           <NotificationProvider>
             <GpsBroadcaster>{children}</GpsBroadcaster>
-            <InstallPrompt />
           </NotificationProvider>
         </InstallProvider>
       </body>
