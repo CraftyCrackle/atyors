@@ -27,6 +27,7 @@ function detectIos() {
 
 function detectStandalone() {
   if (typeof window === 'undefined') return false;
+  if (window.Capacitor?.isNativePlatform?.()) return true;
   return (
     window.matchMedia('(display-mode: standalone)').matches ||
     window.navigator.standalone === true
@@ -80,7 +81,7 @@ export default function InstallProvider({ children }) {
   return (
     <InstallCtx.Provider
       value={{
-        canInstall: !!deferredPrompt || isIos,
+        canInstall: !isStandalone && (!!deferredPrompt || isIos),
         isIos,
         isStandalone,
         triggerInstall,
