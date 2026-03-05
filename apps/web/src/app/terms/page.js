@@ -39,9 +39,9 @@ export default function TermsPage() {
               atyors.com is a platform that connects homeowners (&quot;Customers&quot;) with people who provide curbside trash barrel services (&quot;Servicers&quot;). Our services include:
             </p>
             <ul className="mt-2 list-disc space-y-1 pl-5">
-              <li><strong>Put-Out:</strong> Moving your trash barrels from your property to the curb for pickup.</li>
-              <li><strong>Bring-In:</strong> Moving your trash barrels from the curb back to your property after pickup.</li>
-              <li><strong>Both:</strong> Put-Out and Bring-In as two separate jobs.</li>
+              <li><strong>Put Out:</strong> We take your trash barrels from your property to the curb for pickup.</li>
+              <li><strong>Bring In:</strong> We bring your trash barrels back from the curb to your property after pickup.</li>
+              <li><strong>Both:</strong> Put out and bring in as two separate jobs.</li>
             </ul>
             <p className="mt-2">
               We are a technology platform. Servicers are independent workers, not employees of atyors.com.

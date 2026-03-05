@@ -18,19 +18,24 @@ async function getTypesByCategory(categorySlug) {
 
 async function seed() {
   const existing = await ServiceCategory.findOne({ slug: 'trash-recycling' });
-  if (existing) return { seeded: false, message: 'Seed data already exists' };
+  if (existing) {
+    await ServiceType.updateOne({ slug: 'put-out' }, { $set: { name: 'Put Out Only', description: 'We take your barrels to the curb' } });
+    await ServiceType.updateOne({ slug: 'bring-in' }, { $set: { name: 'Bring In Only', description: 'We bring your barrels back from the curb' } });
+    await ServiceType.updateOne({ slug: 'both' }, { $set: { name: 'Both (Put Out and Bring In)', description: 'We take your barrels to the curb and bring them back' } });
+    return { seeded: false, message: 'Names updated' };
+  }
 
   const category = await ServiceCategory.create({
     name: 'Trash & Recycling',
     slug: 'trash-recycling',
-    description: 'Curbside trash barrel put-out and bring-in services',
+    description: 'Curbside trash barrel services',
     icon: 'trash',
   });
 
   await ServiceType.insertMany([
-    { categoryId: category._id, name: 'Put-Out Only', slug: 'put-out', description: 'We put your barrels out to the curb', basePrice: 1.50, sortOrder: 1 },
-    { categoryId: category._id, name: 'Bring-In Only', slug: 'bring-in', description: 'We bring your barrels back in from the curb', basePrice: 1.50, sortOrder: 2 },
-    { categoryId: category._id, name: 'Both (Put-Out & Bring-In)', slug: 'both', description: 'We take your barrels out and bring them back in', basePrice: 3.00, recurringPrice: 25.00, isDefault: true, sortOrder: 0 },
+    { categoryId: category._id, name: 'Put Out Only', slug: 'put-out', description: 'We take your barrels to the curb', basePrice: 1.50, sortOrder: 1 },
+    { categoryId: category._id, name: 'Bring In Only', slug: 'bring-in', description: 'We bring your barrels back from the curb', basePrice: 1.50, sortOrder: 2 },
+    { categoryId: category._id, name: 'Both (Put Out and Bring In)', slug: 'both', description: 'We take your barrels to the curb and bring them back', basePrice: 3.00, recurringPrice: 25.00, isDefault: true, sortOrder: 0 },
   ]);
 
   return { seeded: true, message: 'Seed data created' };

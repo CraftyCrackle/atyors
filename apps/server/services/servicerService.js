@@ -44,7 +44,8 @@ function getEarliestAcceptDate(booking) {
 
   const pot = (booking.putOutTime || '').toLowerCase();
   const svcName = (booking.serviceTypeId?.name || booking.serviceTypeId?.slug || '').toLowerCase();
-  const isPutOut = svcName.includes('put-out') || svcName.includes('put out');
+  const slug = booking.serviceTypeId?.slug || '';
+  const isPutOut = slug === 'put-out' || svcName.includes('put out');
   const hasEveningTime = pot.includes('night before') || pot.includes('pm');
 
   if (isPutOut || hasEveningTime) {

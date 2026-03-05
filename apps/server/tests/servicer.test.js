@@ -22,13 +22,13 @@ describe('Servicer accept-date enforcement', () => {
   const localDate = new Date(2026, 2, 10);
 
   test('bring-in only job: earliest accept is the scheduled date', () => {
-    const booking = { scheduledDate: localDate, putOutTime: '', serviceTypeId: { name: 'Bring-In Only' } };
+    const booking = { scheduledDate: localDate, putOutTime: '', serviceTypeId: { name: 'Bring In Only', slug: 'bring-in' } };
     const earliest = getEarliestAcceptDate(booking);
     expect(earliest.getDate()).toBe(10);
   });
 
   test('put-out service type (no putOutTime): earliest accept is one day before', () => {
-    const booking = { scheduledDate: localDate, putOutTime: '', serviceTypeId: { name: 'Put-Out Only' } };
+    const booking = { scheduledDate: localDate, putOutTime: '', serviceTypeId: { name: 'Put Out Only', slug: 'put-out' } };
     const earliest = getEarliestAcceptDate(booking);
     expect(earliest.getDate()).toBe(9);
   });
@@ -40,13 +40,13 @@ describe('Servicer accept-date enforcement', () => {
   });
 
   test('evening put-out (5-7 PM): earliest accept is one day before', () => {
-    const booking = { scheduledDate: localDate, putOutTime: '5–7 PM (Afternoon)', serviceTypeId: { name: 'Put-Out Only' } };
+    const booking = { scheduledDate: localDate, putOutTime: '5–7 PM (Afternoon)', serviceTypeId: { name: 'Put Out Only', slug: 'put-out' } };
     const earliest = getEarliestAcceptDate(booking);
     expect(earliest.getDate()).toBe(9);
   });
 
   test('evening put-out (9-11 PM): earliest accept is one day before', () => {
-    const booking = { scheduledDate: localDate, putOutTime: '9–11 PM (Night)', serviceTypeId: { name: 'Put-Out Only' } };
+    const booking = { scheduledDate: localDate, putOutTime: '9–11 PM (Night)', serviceTypeId: { name: 'Put Out Only', slug: 'put-out' } };
     const earliest = getEarliestAcceptDate(booking);
     expect(earliest.getDate()).toBe(9);
   });

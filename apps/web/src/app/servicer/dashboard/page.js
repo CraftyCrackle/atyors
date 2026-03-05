@@ -147,6 +147,7 @@ export default function ServicerDashboard() {
   const [reviewBooking, setReviewBooking] = useState(null);
   const [reviewedMap, setReviewedMap] = useState({});
   const [unreadNotifs, setUnreadNotifs] = useState(0);
+  const [visibleCount, setVisibleCount] = useState(15);
 
   useEffect(() => { init(); }, [init]);
 
@@ -223,11 +224,18 @@ export default function ServicerDashboard() {
   const completedJobs = myJobs
     .filter((b) => b.status === 'completed')
     .sort((a, b) => new Date(b.completedAt || b.updatedAt) - new Date(a.completedAt || a.updatedAt));
-  const tabData = tab === 'available' ? available : tab === 'active' ? activeJobs : completedJobs;
+  const allTabData = tab === 'available' ? available : tab === 'active' ? activeJobs : completedJobs;
+  const tabData = allTabData.slice(0, visibleCount);
+  const hasMore = allTabData.length > visibleCount;
+
+  function switchTab(key) {
+    setTab(key);
+    setVisibleCount(15);
+  }
 
   return (
     <div className="flex min-h-[100dvh] min-h-[100vh] flex-col bg-gray-900 pb-6">
-      <header className="bg-gradient-to-b from-gray-800 to-gray-900 px-5 pb-5 pt-header-safe">
+      <header className="sticky top-0 z-10 bg-gradient-to-b from-gray-800 to-gray-900 px-5 pb-5 pt-header-safe">
         <div className="flex items-center justify-between">
           <Logo size="sm" variant="wordmark" dark />
           <div className="flex items-center gap-1.5">
@@ -297,7 +305,7 @@ export default function ServicerDashboard() {
 
       <div className="mt-4 flex gap-1.5 px-4">
         {[['available', `Available (${available.length})`], ['active', `My Jobs (${activeJobs.length})`], ['completed', `Done (${completedJobs.length})`]].map(([key, label]) => (
-          <button key={key} onClick={() => setTab(key)}
+          <button key={key} onClick={() => switchTab(key)}
             className={`flex-1 rounded-xl py-2.5 text-xs font-semibold transition ${tab === key ? 'bg-brand-600 text-white shadow-md shadow-brand-600/25' : 'bg-gray-800/60 text-gray-400 hover:text-gray-300'}`}>
             {label}
           </button>
@@ -338,7 +346,14 @@ export default function ServicerDashboard() {
             </p>
           </div>
         ) : (
-          tabData.map((b) => <JobCard key={b._id} booking={b} onAccept={handleAccept} accepting={accepting} onRate={setReviewBooking} alreadyRated={reviewedMap[b._id]} />)
+          <>
+            {tabData.map((b) => <JobCard key={b._id} booking={b} onAccept={handleAccept} accepting={accepting} onRate={setReviewBooking} alreadyRated={reviewedMap[b._id]} />)}
+            {hasMore && (
+              <button onClick={() => setVisibleCount((c) => c + 15)} className="w-full rounded-xl border border-gray-700 bg-gray-800/60 py-3 text-sm font-medium text-brand-400 transition hover:bg-gray-800 active:scale-[0.98]">
+                Show more ({allTabData.length - visibleCount} remaining)
+              </button>
+            )}
+          </>
         )}
       </div>
 

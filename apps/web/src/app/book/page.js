@@ -69,7 +69,7 @@ export default function BookPage() {
   const extraBarrelMonthly = pricing?.extraBarrelMonthly ?? 2;
 
   function isBothSvc(svc) {
-    return svc?.slug === 'both' || (svc?.name || '').toLowerCase().includes('both');
+    return svc?.slug === 'both';
   }
 
   function isBoth() {
@@ -92,13 +92,13 @@ export default function BookPage() {
   }
 
   function needsPutOut() {
-    const name = selected.serviceType?.name?.toLowerCase() || '';
-    return name.includes('put-out') || name.includes('both');
+    const slug = selected.serviceType?.slug || '';
+    return slug === 'put-out' || slug === 'both';
   }
 
   function needsBringIn() {
-    const name = selected.serviceType?.name?.toLowerCase() || '';
-    return name.includes('bring-in') || name.includes('both');
+    const slug = selected.serviceType?.slug || '';
+    return slug === 'bring-in' || slug === 'both';
   }
 
   function selectAddress(addr) {
@@ -354,11 +354,11 @@ export default function BookPage() {
                     {isBoth() ? (
                       <>
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Put-Out: {selected.barrelCount} barrel{selected.barrelCount > 1 ? 's' : ''} × ${perBarrel.toFixed(2)}</span>
+                          <span className="text-gray-600">Put out: {selected.barrelCount} barrel{selected.barrelCount > 1 ? 's' : ''} × ${perBarrel.toFixed(2)}</span>
                           <span className="font-medium">${(perBarrel * selected.barrelCount).toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Bring-In: {selected.barrelCount} barrel{selected.barrelCount > 1 ? 's' : ''} × ${perBarrel.toFixed(2)}</span>
+                          <span className="text-gray-600">Bring in: {selected.barrelCount} barrel{selected.barrelCount > 1 ? 's' : ''} × ${perBarrel.toFixed(2)}</span>
                           <span className="font-medium">${(perBarrel * selected.barrelCount).toFixed(2)}</span>
                         </div>
                         <hr className="border-brand-200" />
@@ -373,7 +373,7 @@ export default function BookPage() {
                       <span className="text-xl font-bold text-brand-600">${oneTimePrice().toFixed(2)}</span>
                     </div>
                     {isBoth() && (
-                      <p className="mt-1 text-xs text-brand-600">This will create 2 independent jobs</p>
+                      <p className="mt-1 text-xs text-brand-600">This creates 2 separate jobs</p>
                     )}
                   </div>
                 ) : (
@@ -410,7 +410,7 @@ export default function BookPage() {
                       return null;
                     })()}
                     {isBoth() && (
-                      <p className="mt-1 text-xs text-brand-600">Each week generates 2 independent jobs</p>
+                      <p className="mt-1 text-xs text-brand-600">Each week creates 2 separate jobs</p>
                     )}
                   </div>
                 )}
@@ -432,7 +432,7 @@ export default function BookPage() {
                 )}
               </div>
 
-              {/* Put-out / Bring-in times */}
+              {/* Put out / Bring in times */}
               {needsPutOut() && (
                 <div className="mt-5">
                   <label className="text-sm font-medium text-gray-700">When should barrels be placed on the curb?</label>
@@ -491,7 +491,7 @@ export default function BookPage() {
                       Your subscription includes 4 weekly services starting{' '}
                       {selected.date && new Date(selected.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}.
                       All 4 appointments are automatically scheduled and cannot be individually cancelled.
-                      {isBoth() && ' Each week creates 2 jobs — one for Put-Out and one for Bring-In.'}
+                      {isBoth() && ' Each week creates 2 jobs, one for put out and one for bring in.'}
                     </p>
                   </div>
                   {selected.date && (
@@ -515,7 +515,7 @@ export default function BookPage() {
                 </div>
               ) : isBoth() ? (
                 <div className="mt-4 rounded-xl border border-brand-200 bg-brand-50 p-3 text-sm text-brand-700">
-                  <strong>Note:</strong> This will create 2 independent jobs — one for Put-Out and one for Bring-In. Each can be accepted by any servicer separately.
+                  <strong>Note:</strong> This creates 2 separate jobs, one for put out and one for bring in. Each can be handled by any servicer.
                 </div>
               ) : null}
 

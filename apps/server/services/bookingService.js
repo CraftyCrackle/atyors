@@ -8,8 +8,13 @@ const config = require('../config');
 const DAILY_BOOKING_CAP = 400;
 const MAX_BARRELS = 50;
 
+function todayInEastern() {
+  const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' });
+  return fmt.format(new Date());
+}
+
 async function create(userId, data) {
-  const scheduledDate = new Date(data.scheduledDate);
+  const scheduledDate = new Date(data.scheduledDate + 'T12:00:00');
 
   if (scheduledDate.getDay() === 0) {
     const err = new Error('Service is not available on Sundays. Please select a day Monday through Saturday.');
@@ -18,11 +23,9 @@ async function create(userId, data) {
     throw err;
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const schedNorm = new Date(scheduledDate);
-  schedNorm.setHours(0, 0, 0, 0);
-  if (schedNorm < today) {
+  const dateStr = data.scheduledDate;
+  const todayStr = todayInEastern();
+  if (dateStr < todayStr) {
     const err = new Error('Cannot book a service in the past.');
     err.status = 400;
     err.code = 'PAST_DATE';
@@ -57,7 +60,7 @@ async function create(userId, data) {
   const paymentStatus = isSubscription ? 'paid' : 'pending_payment';
 
   const svcType = await ServiceType.findById(data.serviceTypeId);
-  const isBoth = svcType && (svcType.slug === 'both' || (svcType.name || '').toLowerCase().includes('both'));
+  const isBoth = svcType && svcType.slug === 'both';
 
   const dayStart = new Date(scheduledDate);
   dayStart.setHours(0, 0, 0, 0);
@@ -75,8 +78,8 @@ async function create(userId, data) {
 
   if (isBoth) {
     const [putOutType, bringInType] = await Promise.all([
-      ServiceType.findOne({ $or: [{ slug: 'put-out' }, { name: /put-out/i }] }),
-      ServiceType.findOne({ $or: [{ slug: 'bring-in' }, { name: /bring-in/i }] }),
+      ServiceType.findOne({ slug: 'put-out' }),
+      ServiceType.findOne({ slug: 'bring-in' }),
     ]);
 
     const putOutBooking = await Booking.create({
@@ -275,17 +278,13 @@ async function reschedule(bookingId, userId, { scheduledDate }) {
     throw err;
   }
 
-  const newDate = new Date(scheduledDate);
+  const newDate = new Date(scheduledDate + 'T12:00:00');
   if (newDate.getDay() === 0) {
     const err = new Error('Service is not available on Sundays.');
     err.status = 400;
     throw err;
   }
-  const todayR = new Date();
-  todayR.setHours(0, 0, 0, 0);
-  const newNorm = new Date(newDate);
-  newNorm.setHours(0, 0, 0, 0);
-  if (newNorm < todayR) {
+  if (scheduledDate < todayInEastern()) {
     const err = new Error('Cannot reschedule to a past date.');
     err.status = 400;
     err.code = 'PAST_DATE';

@@ -204,7 +204,7 @@ function BookingCard({ booking, onRate, alreadyRated, onCancel, cancelling }) {
           <p className="mt-2 text-xs text-gray-400">{booking.addressId.street}, {booking.addressId.city}</p>
         )}
         {booking.linkedBookingId && (
-          <p className="mt-1 text-xs text-brand-500 font-medium">Part of Put-Out &amp; Bring-In</p>
+          <p className="mt-1 text-xs text-brand-500 font-medium">Part of Put Out and Bring In</p>
         )}
         {servicer && (
           <div className="mt-1 flex items-center gap-2">
@@ -285,6 +285,8 @@ function BookingCard({ booking, onRate, alreadyRated, onCancel, cancelling }) {
   );
 }
 
+const PAGE_SIZE = 15;
+
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user);
   const { unreadBump } = useNotifications();
@@ -297,12 +299,13 @@ export default function DashboardPage() {
   const [reviewBooking, setReviewBooking] = useState(null);
   const [reviewedMap, setReviewedMap] = useState({});
   const [unreadNotifs, setUnreadNotifs] = useState(0);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   async function loadBookings() {
     try {
       const [activeRes, pastRes] = await Promise.all([
-        api.get('/bookings?limit=50'),
-        api.get('/bookings?status=completed&limit=50&sortBy=completedAt'),
+        api.get('/bookings?limit=200'),
+        api.get('/bookings?status=completed&limit=200&sortBy=completedAt'),
       ]);
       const activeBookings = (activeRes.data.bookings || []).filter((b) => b.status !== 'completed');
       const completedBookings = pastRes.data.bookings || [];
@@ -367,12 +370,19 @@ export default function DashboardPage() {
   const past = bookings
     .filter((b) => ['completed', 'cancelled', 'no-show'].includes(b.status))
     .sort((a, b) => new Date(b.completedAt || b.updatedAt) - new Date(a.completedAt || a.updatedAt));
-  const tabData = tab === 'upcoming' ? upcoming : tab === 'active' ? active : past;
+  const allTabData = tab === 'upcoming' ? upcoming : tab === 'active' ? active : past;
+  const tabData = allTabData.slice(0, visibleCount);
+  const hasMore = allTabData.length > visibleCount;
+
+  function switchTab(key) {
+    setTab(key);
+    setVisibleCount(PAGE_SIZE);
+  }
 
   return (
     <AuthGuard>
       <div className="min-h-screen-safe bg-gray-50 pb-20">
-        <header className="bg-white px-6 pb-4 pt-header-safe shadow-sm">
+        <header className="sticky top-0 z-10 bg-white px-6 pb-4 pt-header-safe shadow-sm">
           <div className="mb-3">
             <Logo size="sm" variant="wordmark" />
           </div>
@@ -435,7 +445,7 @@ export default function DashboardPage() {
 
         <div className="mt-6 flex gap-1 px-4">
           {[['upcoming', `Upcoming (${upcoming.length})`], ['active', `Active (${active.length})`], ['past', `Past (${past.length})`]].map(([key, label]) => (
-            <button key={key} onClick={() => setTab(key)} className={`flex-1 rounded-lg py-2 text-xs font-medium transition ${tab === key ? 'bg-brand-600 text-white' : 'bg-white text-gray-500'}`}>
+            <button key={key} onClick={() => switchTab(key)} className={`flex-1 rounded-lg py-2 text-xs font-medium transition ${tab === key ? 'bg-brand-600 text-white' : 'bg-white text-gray-500'}`}>
               {label}
             </button>
           ))}
@@ -452,7 +462,14 @@ export default function DashboardPage() {
               )}
             </div>
           ) : (
-            tabData.map((b) => <BookingCard key={b._id} booking={b} onRate={setReviewBooking} alreadyRated={reviewedMap[b._id]} onCancel={handleCancelClick} cancelling={cancelling} />)
+            <>
+              {tabData.map((b) => <BookingCard key={b._id} booking={b} onRate={setReviewBooking} alreadyRated={reviewedMap[b._id]} onCancel={handleCancelClick} cancelling={cancelling} />)}
+              {hasMore && (
+                <button onClick={() => setVisibleCount((c) => c + PAGE_SIZE)} className="w-full rounded-xl border border-gray-200 bg-white py-3 text-sm font-medium text-brand-600 transition hover:bg-brand-50 active:scale-[0.98]">
+                  Show more ({allTabData.length - visibleCount} remaining)
+                </button>
+              )}
+            </>
           )}
         </div>
 

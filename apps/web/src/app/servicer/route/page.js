@@ -107,6 +107,8 @@ export default function ServicerRoutePage() {
   const [loading, setLoading] = useState(true);
   const [reviewBooking, setReviewBooking] = useState(null);
   const [reviewedMap, setReviewedMap] = useState({});
+  const [visibleActive, setVisibleActive] = useState(15);
+  const [visibleDone, setVisibleDone] = useState(15);
 
   useEffect(() => { init(); }, [init]);
 
@@ -176,9 +178,14 @@ export default function ServicerRoutePage() {
               <div className="mb-1">
                 <p className="mb-2 text-xs font-semibold uppercase text-gray-500">Active ({activeJobs.length})</p>
                 <div className="space-y-3">
-                  {activeJobs.map((b) => (
+                  {activeJobs.slice(0, visibleActive).map((b) => (
                     <JobCard key={b._id} booking={b} onRate={setReviewBooking} alreadyRated={reviewedMap[b._id]} />
                   ))}
+                  {activeJobs.length > visibleActive && (
+                    <button onClick={() => setVisibleActive((c) => c + 15)} className="w-full rounded-xl border border-gray-700 bg-gray-800/60 py-3 text-sm font-medium text-brand-400 transition hover:bg-gray-800">
+                      Show more ({activeJobs.length - visibleActive} remaining)
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -187,9 +194,14 @@ export default function ServicerRoutePage() {
               <div className="mt-4">
                 <p className="mb-2 text-xs font-semibold uppercase text-gray-500">Completed ({completedJobs.length})</p>
                 <div className="space-y-3">
-                  {completedJobs.map((b) => (
+                  {completedJobs.slice(0, visibleDone).map((b) => (
                     <JobCard key={b._id} booking={b} onRate={setReviewBooking} alreadyRated={reviewedMap[b._id]} />
                   ))}
+                  {completedJobs.length > visibleDone && (
+                    <button onClick={() => setVisibleDone((c) => c + 15)} className="w-full rounded-xl border border-gray-700 bg-gray-800/60 py-3 text-sm font-medium text-brand-400 transition hover:bg-gray-800">
+                      Show more ({completedJobs.length - visibleDone} remaining)
+                    </button>
+                  )}
                 </div>
               </div>
             )}

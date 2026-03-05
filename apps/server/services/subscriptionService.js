@@ -73,8 +73,8 @@ async function generateUpcomingBookings(subscription, weeksAhead = 4) {
   let putOutType, bringInType;
   if (isBoth) {
     [putOutType, bringInType] = await Promise.all([
-      ServiceType.findOne({ $or: [{ slug: 'put-out' }, { name: /put-out/i }] }),
-      ServiceType.findOne({ $or: [{ slug: 'bring-in' }, { name: /bring-in/i }] }),
+      ServiceType.findOne({ slug: 'put-out' }),
+      ServiceType.findOne({ slug: 'bring-in' }),
     ]);
   }
 
