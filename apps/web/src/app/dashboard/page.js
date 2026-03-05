@@ -1,8 +1,32 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+
+const GRACE_MS = 2 * 60 * 1000;
+
+function useGraceCountdown(createdAt) {
+  const getRemaining = useCallback(() => {
+    if (!createdAt) return 0;
+    const elapsed = Date.now() - new Date(createdAt).getTime();
+    return Math.max(0, Math.ceil((GRACE_MS - elapsed) / 1000));
+  }, [createdAt]);
+
+  const [seconds, setSeconds] = useState(getRemaining);
+
+  useEffect(() => {
+    if (seconds <= 0) return;
+    const id = setInterval(() => {
+      const s = getRemaining();
+      setSeconds(s);
+      if (s <= 0) clearInterval(id);
+    }, 1000);
+    return () => clearInterval(id);
+  }, [seconds, getRemaining]);
+
+  return seconds;
+}
 import AuthGuard from '../../components/AuthGuard';
 import BottomNav from '../../components/BottomNav';
 import ReviewModal from '../../components/ReviewModal';
@@ -150,6 +174,10 @@ function BookingCard({ booking, onRate, alreadyRated, onCancel, cancelling }) {
   const isCompleted = booking.status === 'completed';
   const servicer = booking.assignedTo;
   const canCancel = booking.status === 'pending' && !booking.assignedTo && !booking.subscriptionId;
+  const graceSeconds = useGraceCountdown(canCancel ? booking.createdAt : null);
+  const inGrace = canCancel && graceSeconds > 0;
+  const graceMin = Math.floor(graceSeconds / 60);
+  const graceSec = graceSeconds % 60;
 
   return (
     <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
@@ -202,6 +230,14 @@ function BookingCard({ booking, onRate, alreadyRated, onCancel, cancelling }) {
       </Link>
       {canCancel && (
         <div className="mt-3">
+          {inGrace && (
+            <div className="mb-2 flex items-center justify-center gap-1.5 rounded-lg bg-amber-50 py-1.5 text-xs text-amber-700">
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z" />
+              </svg>
+              Free cancellation for <span className="font-semibold">{graceMin}:{String(graceSec).padStart(2, '0')}</span>
+            </div>
+          )}
           <button onClick={() => onCancel(booking._id)} disabled={cancelling}
             className="w-full rounded-lg border border-red-200 bg-red-50 py-2 text-xs font-medium text-red-600 transition hover:bg-red-100 active:scale-[0.98] disabled:opacity-50">
             {cancelling ? 'Cancelling...' : 'Cancel Booking'}
