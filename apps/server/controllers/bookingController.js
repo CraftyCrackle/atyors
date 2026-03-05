@@ -140,6 +140,30 @@ async function getById(req, res, next) {
 async function cancel(req, res, next) {
   try {
     const booking = await bookingService.cancel(req.params.id, req.user._id, req.body.reason);
+
+    if (booking.assignedTo) {
+      const servicerId = booking.assignedTo?._id || booking.assignedTo;
+      const svcName = booking.serviceTypeId?.name || 'Service';
+      const customerName = `${req.user.firstName} ${req.user.lastName}`;
+      notificationService.create({
+        userId: servicerId,
+        type: 'booking:status',
+        title: 'Booking Cancelled',
+        body: `${customerName} cancelled their ${svcName} booking.`,
+        bookingId: booking._id,
+        meta: { status: 'cancelled' },
+      }).catch((err) => console.error('[Notify] cancel notify error:', err.message));
+
+      const io = req.app.locals.io;
+      if (io) {
+        io.of('/notifications').to(`user:${servicerId}`).emit('booking:status', {
+          bookingId: booking._id,
+          status: 'cancelled',
+          message: `${customerName} cancelled their ${svcName} booking.`,
+        });
+      }
+    }
+
     res.json({ success: true, data: { booking } });
   } catch (err) { next(err); }
 }
