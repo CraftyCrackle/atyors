@@ -31,22 +31,45 @@ export default function NotificationProvider({ children }) {
   useEffect(() => {
     if (!userId) return;
 
-    let retryTimer;
+    let timers = [];
+    let disposed = false;
+
+    async function attemptNativePush() {
+      const { isNativeApp, registerNativePush, isPushRegistered, getPushDiagnostics } =
+        await import('../services/capacitorPush');
+
+      if (!isNativeApp()) return false;
+
+      console.log('[Push] Native platform detected, registering...');
+      await registerNativePush();
+
+      const diag = getPushDiagnostics();
+      console.log('[Push] After registration attempt:', JSON.stringify(diag));
+
+      if (!isPushRegistered() && !disposed) {
+        const delays = [3000, 8000, 15000];
+        delays.forEach((delay, i) => {
+          const t = setTimeout(async () => {
+            if (disposed || isPushRegistered()) return;
+            console.log(`[Push] Retry ${i + 1} after ${delay}ms...`);
+            try {
+              await registerNativePush();
+              console.log('[Push] Retry result:', JSON.stringify(getPushDiagnostics()));
+            } catch (e) {
+              console.error(`[Push] Retry ${i + 1} failed:`, e);
+            }
+          }, delay);
+          timers.push(t);
+        });
+      }
+
+      return true;
+    }
 
     (async () => {
       try {
-        const { isNativeApp, registerNativePush, isPushRegistered } = await import('../services/capacitorPush');
-        if (isNativeApp()) {
-          await registerNativePush();
-
-          if (!isPushRegistered()) {
-            retryTimer = setTimeout(async () => {
-              console.log('[Push] Retrying registration after delay...');
-              try { await registerNativePush(); } catch (e) { console.error('[Push] Retry failed:', e); }
-            }, 5000);
-          }
-          return;
-        }
+        const isNative = await attemptNativePush();
+        if (isNative) return;
       } catch (err) {
         console.error('[Push] Native push setup error:', err);
       }
@@ -78,7 +101,10 @@ export default function NotificationProvider({ children }) {
       });
     })();
 
-    return () => { if (retryTimer) clearTimeout(retryTimer); };
+    return () => {
+      disposed = true;
+      timers.forEach(clearTimeout);
+    };
   }, [userId]);
 
   useEffect(() => {

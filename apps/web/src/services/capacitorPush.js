@@ -1,20 +1,44 @@
-import { Capacitor } from '@capacitor/core';
+'use client';
 
-let PushNotificationsPlugin = null;
-
-export function isNativeApp() {
-  try {
-    return Capacitor.isNativePlatform();
-  } catch {
-    return false;
-  }
-}
+let Capacitor = null;
+let PushNotifications = null;
+let initPromise = null;
 
 let listenersAttached = false;
 let registered = false;
 let lastError = null;
 let permissionState = null;
 let tokenValue = null;
+
+async function initCapacitor() {
+  if (initPromise) return initPromise;
+  initPromise = (async () => {
+    try {
+      const core = await import('@capacitor/core');
+      Capacitor = core.Capacitor;
+    } catch (err) {
+      lastError = `Capacitor core load failed: ${err.message}`;
+    }
+    try {
+      const push = await import('@capacitor/push-notifications');
+      PushNotifications = push.PushNotifications;
+    } catch (err) {
+      lastError = `Push plugin load failed: ${err.message}`;
+    }
+  })();
+  return initPromise;
+}
+
+export function isNativeApp() {
+  try {
+    if (typeof window !== 'undefined' && window.Capacitor?.isNativePlatform) {
+      return window.Capacitor.isNativePlatform();
+    }
+    return Capacitor?.isNativePlatform?.() ?? false;
+  } catch {
+    return false;
+  }
+}
 
 export function isPushRegistered() {
   return registered;
@@ -27,37 +51,35 @@ export function getPushDiagnostics() {
     permissionState,
     lastError,
     hasToken: !!tokenValue,
-    pluginLoaded: !!PushNotificationsPlugin,
+    pluginLoaded: !!PushNotifications,
+    capacitorLoaded: !!Capacitor,
   };
 }
 
-async function loadPlugin() {
-  if (PushNotificationsPlugin) return PushNotificationsPlugin;
-  try {
-    const mod = await import('@capacitor/push-notifications');
-    PushNotificationsPlugin = mod.PushNotifications;
-    console.log('[Push] Plugin loaded successfully');
-    return PushNotificationsPlugin;
-  } catch (err) {
-    console.error('[Push] Failed to load PushNotifications plugin:', err);
-    lastError = `Plugin load failed: ${err.message}`;
-    return null;
-  }
+function withTimeout(promise, ms, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
+    ),
+  ]);
 }
 
 export async function registerNativePush() {
+  await initCapacitor();
+
   if (!isNativeApp()) {
     console.log('[Push] Not a native app, skipping');
     return;
   }
 
-  console.log('[Push] Starting native push registration...');
-
-  const PushNotifications = await loadPlugin();
   if (!PushNotifications) {
-    lastError = 'Plugin not available';
+    lastError = lastError || 'PushNotifications plugin not available';
+    console.error('[Push]', lastError);
     return;
   }
+
+  console.log('[Push] Starting native push registration...');
 
   if (!listenersAttached) {
     listenersAttached = true;
@@ -69,25 +91,36 @@ export async function registerNativePush() {
     }
 
     await PushNotifications.addListener('registration', async (token) => {
-      console.log('[Push] APNs token received (' + token.value.substring(0, 16) + '...)');
+      console.log('[Push] APNs token received:', token.value.substring(0, 20) + '...');
       tokenValue = token.value;
       try {
-        const { api } = await import('./api');
-        await api.post('/push/device/register', {
-          token: token.value,
-          platform: Capacitor.getPlatform(),
+        const accessToken = localStorage.getItem('accessToken');
+        const platform = Capacitor.getPlatform();
+        const res = await fetch('/api/v1/push/device/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ token: token.value, platform }),
         });
-        registered = true;
-        lastError = null;
-        console.log('[Push] Device registered with server successfully');
+        const data = await res.json();
+        if (res.ok) {
+          registered = true;
+          lastError = null;
+          console.log('[Push] Device registered with server OK');
+        } else {
+          lastError = `Server error: ${data?.error || res.status}`;
+          console.error('[Push] Server registration failed:', data);
+        }
       } catch (err) {
         lastError = `Server register failed: ${err.message}`;
-        console.error('[Push] Failed to register device token with server:', err);
+        console.error('[Push] Failed to register device token:', err);
       }
     });
 
     await PushNotifications.addListener('registrationError', (err) => {
-      lastError = `APNs error: ${JSON.stringify(err)}`;
+      lastError = `APNs registration error: ${JSON.stringify(err)}`;
       console.error('[Push] APNs registration error:', JSON.stringify(err));
     });
 
@@ -104,18 +137,29 @@ export async function registerNativePush() {
         window.location.href = `/tracking/${data.bookingId}`;
       }
     });
+
+    console.log('[Push] Listeners attached');
   }
 
   try {
-    const checkResult = await PushNotifications.checkPermissions();
-    console.log('[Push] Current permission:', checkResult.receive);
+    const checkResult = await withTimeout(
+      PushNotifications.checkPermissions(),
+      5000,
+      'checkPermissions'
+    );
     permissionState = checkResult.receive;
+    console.log('[Push] Current permission:', checkResult.receive);
   } catch (err) {
     console.warn('[Push] checkPermissions failed:', err.message);
+    lastError = `checkPermissions: ${err.message}`;
   }
 
   try {
-    const permResult = await PushNotifications.requestPermissions();
+    const permResult = await withTimeout(
+      PushNotifications.requestPermissions(),
+      10000,
+      'requestPermissions'
+    );
     permissionState = permResult.receive;
     console.log('[Push] Permission result:', permResult.receive);
     if (permResult.receive !== 'granted') {
@@ -124,17 +168,17 @@ export async function registerNativePush() {
       return;
     }
   } catch (err) {
-    lastError = `requestPermissions failed: ${err.message}`;
+    lastError = `requestPermissions: ${err.message}`;
     console.error('[Push] requestPermissions failed:', err);
     return;
   }
 
   try {
-    console.log('[Push] Calling PushNotifications.register()...');
-    await PushNotifications.register();
-    console.log('[Push] register() called successfully');
+    console.log('[Push] Calling register()...');
+    await withTimeout(PushNotifications.register(), 10000, 'register');
+    console.log('[Push] register() completed');
   } catch (err) {
-    lastError = `register() failed: ${err.message}`;
+    lastError = `register: ${err.message}`;
     console.error('[Push] register() failed:', err);
   }
 }
