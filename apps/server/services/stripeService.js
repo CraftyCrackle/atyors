@@ -156,18 +156,35 @@ async function hasDefaultPaymentMethod(user) {
   const customerId = await ensureCustomer(user);
   const stripe = getStripe();
   const customer = await stripe.customers.retrieve(customerId);
-  return !!customer.invoice_settings?.default_payment_method;
+  if (customer.invoice_settings?.default_payment_method) return true;
+
+  const methods = await stripe.paymentMethods.list({ customer: customerId, type: 'card', limit: 1 });
+  if (methods.data.length > 0) {
+    await stripe.customers.update(customerId, {
+      invoice_settings: { default_payment_method: methods.data[0].id },
+    });
+    return true;
+  }
+  return false;
 }
 
 async function chargeOffSession(user, amount, bookingId) {
   const customerId = await ensureCustomer(user);
   const stripe = getStripe();
   const customer = await stripe.customers.retrieve(customerId);
-  const defaultPm = customer.invoice_settings?.default_payment_method;
+  let defaultPm = customer.invoice_settings?.default_payment_method;
   if (!defaultPm) {
-    const err = new Error('No payment method on file');
-    err.code = 'NO_PAYMENT_METHOD';
-    throw err;
+    const methods = await stripe.paymentMethods.list({ customer: customerId, type: 'card', limit: 1 });
+    if (methods.data.length > 0) {
+      defaultPm = methods.data[0].id;
+      await stripe.customers.update(customerId, {
+        invoice_settings: { default_payment_method: defaultPm },
+      });
+    } else {
+      const err = new Error('No payment method on file');
+      err.code = 'NO_PAYMENT_METHOD';
+      throw err;
+    }
   }
   return stripe.paymentIntents.create({
     amount: Math.round(amount * 100),
