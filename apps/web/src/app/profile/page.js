@@ -640,6 +640,7 @@ function AddCardModal({ clientSecret, onSuccess, onClose }) {
   const [cardReady, setCardReady] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -658,7 +659,13 @@ function AddCardModal({ clientSecret, onSuccess, onClose }) {
     if (!elements) return;
     const card = elements.create('card', {
       style: {
-        base: { fontSize: '16px', color: '#1f2937', '::placeholder': { color: '#9ca3af' } },
+        base: {
+          fontSize: '18px',
+          color: '#1f2937',
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+          '::placeholder': { color: '#9ca3af' },
+          lineHeight: '28px',
+        },
         invalid: { color: '#ef4444' },
       },
     });
@@ -681,38 +688,89 @@ function AddCardModal({ clientSecret, onSuccess, onClose }) {
       setError(err.message);
       setSaving(false);
     } else {
-      onSuccess();
+      setSuccess(true);
+      setTimeout(() => onSuccess(), 1200);
     }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40" onClick={onClose}>
-      <div
-        className="w-full max-w-md rounded-t-2xl sm:rounded-2xl bg-white p-5 pb-8 shadow-xl animate-slide-up"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Add Card</h3>
-          <button onClick={onClose} className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+    <div className="fixed inset-0 z-[60] flex flex-col bg-white">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 pt-[max(env(safe-area-inset-top),12px)] pb-3 border-b border-gray-100">
+        <button onClick={onClose} className="text-brand-600 font-medium text-base py-2 pr-4">Cancel</button>
+        <h3 className="text-lg font-bold text-gray-900">Add Payment Card</h3>
+        <div className="w-16" />
+      </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="rounded-lg border border-gray-200 p-3">
-            <div id="card-element" className="min-h-[24px]" />
+      <div className="flex-1 overflow-y-auto px-5 pt-6 pb-10">
+        {success ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <p className="text-xl font-semibold text-gray-900">Card saved</p>
+            <p className="mt-1 text-sm text-gray-500">Your payment method has been added.</p>
           </div>
-          {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
-          <button
-            type="submit"
-            disabled={saving || !cardReady}
-            className="mt-4 w-full rounded-lg bg-brand-600 py-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50 transition"
-          >
-            {saving ? 'Saving...' : 'Save Card'}
-          </button>
-        </form>
+        ) : (
+          <>
+            {/* Card illustration */}
+            <div className="mx-auto mb-6 w-56 h-36 rounded-2xl bg-gradient-to-br from-brand-600 to-brand-800 p-5 shadow-lg">
+              <div className="flex justify-between items-start">
+                <div className="w-10 h-7 rounded bg-yellow-300/80" />
+                <svg className="w-6 h-6 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.288 15.038a5.25 5.25 0 017.424 0M5.106 11.856c3.807-3.808 9.98-3.808 13.788 0" />
+                </svg>
+              </div>
+              <p className="mt-4 text-white/70 text-sm tracking-[0.25em] font-mono">•••• •••• •••• ••••</p>
+              <div className="mt-3 flex justify-between">
+                <p className="text-white/50 text-xs">YOUR NAME</p>
+                <p className="text-white/50 text-xs">MM/YY</p>
+              </div>
+            </div>
+
+            <p className="text-center text-sm text-gray-500 mb-6">
+              Enter your card details below. Your information is encrypted and secure.
+            </p>
+
+            <form onSubmit={handleSubmit}>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Card information</label>
+              <div className="rounded-xl border-2 border-gray-200 focus-within:border-brand-500 bg-gray-50 px-4 py-4 transition-colors">
+                <div id="card-element" className="min-h-[28px]" />
+              </div>
+
+              {error && (
+                <div className="mt-3 flex items-start gap-2 rounded-lg bg-red-50 p-3">
+                  <svg className="w-5 h-5 text-red-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                  </svg>
+                  <p className="text-sm text-red-700">{error}</p>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={saving || !cardReady}
+                className="mt-6 w-full rounded-xl bg-brand-600 py-4 text-base font-semibold text-white hover:bg-brand-700 active:bg-brand-800 disabled:opacity-40 transition"
+              >
+                {saving ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Saving...
+                  </span>
+                ) : 'Save Card'}
+              </button>
+            </form>
+
+            <div className="mt-6 flex items-center justify-center gap-1.5 text-gray-400">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+              </svg>
+              <span className="text-xs">Secured by Stripe</span>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
