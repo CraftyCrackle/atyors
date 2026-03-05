@@ -13,18 +13,20 @@ async function create({ userId, type, title, body, bookingId, meta }) {
   return notification;
 }
 
-async function notifyServicers({ title, body, bookingId, io }) {
+async function notifyServicers({ title, body, bookingId, io, type, socketEvent }) {
+  const notifType = type || 'job:available';
+  const event = socketEvent || 'job:available';
   const servicers = await User.find({ role: { $in: ['servicer', 'admin', 'superadmin'] }, isActive: true }).select('_id').lean();
 
   for (const svc of servicers) {
-    create({ userId: svc._id, type: 'job:available', title, body, bookingId }).catch((err) => {
+    create({ userId: svc._id, type: notifType, title, body, bookingId }).catch((err) => {
       console.error(`[Notify] Failed to notify servicer ${svc._id}:`, err.message);
     });
   }
 
   if (io) {
     for (const svc of servicers) {
-      io.of('/notifications').to(`user:${svc._id}`).emit('job:available', {
+      io.of('/notifications').to(`user:${svc._id}`).emit(event, {
         bookingId: bookingId?.toString(),
         message: body,
       });
