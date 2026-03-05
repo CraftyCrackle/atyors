@@ -62,7 +62,7 @@ async function checkZone(lat, lng) {
 }
 
 async function update(userId, addressId, data) {
-  const allowed = ['street', 'unit', 'city', 'state', 'zip', 'formatted', 'barrelCount', 'barrelLocation', 'barrelPhotoUrl', 'barrelNotes', 'barrelPlacementInstructions', 'barrelReturnInstructions', 'trashDay', 'isDefault'];
+  const allowed = ['street', 'unit', 'city', 'state', 'zip', 'formatted', 'barrelCount', 'barrelLocation', 'barrelPhotoUrl', 'barrelNotes', 'barrelPlacementInstructions', 'barrelReturnInstructions', 'trashDay', 'isDefault', 'photos'];
   const updates = {};
   for (const key of allowed) {
     if (data[key] !== undefined) updates[key] = data[key];
@@ -77,4 +77,27 @@ async function update(userId, addressId, data) {
   return address;
 }
 
-module.exports = { create, list, remove, update, checkZone };
+async function addPhotos(userId, addressId, urls) {
+  const address = await Address.findOne({ _id: addressId, userId });
+  if (!address) { const err = new Error('Address not found'); err.status = 404; throw err; }
+  const MAX_PHOTOS = 10;
+  const remaining = MAX_PHOTOS - (address.photos?.length || 0);
+  if (remaining <= 0) { const err = new Error('Maximum of 10 photos reached'); err.status = 400; throw err; }
+  address.photos.push(...urls.slice(0, remaining));
+  await address.save();
+  return address;
+}
+
+async function removePhoto(userId, addressId, photoIdx) {
+  const idx = parseInt(photoIdx);
+  const address = await Address.findOne({ _id: addressId, userId });
+  if (!address) { const err = new Error('Address not found'); err.status = 404; throw err; }
+  if (isNaN(idx) || idx < 0 || idx >= (address.photos?.length || 0)) {
+    const err = new Error('Photo not found'); err.status = 404; throw err;
+  }
+  address.photos.splice(idx, 1);
+  await address.save();
+  return address;
+}
+
+module.exports = { create, list, remove, update, checkZone, addPhotos, removePhoto };

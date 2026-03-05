@@ -15,6 +15,7 @@ const addressSchema = new mongoose.Schema({
   barrelCount: { type: Number, default: 1, min: 1 },
   barrelLocation: { type: String, trim: true },
   barrelPhotoUrl: { type: String, trim: true },
+  photos: [{ type: String, trim: true }],
   barrelNotes: { type: String, trim: true },
   barrelPlacementInstructions: { type: String, trim: true },
   barrelReturnInstructions: { type: String, trim: true },

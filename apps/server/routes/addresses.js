@@ -28,6 +28,8 @@ router.get('/', authenticate, addressController.list);
 router.patch('/:id', authenticate, addressController.update);
 router.delete('/:id', authenticate, addressController.remove);
 router.post('/:id/photo', authenticate, upload.single('photo'), validateUpload, addressController.uploadPhoto);
+router.post('/:id/photos', authenticate, upload.array('photos', 5), addressController.uploadPhotos);
+router.delete('/:id/photos/:photoIdx', authenticate, addressController.removePhoto);
 router.get('/check-zone', addressController.checkZone);
 
 module.exports = router;

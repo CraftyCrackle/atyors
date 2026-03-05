@@ -227,6 +227,33 @@ function AddressCard({ address, dark, onUpdated, onDelete }) {
     e.target.value = '';
   }
 
+  async function handleAddPhotos(e) {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setUploadingBarrelPhoto(true);
+    try {
+      const fd = new FormData();
+      files.forEach((f) => fd.append('photos', f));
+      const token = localStorage.getItem('accessToken');
+      const res = await fetch(`/api/v1/addresses/${address._id}/photos`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      const data = await res.json();
+      if (data.success) onUpdated(data.data.address);
+    } catch { }
+    setUploadingBarrelPhoto(false);
+    e.target.value = '';
+  }
+
+  async function handleRemovePhoto(idx) {
+    try {
+      const res = await api.delete(`/addresses/${address._id}/photos/${idx}`);
+      if (res.data) onUpdated(res.data.address);
+    } catch { }
+  }
+
   const update = (f) => (e) => setForm({ ...form, [f]: e.target.value });
   const inputCls = dark
     ? 'w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white placeholder-gray-400 focus:border-brand-500 focus:outline-none'
@@ -287,24 +314,40 @@ function AddressCard({ address, dark, onUpdated, onDelete }) {
         </div>
 
         <div>
-          <label className="text-xs text-gray-500">Barrel photo</label>
-          {address.barrelPhotoUrl && (
-            <div className="mt-1 mb-2 relative">
-              <img src={address.barrelPhotoUrl} alt="Barrel location" className="h-32 w-full rounded-lg object-cover" />
+          <label className="text-xs text-gray-500">Photos to help your servicer (up to 10)</label>
+          <p className="text-[11px] text-gray-400 mt-0.5">Show barrel location, curb spot, driveway, or anything helpful.</p>
+          {(address.barrelPhotoUrl || address.photos?.length > 0) && (
+            <div className="mt-2 grid grid-cols-3 gap-2">
+              {address.barrelPhotoUrl && (
+                <div className="relative">
+                  <img src={address.barrelPhotoUrl} alt="Main barrel photo" className="h-24 w-full rounded-lg object-cover" />
+                  <span className="absolute bottom-1 left-1 rounded bg-black/60 px-1.5 py-0.5 text-[9px] font-medium text-white">Main</span>
+                </div>
+              )}
+              {address.photos?.map((url, i) => (
+                <div key={i} className="relative">
+                  <img src={url} alt={`Photo ${i + 1}`} className="h-24 w-full rounded-lg object-cover" />
+                  <button type="button" onClick={() => handleRemovePhoto(i)} className="absolute top-1 right-1 rounded-full bg-black/50 p-1 text-white hover:bg-red-600">
+                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                </div>
+              ))}
             </div>
           )}
-          <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-gray-300 px-3 py-2.5 text-sm text-gray-500 hover:border-brand-400 hover:text-brand-600 transition">
-            {uploadingBarrelPhoto ? (
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
-            ) : (
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            )}
-            {address.barrelPhotoUrl ? 'Change photo' : 'Upload barrel photo'}
-            <input type="file" accept="image/*" onChange={handleBarrelPhoto} className="hidden" disabled={uploadingBarrelPhoto} />
-          </label>
+          <div className="mt-2 flex gap-2">
+            <label className="flex-1 flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-gray-300 px-3 py-2.5 text-sm text-gray-500 hover:border-brand-400 hover:text-brand-600 transition">
+              {uploadingBarrelPhoto ? (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
+              ) : (
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              )}
+              {(address.photos?.length || 0) + (address.barrelPhotoUrl ? 1 : 0) > 0 ? 'Add more photos' : 'Add photos'}
+              <input type="file" accept="image/*" multiple onChange={handleAddPhotos} className="hidden" disabled={uploadingBarrelPhoto} />
+            </label>
+          </div>
         </div>
 
         <button onClick={handleSave} disabled={saving} className="w-full rounded-lg bg-brand-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
@@ -326,12 +369,12 @@ function AddressCard({ address, dark, onUpdated, onDelete }) {
           <button onClick={onDelete} className="text-xs text-red-500 hover:text-red-700">Remove</button>
         </div>
       </div>
-      {address.barrelPhotoUrl && (
-        <div className="mt-2">
-          <img src={address.barrelPhotoUrl} alt="Barrel location" className="h-24 w-full rounded-lg object-cover" />
+      {(address.barrelPhotoUrl || address.photos?.length > 0) ? (
+        <div className="mt-2 flex gap-1.5 overflow-x-auto">
+          {address.barrelPhotoUrl && <img src={address.barrelPhotoUrl} alt="Barrel" className="h-16 w-20 shrink-0 rounded-lg object-cover" />}
+          {address.photos?.map((url, i) => <img key={i} src={url} alt={`Photo ${i + 1}`} className="h-16 w-20 shrink-0 rounded-lg object-cover" />)}
         </div>
-      )}
-      {!address.barrelPhotoUrl && (
+      ) : (
         <label className="mt-2 flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-gray-200 px-3 py-2 text-xs text-gray-400 hover:border-brand-300 hover:text-brand-500 transition">
           {uploadingBarrelPhoto ? (
             <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
@@ -341,8 +384,8 @@ function AddressCard({ address, dark, onUpdated, onDelete }) {
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
           )}
-          Add barrel photo to help servicers
-          <input type="file" accept="image/*" onChange={handleBarrelPhoto} className="hidden" disabled={uploadingBarrelPhoto} />
+          Add photos to help servicers
+          <input type="file" accept="image/*" multiple onChange={handleAddPhotos} className="hidden" disabled={uploadingBarrelPhoto} />
         </label>
       )}
       {(address.barrelCount > 0 || address.barrelLocation || address.trashDay) && (

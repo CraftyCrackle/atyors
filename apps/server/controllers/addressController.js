@@ -46,4 +46,20 @@ async function uploadPhoto(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { create, list, remove, update, uploadPhoto, checkZone };
+async function uploadPhotos(req, res, next) {
+  try {
+    if (!req.files || req.files.length === 0) return res.status(400).json({ success: false, error: { code: 'NO_FILES', message: 'No photos uploaded' } });
+    const urls = req.files.map((f) => `/uploads/${f.filename}`);
+    const address = await addressService.addPhotos(req.user._id, req.params.id, urls);
+    res.json({ success: true, data: { address, photos: address.photos } });
+  } catch (err) { next(err); }
+}
+
+async function removePhoto(req, res, next) {
+  try {
+    const address = await addressService.removePhoto(req.user._id, req.params.id, req.params.photoIdx);
+    res.json({ success: true, data: { address } });
+  } catch (err) { next(err); }
+}
+
+module.exports = { create, list, remove, update, uploadPhoto, uploadPhotos, removePhoto, checkZone };

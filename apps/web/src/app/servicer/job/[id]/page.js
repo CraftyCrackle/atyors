@@ -277,10 +277,17 @@ export default function ServicerJobPage() {
             {addr.barrelNotes && (
               <p className="mt-2 text-xs text-gray-400 italic">Note: &ldquo;{addr.barrelNotes}&rdquo;</p>
             )}
-            {addr.barrelPhotoUrl && (
+            {(addr.barrelPhotoUrl || addr.photos?.length > 0) && (
               <div className="mt-3">
-                <p className="mb-1 text-xs font-medium text-gray-500">Customer Photo</p>
-                <img src={addr.barrelPhotoUrl} alt="Barrel location" className="w-full rounded-lg object-cover" />
+                <p className="mb-1 text-xs font-medium text-gray-500">Customer Photos</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {addr.barrelPhotoUrl && (
+                    <img src={addr.barrelPhotoUrl} alt="Barrel location" className="w-full rounded-lg object-cover" />
+                  )}
+                  {addr.photos?.map((url, i) => (
+                    <img key={i} src={url} alt={`Photo ${i + 1}`} className="w-full rounded-lg object-cover" />
+                  ))}
+                </div>
               </div>
             )}
           </div>

@@ -215,8 +215,11 @@ export default function BookPage() {
                         {addr.trashDay && <span>Trash day: {addr.trashDay}</span>}
                         {addr.barrelLocation && <span>Location: {addr.barrelLocation}</span>}
                       </div>
-                      {addr.barrelPhotoUrl && (
-                        <img src={addr.barrelPhotoUrl} alt="Barrel" className="mt-2 h-20 w-full rounded-lg object-cover" />
+                      {(addr.barrelPhotoUrl || addr.photos?.length > 0) && (
+                        <div className="mt-2 flex gap-1.5 overflow-x-auto">
+                          {addr.barrelPhotoUrl && <img src={addr.barrelPhotoUrl} alt="Barrel" className="h-16 w-20 shrink-0 rounded-lg object-cover" />}
+                          {addr.photos?.map((url, i) => <img key={i} src={url} alt={`Photo ${i + 1}`} className="h-16 w-20 shrink-0 rounded-lg object-cover" />)}
+                        </div>
                       )}
                     </button>
                   ))}
@@ -263,8 +266,11 @@ export default function BookPage() {
                     </svg>
                     <p className="text-sm text-gray-600">{selectedAddr.street}{selectedAddr.unit ? `, ${selectedAddr.unit}` : ''}, {selectedAddr.city}</p>
                   </div>
-                  {selectedAddr.barrelPhotoUrl && (
-                    <img src={selectedAddr.barrelPhotoUrl} alt="Barrel location" className="mt-2 h-24 w-full rounded-lg object-cover" />
+                  {(selectedAddr.barrelPhotoUrl || selectedAddr.photos?.length > 0) && (
+                    <div className="mt-2 flex gap-1.5 overflow-x-auto">
+                      {selectedAddr.barrelPhotoUrl && <img src={selectedAddr.barrelPhotoUrl} alt="Barrel" className="h-16 w-20 shrink-0 rounded-lg object-cover" />}
+                      {selectedAddr.photos?.map((url, i) => <img key={i} src={url} alt={`Photo ${i + 1}`} className="h-16 w-20 shrink-0 rounded-lg object-cover" />)}
+                    </div>
                   )}
                   {(selectedAddr.barrelPlacementInstructions || selectedAddr.barrelReturnInstructions || selectedAddr.barrelLocation) && (
                     <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-400">
@@ -517,10 +523,17 @@ export default function BookPage() {
                   <span className="text-sm text-gray-500">Date</span>
                   <span className="text-sm font-medium">{new Date(selected.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
                 </div>
-                {selectedAddr?.barrelPhotoUrl && (
+                {(selectedAddr?.barrelPhotoUrl || selectedAddr?.photos?.length > 0) && (
                   <div>
-                    <p className="text-xs text-gray-400 mb-1">Barrel photo (visible to servicer)</p>
-                    <img src={selectedAddr.barrelPhotoUrl} alt="Barrel" className="h-24 w-full rounded-lg object-cover" />
+                    <p className="text-xs text-gray-400 mb-1">Photos (visible to servicer)</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {selectedAddr.barrelPhotoUrl && (
+                        <img src={selectedAddr.barrelPhotoUrl} alt="Barrel" className="h-20 w-full rounded-lg object-cover" />
+                      )}
+                      {selectedAddr.photos?.map((url, i) => (
+                        <img key={i} src={url} alt={`Photo ${i + 1}`} className="h-20 w-full rounded-lg object-cover" />
+                      ))}
+                    </div>
                   </div>
                 )}
                 <hr className="border-gray-200" />
@@ -540,6 +553,15 @@ export default function BookPage() {
                   <span>Your card on file will be charged <strong>${currentPrice().toFixed(2)}</strong> after service completion.</span>
                 </div>
               )}
+
+              <div className="mt-4 flex gap-2.5 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+                <svg className="h-5 w-5 shrink-0 text-amber-500 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                </svg>
+                <p className="text-xs text-amber-800 leading-relaxed">
+                  <strong>Heads up:</strong> Please make sure your instructions are accurate. If things look different when the servicer arrives, they may use their best judgement or only handle the barrels you requested.
+                </p>
+              </div>
 
               {bookingConfirmed ? (
                 <div className="mt-6 flex flex-col items-center py-8 text-center">
@@ -783,17 +805,24 @@ function AddAddressForm({ onAdded }) {
     barrelCount: 1, barrelLocation: '', barrelNotes: '',
     barrelPlacementInstructions: '', barrelReturnInstructions: '', trashDay: '',
   });
-  const [photo, setPhoto] = useState(null);
-  const [photoPreview, setPhotoPreview] = useState(null);
+  const [photos, setPhotos] = useState([]);
+  const [photoPreviews, setPhotoPreviews] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [show, setShow] = useState(false);
   const update = (f) => (e) => setForm({ ...form, [f]: e.target.value });
 
-  function handlePhoto(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setPhoto(file);
-    setPhotoPreview(URL.createObjectURL(file));
+  function handlePhotos(e) {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    const allowed = 10 - photos.length;
+    const toAdd = files.slice(0, allowed);
+    setPhotos((prev) => [...prev, ...toAdd]);
+    setPhotoPreviews((prev) => [...prev, ...toAdd.map((f) => URL.createObjectURL(f))]);
+  }
+
+  function removePhoto(idx) {
+    setPhotos((prev) => prev.filter((_, i) => i !== idx));
+    setPhotoPreviews((prev) => prev.filter((_, i) => i !== idx));
   }
 
   async function handleSubmit(e) {
@@ -809,17 +838,25 @@ function AddAddressForm({ onAdded }) {
       });
       const addr = res.data.address;
 
-      if (photo) {
-        const fd = new FormData();
-        fd.append('photo', photo);
+      if (photos.length > 0) {
         const token = localStorage.getItem('accessToken');
+        const fd = new FormData();
+        fd.append('photo', photos[0]);
         const photoRes = await fetch(`/api/v1/addresses/${addr._id}/photo`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-          body: fd,
+          method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd,
         });
         const photoData = await photoRes.json();
         if (photoData.success) addr.barrelPhotoUrl = photoData.data.photoUrl;
+
+        if (photos.length > 1) {
+          const fd2 = new FormData();
+          photos.slice(1).forEach((f) => fd2.append('photos', f));
+          const multiRes = await fetch(`/api/v1/addresses/${addr._id}/photos`, {
+            method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd2,
+          });
+          const multiData = await multiRes.json();
+          if (multiData.success) addr.photos = multiData.data.photos;
+        }
       }
 
       onAdded(addr);
@@ -873,21 +910,29 @@ function AddAddressForm({ onAdded }) {
       <textarea placeholder="Any extra notes for the servicer (optional)" value={form.barrelNotes} onChange={update('barrelNotes')} rows={2} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none resize-none" />
 
       <div>
-        <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-gray-300 px-3 py-3 text-sm text-gray-500 hover:border-brand-400 hover:text-brand-600 transition">
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          {photo ? photo.name : 'Take or upload a photo of your barrels'}
-          <input type="file" accept="image/*" capture="environment" onChange={handlePhoto} className="hidden" />
-        </label>
-        {photoPreview && (
-          <div className="mt-2 relative">
-            <img src={photoPreview} alt="Barrel preview" className="h-32 w-full rounded-lg object-cover" />
-            <button type="button" onClick={() => { setPhoto(null); setPhotoPreview(null); }} className="absolute top-1 right-1 rounded-full bg-black/50 p-1 text-white">
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
+        <label className="text-xs text-gray-500">Photos to help your servicer (up to 10)</label>
+        <p className="text-[11px] text-gray-400 mt-0.5">Show where your barrels are, the curb spot, driveway, or anything that helps.</p>
+        {photoPreviews.length > 0 && (
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            {photoPreviews.map((url, i) => (
+              <div key={i} className="relative">
+                <img src={url} alt={`Photo ${i + 1}`} className="h-24 w-full rounded-lg object-cover" />
+                <button type="button" onClick={() => removePhoto(i)} className="absolute top-1 right-1 rounded-full bg-black/50 p-1 text-white">
+                  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+            ))}
           </div>
+        )}
+        {photos.length < 10 && (
+          <label className="mt-2 flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-gray-300 px-3 py-3 text-sm text-gray-500 hover:border-brand-400 hover:text-brand-600 transition">
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            {photos.length === 0 ? 'Add photos of your barrels and location' : `Add more photos (${photos.length}/10)`}
+            <input type="file" accept="image/*" multiple onChange={handlePhotos} className="hidden" />
+          </label>
         )}
       </div>
 
