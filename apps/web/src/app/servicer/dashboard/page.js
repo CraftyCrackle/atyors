@@ -133,23 +133,47 @@ function JobCard({ booking, onAccept, accepting, onRate, alreadyRated }) {
   );
 }
 
+function isDueToday(booking) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const scheduled = new Date(booking.scheduledDate);
+  if (booking.putOutTime === 'Night before') {
+    const evening = new Date(scheduled);
+    evening.setDate(evening.getDate() - 1);
+    evening.setHours(0, 0, 0, 0);
+    return today.getTime() === evening.getTime() || (scheduled >= today && scheduled < tomorrow);
+  }
+  return scheduled >= today && scheduled < tomorrow;
+}
+
 function CityGroup({ city, jobs, onAccept, accepting, onRate, reviewedMap }) {
-  const [open, setOpen] = useState(false);
+  const todayCount = jobs.filter(isDueToday).length;
+  const [open, setOpen] = useState(todayCount > 0);
   const totalValue = jobs.reduce((sum, b) => sum + Number(b.serviceValue ?? b.amount ?? 0), 0);
+  const hasDueToday = todayCount > 0;
 
   return (
-    <div className="rounded-xl border border-gray-700 bg-gray-800/60 overflow-hidden">
+    <div className={`rounded-xl border overflow-hidden ${hasDueToday ? 'border-amber-500/60 bg-gray-800/80' : 'border-gray-700 bg-gray-800/60'}`}>
       <button
         onClick={() => setOpen(!open)}
         className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition hover:bg-gray-800 active:bg-gray-700/50"
       >
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600/20">
-          <svg className="h-5 w-5 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${hasDueToday ? 'bg-amber-500/20' : 'bg-brand-600/20'}`}>
+          <svg className={`h-5 w-5 ${hasDueToday ? 'text-amber-400' : 'text-brand-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5M3.75 3v18m16.5-18v18M5.25 3h13.5M5.25 21h13.5M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15" />
           </svg>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-white truncate">{city}</p>
+          <div className="flex items-center gap-2">
+            <p className="font-semibold text-white truncate">{city}</p>
+            {hasDueToday && (
+              <span className="shrink-0 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-gray-900">
+                {todayCount} today
+              </span>
+            )}
+          </div>
           <p className="text-xs text-gray-400">{jobs.length} job{jobs.length !== 1 ? 's' : ''} &middot; ${totalValue.toFixed(2)}</p>
         </div>
         <svg className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -335,8 +359,12 @@ export default function ServicerDashboard() {
       groups[city].push(b);
     });
     return Object.entries(groups)
-      .sort((a, b) => b[1].length - a[1].length)
-      .map(([city, jobs]) => ({ city, jobs: jobs.sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate)) }));
+      .map(([city, jobs]) => ({
+        city,
+        jobs: jobs.sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate)),
+        todayCount: jobs.filter(isDueToday).length,
+      }))
+      .sort((a, b) => b.todayCount - a.todayCount || b.jobs.length - a.jobs.length);
   })();
 
   const serviceTypeGroups = (() => {
