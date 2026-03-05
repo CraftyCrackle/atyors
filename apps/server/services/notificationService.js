@@ -3,10 +3,11 @@ const User = require('../models/User');
 const pushService = require('./pushService');
 
 async function create({ userId, type, title, body, bookingId, meta }) {
-  const notification = await Notification.create({ userId, type, title, body, bookingId, meta });
+  const uid = userId?._id || userId;
+  const notification = await Notification.create({ userId: uid, type, title, body, bookingId, meta });
 
   pushService
-    .sendToUser(userId, { title, body, data: { type, bookingId: bookingId?.toString(), url: bookingId ? `/booking/${bookingId}` : '/notifications' } })
+    .sendToUser(uid, { title, body, data: { type, bookingId: bookingId?.toString(), url: bookingId ? `/booking/${bookingId}` : '/notifications' } })
     .catch(() => {});
 
   return notification;

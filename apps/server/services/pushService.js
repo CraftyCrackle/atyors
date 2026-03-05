@@ -36,7 +36,8 @@ async function unregisterDevice(userId, token) {
   return NativeDevice.deleteOne({ userId, token });
 }
 
-async function sendToUser(userId, { title, body, data }) {
+async function sendToUser(rawUserId, { title, body, data }) {
+  const userId = rawUserId?._id || rawUserId;
   if (VAPID_PUBLIC && VAPID_PRIVATE) {
     const subs = await PushSubscription.find({ userId }).lean();
     if (subs.length) {
