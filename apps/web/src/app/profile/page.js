@@ -522,7 +522,9 @@ function PaymentMethodsSection() {
       }
 
       const { loadStripe } = await import('@stripe/stripe-js');
-      const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+      const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, {
+        developerTools: { assistant: { enabled: false } },
+      });
       if (!stripe) { setAdding(false); return; }
 
       const { error } = await stripe.confirmCardSetup(clientSecret, {

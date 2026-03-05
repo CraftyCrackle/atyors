@@ -10,7 +10,9 @@ import CheckoutForm from '../../components/CheckoutForm';
 import { api } from '../../services/api';
 
 const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-const stripePromise = stripeKey ? loadStripe(stripeKey) : null;
+const stripePromise = stripeKey ? loadStripe(stripeKey, {
+  developerTools: { assistant: { enabled: false } },
+}) : null;
 
 const STEPS = ['service', 'address', 'details', 'confirm', 'payment'];
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
