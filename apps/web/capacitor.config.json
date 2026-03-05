@@ -7,10 +7,11 @@
     "cleartext": false
   },
   "ios": {
-    "contentInset": "automatic",
+    "contentInset": "never",
     "preferredContentMode": "mobile",
     "allowsLinkPreview": false,
-    "scheme": "atyors"
+    "scheme": "atyors",
+    "backgroundColor": "#111827"
   },
   "plugins": {
     "PushNotifications": {

@@ -35,7 +35,7 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className="bg-gray-50 text-gray-900 antialiased">
+      <body className="text-gray-900 antialiased">
         <InstallProvider>
           <NotificationProvider>
             <GpsBroadcaster>{children}</GpsBroadcaster>
