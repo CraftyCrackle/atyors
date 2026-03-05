@@ -232,7 +232,9 @@ async function cancel(bookingId, userId, reason) {
     const user = await User.findById(userId);
     if (user) {
       try {
-        await stripeService.chargeOffSession(user, CANCELLATION_FEE, `cancel-${booking._id}`);
+        await stripeService.chargeOffSession(user, CANCELLATION_FEE, `cancel-${booking._id}`, {
+          description: 'Cancellation fee',
+        });
         cancellationFeeCharged = true;
       } catch (err) {
         console.error(`[Cancel] Failed to charge cancellation fee for booking ${booking._id}:`, err.message);
@@ -294,6 +296,8 @@ async function reschedule(bookingId, userId, { scheduledDate }) {
 
 async function chargeBookingOnCompletion(bookingId) {
   const User = require('../models/User');
+  const ServiceType = require('../models/ServiceType');
+  const Address = require('../models/Address');
   const booking = await Booking.findById(bookingId);
   if (!booking) return;
 
@@ -309,8 +313,15 @@ async function chargeBookingOnCompletion(bookingId) {
   const user = await User.findById(booking.userId);
   if (!user) return;
 
+  const svcType = await ServiceType.findById(booking.serviceTypeId);
+  const addr = await Address.findById(booking.addressId);
+  const svcName = svcType?.name || 'Service';
+  const city = addr?.city || '';
+  const dateStr = booking.scheduledDate ? new Date(booking.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+  const desc = `${svcName}${city ? ` — ${city}` : ''}${dateStr ? ` (${dateStr})` : ''} — ${booking.barrelCount || 1} barrel${(booking.barrelCount || 1) > 1 ? 's' : ''}`;
+
   try {
-    const intent = await stripeService.chargeOffSession(user, booking.amount, booking._id.toString());
+    const intent = await stripeService.chargeOffSession(user, booking.amount, booking._id.toString(), { description: desc });
     booking.stripePaymentIntentId = intent.id;
     booking.paymentStatus = 'paid';
     await booking.save();

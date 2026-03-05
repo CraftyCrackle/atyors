@@ -576,6 +576,17 @@ function PaymentMethodsSection() {
   );
 }
 
+function formatChargeDescription(desc, amountCents) {
+  if (!desc) {
+    if (amountCents === 100) return 'Cancellation fee';
+    return 'Service charge';
+  }
+  if (/^cancellation fee$/i.test(desc)) return 'Cancellation fee';
+  if (/cancel-[a-f0-9]/i.test(desc)) return 'Cancellation fee';
+  const cleaned = desc.replace(/\s*—\s*booking\s+[a-f0-9]{20,}/i, '').replace(/^atyors service\s*—?\s*/i, '').trim();
+  return cleaned || 'Service charge';
+}
+
 function InvoiceSection() {
   const [charges, setCharges] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -639,7 +650,7 @@ function InvoiceSection() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900">
-                      {c.description || 'Service charge'}
+                      {formatChargeDescription(c.description, c.amount)}
                     </p>
                     <p className="text-xs text-gray-400">
                       {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}

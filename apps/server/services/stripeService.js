@@ -168,7 +168,7 @@ async function hasDefaultPaymentMethod(user) {
   return false;
 }
 
-async function chargeOffSession(user, amount, bookingId) {
+async function chargeOffSession(user, amount, bookingId, { description } = {}) {
   const customerId = await ensureCustomer(user);
   const stripe = getStripe();
   const customer = await stripe.customers.retrieve(customerId);
@@ -193,7 +193,7 @@ async function chargeOffSession(user, amount, bookingId) {
     payment_method: defaultPm,
     off_session: true,
     confirm: true,
-    description: `atyors service — booking ${bookingId}`,
+    description: description || `atyors service — booking ${bookingId}`,
     metadata: { bookingId, userId: user._id?.toString() || user.toString() },
   });
 }
