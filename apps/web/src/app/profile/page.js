@@ -141,7 +141,6 @@ export default function ProfilePage() {
             )}
           </div>
 
-          <PushDiagnosticSection dark={dark} />
 
           {isCustomer && <PaymentMethodsSection />}
 
@@ -379,108 +378,6 @@ const BRAND_ICONS = {
 function CardIcon({ brand }) {
   return BRAND_ICONS[brand] || (
     <svg className="h-8 w-12" viewBox="0 0 48 32" fill="none"><rect width="48" height="32" rx="4" fill="#e5e7eb"/><rect x="6" y="10" width="12" height="3" rx="1" fill="#9ca3af"/><rect x="6" y="19" width="20" height="2" rx="1" fill="#9ca3af"/><rect x="6" y="23" width="14" height="2" rx="1" fill="#9ca3af"/></svg>
-  );
-}
-
-function PushDiagnosticSection({ dark }) {
-  const [status, setStatus] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [diagLog, setDiagLog] = useState([]);
-  const [testResult, setTestResult] = useState(null);
-
-  function log(msg) {
-    setDiagLog((prev) => [...prev, `${new Date().toLocaleTimeString()}: ${msg}`]);
-  }
-
-  async function checkStatus() {
-    setLoading(true);
-    try {
-      const res = await api.get('/push/status');
-      setStatus(res);
-      log(`Server: ${res.nativeDevices?.length || 0} device(s), ${res.webSubscriptions || 0} web sub(s), APNs: ${res.apnsConfigured ? 'yes' : 'no'}`);
-    } catch (err) {
-      log(`Status check failed: ${err.message}`);
-    }
-    try {
-      const { getPushDiagnostics } = await import('../../services/capacitorPush');
-      const diag = getPushDiagnostics();
-      log(`Client: native=${diag.isNative}, registered=${diag.registered}, perm=${diag.permissionState}, plugin=${diag.pluginLoaded}, token=${diag.hasToken}, err=${diag.lastError || 'none'}`);
-    } catch (err) {
-      log(`Client diag failed: ${err.message}`);
-    }
-    setLoading(false);
-  }
-
-  async function manualRegister() {
-    setLoading(true);
-    log('Starting manual push registration...');
-    try {
-      const { registerNativePush, getPushDiagnostics } = await import('../../services/capacitorPush');
-      await registerNativePush();
-      const diag = getPushDiagnostics();
-      log(`After register: registered=${diag.registered}, perm=${diag.permissionState}, token=${diag.hasToken}, err=${diag.lastError || 'none'}`);
-    } catch (err) {
-      log(`Registration error: ${err.message}`);
-    }
-    setLoading(false);
-  }
-
-  async function sendTestPush() {
-    setTestResult(null);
-    try {
-      const res = await api.post('/push/test');
-      setTestResult(res.message || 'Sent');
-      log(`Test push: ${res.message}`);
-    } catch (err) {
-      setTestResult(`Error: ${err.message}`);
-      log(`Test push failed: ${err.message}`);
-    }
-  }
-
-  const cardCls = dark ? 'rounded-xl border border-gray-700 bg-gray-800 p-4' : 'rounded-xl bg-white p-4 shadow-sm';
-  const btnCls = dark
-    ? 'rounded-lg border border-gray-600 px-3 py-2 text-xs font-medium text-gray-300 hover:bg-gray-700 disabled:opacity-50'
-    : 'rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50';
-
-  return (
-    <div className={`mt-4 ${cardCls}`}>
-      <div className="flex items-center justify-between">
-        <h2 className={`font-semibold ${dark ? 'text-white' : ''}`}>Notifications</h2>
-        <button onClick={checkStatus} disabled={loading} className="text-sm font-medium text-brand-600 disabled:opacity-50">
-          {loading ? 'Checking...' : 'Check Status'}
-        </button>
-      </div>
-
-      {status && (
-        <div className={`mt-3 space-y-1 text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>
-          <p>Native devices: <span className="font-medium text-white">{status.nativeDevices?.length || 0}</span></p>
-          <p>Web subscriptions: <span className="font-medium text-white">{status.webSubscriptions || 0}</span></p>
-          <p>APNs: <span className={`font-medium ${status.apnsConfigured ? 'text-green-400' : 'text-red-400'}`}>{status.apnsConfigured ? 'Configured' : 'Not configured'}</span></p>
-          {status.nativeDevices?.map((d, i) => (
-            <p key={i}>Device {i + 1}: {d.platform} ({d.tokenPrefix}...) registered {new Date(d.createdAt).toLocaleDateString()}</p>
-          ))}
-        </div>
-      )}
-
-      <div className="mt-3 flex flex-wrap gap-2">
-        <button onClick={manualRegister} disabled={loading} className={btnCls}>
-          Register for Push
-        </button>
-        <button onClick={sendTestPush} disabled={loading} className={btnCls}>
-          Send Test Push
-        </button>
-      </div>
-
-      {testResult && (
-        <p className={`mt-2 text-xs ${testResult.startsWith('Error') ? 'text-red-400' : 'text-green-400'}`}>{testResult}</p>
-      )}
-
-      {diagLog.length > 0 && (
-        <div className={`mt-3 max-h-40 overflow-y-auto rounded-lg p-2 text-[10px] font-mono leading-relaxed ${dark ? 'bg-gray-900 text-gray-400' : 'bg-gray-100 text-gray-500'}`}>
-          {diagLog.map((l, i) => <div key={i}>{l}</div>)}
-        </div>
-      )}
-    </div>
   );
 }
 
