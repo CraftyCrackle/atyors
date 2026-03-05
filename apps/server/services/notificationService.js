@@ -17,7 +17,9 @@ async function notifyServicers({ title, body, bookingId, io }) {
   const servicers = await User.find({ role: { $in: ['servicer', 'admin', 'superadmin'] }, isActive: true }).select('_id').lean();
 
   for (const svc of servicers) {
-    create({ userId: svc._id, type: 'job:available', title, body, bookingId }).catch(() => {});
+    create({ userId: svc._id, type: 'job:available', title, body, bookingId }).catch((err) => {
+      console.error(`[Notify] Failed to notify servicer ${svc._id}:`, err.message);
+    });
   }
 
   if (io) {
