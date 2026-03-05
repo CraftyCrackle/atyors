@@ -173,6 +173,54 @@ const EMPTY_ICONS = {
   completed: 'M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
 };
 
+function ServiceTypeGroup({ type, jobs, onAccept, accepting, onRate, reviewedMap, onCancel, cancelling, dark }) {
+  const [open, setOpen] = useState(false);
+  const totalValue = jobs.reduce((sum, b) => sum + Number(b.serviceValue ?? b.amount ?? 0), 0);
+
+  const cardCls = dark
+    ? 'rounded-xl border border-gray-700 bg-gray-800/60 overflow-hidden'
+    : 'rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden';
+  const btnCls = dark
+    ? 'hover:bg-gray-800 active:bg-gray-700/50'
+    : 'hover:bg-gray-50 active:bg-gray-100';
+  const iconBg = dark ? 'bg-green-600/20' : 'bg-green-100';
+  const iconColor = dark ? 'text-green-400' : 'text-green-600';
+  const titleColor = dark ? 'text-white' : 'text-gray-900';
+  const subColor = dark ? 'text-gray-400' : 'text-gray-500';
+  const chevronColor = dark ? 'text-gray-500' : 'text-gray-400';
+
+  return (
+    <div className={cardCls}>
+      <button
+        onClick={() => setOpen(!open)}
+        className={`flex w-full items-center gap-3 px-4 py-3.5 text-left transition ${btnCls}`}
+      >
+        <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${iconBg}`}>
+          <svg className={`h-5 w-5 ${iconColor}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className={`font-semibold truncate ${titleColor}`}>{type}</p>
+          <p className={`text-xs ${subColor}`}>{jobs.length} completed &middot; ${totalValue.toFixed(2)}</p>
+        </div>
+        <svg className={`h-5 w-5 transition-transform duration-200 ${chevronColor} ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+        </svg>
+      </button>
+      {open && (
+        <div className="space-y-3 px-3 pb-3">
+          {jobs.map((b) => (
+            dark
+              ? <JobCard key={b._id} booking={b} onAccept={onAccept} accepting={accepting} onRate={onRate} alreadyRated={reviewedMap?.[b._id]} />
+              : <BookingCard key={b._id} booking={b} onRate={onRate} alreadyRated={reviewedMap?.[b._id]} onCancel={onCancel} cancelling={cancelling} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function EmptyState({ icon, title, subtitle }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-2xl border border-gray-800 bg-gray-800/30 py-16">
@@ -291,9 +339,20 @@ export default function ServicerDashboard() {
       .map(([city, jobs]) => ({ city, jobs: jobs.sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate)) }));
   })();
 
-  const nonAvailableData = tab === 'active' ? activeJobs : completedJobs;
-  const tabData = nonAvailableData.slice(0, visibleCount);
-  const hasMore = nonAvailableData.length > visibleCount;
+  const serviceTypeGroups = (() => {
+    const groups = {};
+    completedJobs.forEach((b) => {
+      const name = b.serviceTypeId?.name || 'Service';
+      if (!groups[name]) groups[name] = [];
+      groups[name].push(b);
+    });
+    return Object.entries(groups)
+      .sort((a, b) => b[1].length - a[1].length)
+      .map(([type, jobs]) => ({ type, jobs }));
+  })();
+
+  const activeTabData = activeJobs.slice(0, visibleCount);
+  const hasMoreActive = activeJobs.length > visibleCount;
 
   function switchTab(key) {
     setTab(key);
@@ -400,18 +459,22 @@ export default function ServicerDashboard() {
               <CityGroup key={g.city} city={g.city} jobs={g.jobs} onAccept={handleAccept} accepting={accepting} onRate={setReviewBooking} reviewedMap={reviewedMap} />
             ))
           )
-        ) : tabData.length === 0 ? (
-          <EmptyState
-            icon={tab}
-            title={tab === 'active' ? 'No active jobs' : 'No completed jobs yet'}
-            subtitle={tab === 'active' ? 'Accept a job to get started' : 'Completed jobs will show here'}
-          />
+        ) : tab === 'completed' ? (
+          serviceTypeGroups.length === 0 ? (
+            <EmptyState icon="completed" title="No completed jobs yet" subtitle="Completed jobs will show here" />
+          ) : (
+            serviceTypeGroups.map((g) => (
+              <ServiceTypeGroup key={g.type} type={g.type} jobs={g.jobs} onRate={setReviewBooking} reviewedMap={reviewedMap} dark />
+            ))
+          )
+        ) : activeTabData.length === 0 ? (
+          <EmptyState icon="active" title="No active jobs" subtitle="Accept a job to get started" />
         ) : (
           <>
-            {tabData.map((b) => <JobCard key={b._id} booking={b} onAccept={handleAccept} accepting={accepting} onRate={setReviewBooking} alreadyRated={reviewedMap[b._id]} />)}
-            {hasMore && (
+            {activeTabData.map((b) => <JobCard key={b._id} booking={b} onAccept={handleAccept} accepting={accepting} onRate={setReviewBooking} alreadyRated={reviewedMap[b._id]} />)}
+            {hasMoreActive && (
               <button onClick={() => setVisibleCount((c) => c + 15)} className="w-full rounded-xl border border-gray-700 bg-gray-800/60 py-3 text-sm font-medium text-brand-400 transition hover:bg-gray-800 active:scale-[0.98]">
-                Show more ({nonAvailableData.length - visibleCount} remaining)
+                Show more ({activeJobs.length - visibleCount} remaining)
               </button>
             )}
           </>

@@ -276,6 +276,52 @@ function BookingCard({ booking, onRate, alreadyRated, onCancel, cancelling }) {
   );
 }
 
+function ServiceTypeGroup({ type, jobs, onRate, reviewedMap, onCancel, cancelling, dark }) {
+  const [open, setOpen] = useState(false);
+  const totalValue = jobs.reduce((sum, b) => sum + Number(b.serviceValue ?? b.amount ?? 0), 0);
+
+  const cardCls = dark
+    ? 'rounded-xl border border-gray-700 bg-gray-800/60 overflow-hidden'
+    : 'rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden';
+  const btnCls = dark
+    ? 'hover:bg-gray-800 active:bg-gray-700/50'
+    : 'hover:bg-gray-50 active:bg-gray-100';
+  const iconBg = dark ? 'bg-green-600/20' : 'bg-green-100';
+  const iconColor = dark ? 'text-green-400' : 'text-green-600';
+  const titleColor = dark ? 'text-white' : 'text-gray-900';
+  const subColor = dark ? 'text-gray-400' : 'text-gray-500';
+  const chevronColor = dark ? 'text-gray-500' : 'text-gray-400';
+
+  return (
+    <div className={cardCls}>
+      <button
+        onClick={() => setOpen(!open)}
+        className={`flex w-full items-center gap-3 px-4 py-3.5 text-left transition ${btnCls}`}
+      >
+        <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${iconBg}`}>
+          <svg className={`h-5 w-5 ${iconColor}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className={`font-semibold truncate ${titleColor}`}>{type}</p>
+          <p className={`text-xs ${subColor}`}>{jobs.length} completed &middot; ${totalValue.toFixed(2)}</p>
+        </div>
+        <svg className={`h-5 w-5 transition-transform duration-200 ${chevronColor} ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+        </svg>
+      </button>
+      {open && (
+        <div className="space-y-3 px-3 pb-3">
+          {jobs.map((b) => (
+            <BookingCard key={b._id} booking={b} onRate={onRate} alreadyRated={reviewedMap?.[b._id]} onCancel={onCancel} cancelling={cancelling} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const PAGE_SIZE = 15;
 
 export default function DashboardPage() {
@@ -359,9 +405,22 @@ export default function DashboardPage() {
   const past = bookings
     .filter((b) => ['completed', 'cancelled', 'no-show'].includes(b.status))
     .sort((a, b) => new Date(b.completedAt || b.updatedAt) - new Date(a.completedAt || a.updatedAt));
-  const allTabData = tab === 'upcoming' ? upcoming : tab === 'active' ? active : past;
-  const tabData = allTabData.slice(0, visibleCount);
-  const hasMore = allTabData.length > visibleCount;
+
+  const pastServiceTypeGroups = (() => {
+    const groups = {};
+    past.forEach((b) => {
+      const name = b.serviceTypeId?.name || 'Service';
+      if (!groups[name]) groups[name] = [];
+      groups[name].push(b);
+    });
+    return Object.entries(groups)
+      .sort((a, b) => b[1].length - a[1].length)
+      .map(([type, jobs]) => ({ type, jobs }));
+  })();
+
+  const nonPastData = tab === 'upcoming' ? upcoming : active;
+  const tabData = nonPastData.slice(0, visibleCount);
+  const hasMore = nonPastData.length > visibleCount;
 
   function switchTab(key) {
     setTab(key);
@@ -443,9 +502,19 @@ export default function DashboardPage() {
         <div className="mt-4 space-y-3 px-4">
           {loading ? (
             <div className="py-12 text-center text-sm text-gray-400">Loading...</div>
+          ) : tab === 'past' ? (
+            pastServiceTypeGroups.length === 0 ? (
+              <div className="py-12 text-center">
+                <p className="text-sm text-gray-400">No past services</p>
+              </div>
+            ) : (
+              pastServiceTypeGroups.map((g) => (
+                <ServiceTypeGroup key={g.type} type={g.type} jobs={g.jobs} onRate={setReviewBooking} reviewedMap={reviewedMap} onCancel={handleCancelClick} cancelling={cancelling} dark={false} />
+              ))
+            )
           ) : tabData.length === 0 ? (
             <div className="py-12 text-center">
-              <p className="text-sm text-gray-400">{tab === 'upcoming' ? 'No upcoming services' : tab === 'active' ? 'No active services' : 'No past services'}</p>
+              <p className="text-sm text-gray-400">{tab === 'upcoming' ? 'No upcoming services' : 'No active services'}</p>
               {tab === 'upcoming' && (
                 <Link href="/book" className="mt-2 inline-block text-sm font-medium text-brand-600">Book your first service</Link>
               )}
@@ -455,7 +524,7 @@ export default function DashboardPage() {
               {tabData.map((b) => <BookingCard key={b._id} booking={b} onRate={setReviewBooking} alreadyRated={reviewedMap[b._id]} onCancel={handleCancelClick} cancelling={cancelling} />)}
               {hasMore && (
                 <button onClick={() => setVisibleCount((c) => c + PAGE_SIZE)} className="w-full rounded-xl border border-gray-200 bg-white py-3 text-sm font-medium text-brand-600 transition hover:bg-brand-50 active:scale-[0.98]">
-                  Show more ({allTabData.length - visibleCount} remaining)
+                  Show more ({nonPastData.length - visibleCount} remaining)
                 </button>
               )}
             </>
