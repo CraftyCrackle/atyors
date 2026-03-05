@@ -30,14 +30,16 @@ async function create(req, res, next) {
       }
     }
 
-    const io = req.app.locals.io;
-    const primary = Array.isArray(result) ? result[0] : result;
-    notificationService.notifyServicers({
-      title: 'New job available',
-      body: 'A new job is available for pickup.',
-      bookingId: primary._id,
-      io,
-    }).catch(() => {});
+    if (totalAmount === 0 || config.stripe.skip) {
+      const io = req.app.locals.io;
+      const primary = Array.isArray(result) ? result[0] : result;
+      notificationService.notifyServicers({
+        title: 'New job available',
+        body: 'A new job is available for pickup.',
+        bookingId: primary._id,
+        io,
+      }).catch((err) => console.error('[Notify] notifyServicers error:', err.message));
+    }
 
     if (Array.isArray(result)) {
       return res.status(201).json({ success: true, data: { bookings: result, clientSecret } });
@@ -66,6 +68,15 @@ async function confirmPayment(req, res, next) {
       if (booking.linkedBookingId) {
         await Booking.findByIdAndUpdate(booking.linkedBookingId, { paymentStatus: 'paid' });
       }
+
+      const io = req.app.locals.io;
+      notificationService.notifyServicers({
+        title: 'New job available',
+        body: 'A new job is ready for pickup.',
+        bookingId: booking._id,
+        io,
+      }).catch((err) => console.error('[Notify] notifyServicers error:', err.message));
+
       return res.json({ success: true, data: { booking } });
     }
 
@@ -92,6 +103,15 @@ async function confirmPayment(req, res, next) {
       if (booking.linkedBookingId) {
         await Booking.findByIdAndUpdate(booking.linkedBookingId, { paymentStatus: 'paid' });
       }
+
+      const io = req.app.locals.io;
+      notificationService.notifyServicers({
+        title: 'New job available',
+        body: 'A new job is ready for pickup.',
+        bookingId: booking._id,
+        io,
+      }).catch((err) => console.error('[Notify] notifyServicers error:', err.message));
+
       return res.json({ success: true, data: { booking } });
     }
 
