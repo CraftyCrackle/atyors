@@ -4,6 +4,8 @@ const notificationService = require('../services/notificationService');
 const config = require('../config');
 const Booking = require('../models/Booking');
 
+const GRACE_PERIOD_MS = 2 * 60 * 1000;
+
 async function create(req, res, next) {
   try {
     const isSubscription = !!req.body.subscriptionId;
@@ -21,12 +23,22 @@ async function create(req, res, next) {
 
     const io = req.app.locals.io;
     const primary = Array.isArray(result) ? result[0] : result;
-    notificationService.notifyServicers({
-      title: 'New job available',
-      body: 'A new job is available for pickup.',
-      bookingId: primary._id,
-      io,
-    }).catch((err) => console.error('[Notify] notifyServicers error:', err.message));
+    const bookingId = primary._id;
+
+    setTimeout(async () => {
+      try {
+        const fresh = await Booking.findById(bookingId).lean();
+        if (!fresh || fresh.status === 'cancelled') return;
+        await notificationService.notifyServicers({
+          title: 'New job available',
+          body: 'A new job is available for pickup.',
+          bookingId,
+          io,
+        });
+      } catch (err) {
+        console.error('[Notify] delayed notifyServicers error:', err.message);
+      }
+    }, GRACE_PERIOD_MS);
 
     if (Array.isArray(result)) {
       return res.status(201).json({ success: true, data: { bookings: result } });
