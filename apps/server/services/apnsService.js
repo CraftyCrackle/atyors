@@ -8,7 +8,7 @@ const APNS_HOST_SANDBOX = 'https://api.sandbox.push.apple.com';
 const BUNDLE_ID = process.env.APNS_BUNDLE_ID || 'com.atyors.app';
 const KEY_ID = process.env.APNS_KEY_ID || '';
 const TEAM_ID = process.env.APNS_TEAM_ID || '';
-const KEY_PATH = process.env.APNS_KEY_PATH || path.join(__dirname, '..', 'config', 'AuthKey_FB84XXH3HQ.p8');
+const KEY_PATH = process.env.APNS_KEY_PATH || path.join(__dirname, '..', 'config', 'AuthKey_RYDZ5XJHZW.p8');
 const USE_SANDBOX = process.env.APNS_SANDBOX === 'true';
 
 let apnsKey = null;
