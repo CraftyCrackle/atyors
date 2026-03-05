@@ -46,7 +46,7 @@ describe('Booking Model Schema', () => {
     const paths = BookingModel.schema.paths;
     expect(paths.paymentStatus).toBeDefined();
     expect(paths.paymentStatus.instance).toBe('String');
-    expect(paths.paymentStatus.options.enum).toEqual(['pending_payment', 'paid', 'failed', 'refunded']);
+    expect(paths.paymentStatus.options.enum).toEqual(['pending_payment', 'paid', 'failed', 'refunded', 'charge_failed']);
     expect(paths.paymentStatus.options.default).toBe('pending_payment');
   });
 

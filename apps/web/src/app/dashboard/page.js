@@ -143,37 +143,12 @@ function LiveTrackingCard({ booking }) {
   );
 }
 
-const GRACE_PERIOD_MS = 2 * 60 * 1000;
-
-function useGraceCountdown(createdAt) {
-  const [secsLeft, setSecsLeft] = useState(() => {
-    const elapsed = Date.now() - new Date(createdAt).getTime();
-    return Math.max(0, Math.ceil((GRACE_PERIOD_MS - elapsed) / 1000));
-  });
-
-  useEffect(() => {
-    if (secsLeft <= 0) return;
-    const timer = setInterval(() => {
-      const elapsed = Date.now() - new Date(createdAt).getTime();
-      const remaining = Math.max(0, Math.ceil((GRACE_PERIOD_MS - elapsed) / 1000));
-      setSecsLeft(remaining);
-      if (remaining <= 0) clearInterval(timer);
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [createdAt, secsLeft]);
-
-  return secsLeft;
-}
-
 function BookingCard({ booking, onRate, alreadyRated, onCancel, cancelling }) {
   const date = new Date(booking.scheduledDate);
   const svc = booking.serviceTypeId;
   const isActive = ACTIVE_STATUSES.includes(booking.status);
   const isCompleted = booking.status === 'completed';
-  const isPendingPayment = booking.paymentStatus === 'pending_payment';
   const servicer = booking.assignedTo;
-  const graceLeft = useGraceCountdown(booking.createdAt);
-  const inGrace = booking.status === 'pending' && !booking.assignedTo && graceLeft > 0;
   const canCancel = booking.status === 'pending' && !booking.assignedTo && !booking.subscriptionId;
 
   return (
@@ -195,9 +170,6 @@ function BookingCard({ booking, onRate, alreadyRated, onCancel, cancelling }) {
             <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[booking.status] || 'bg-gray-100'}`}>
               {STATUS_LABELS[booking.status] || booking.status}
             </span>
-            {isPendingPayment && (
-              <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">Payment Required</span>
-            )}
           </div>
         </div>
         {booking.addressId && (
@@ -229,32 +201,15 @@ function BookingCard({ booking, onRate, alreadyRated, onCancel, cancelling }) {
         )}
       </Link>
       {canCancel && (
-        <div className="mt-3 space-y-2">
-          {inGrace ? (
-            <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
-              <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              <span>Free cancellation — <strong>{Math.floor(graceLeft / 60)}:{String(graceLeft % 60).padStart(2, '0')}</strong> remaining</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">
-              <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" /></svg>
-              <span>A <strong>$1.00</strong> cancellation fee will apply</span>
-            </div>
-          )}
-          <button onClick={() => onCancel(booking._id, inGrace)} disabled={cancelling}
+        <div className="mt-3">
+          <button onClick={() => onCancel(booking._id)} disabled={cancelling}
             className="w-full rounded-lg border border-red-200 bg-red-50 py-2 text-xs font-medium text-red-600 transition hover:bg-red-100 active:scale-[0.98] disabled:opacity-50">
-            {cancelling ? 'Cancelling...' : inGrace ? 'Cancel Booking (Free)' : 'Cancel Booking ($1.00 fee)'}
+            {cancelling ? 'Cancelling...' : 'Cancel Booking'}
           </button>
         </div>
       )}
-      {(isActive || isCompleted || isPendingPayment) && !canCancel && (
+      {(isActive || isCompleted) && !canCancel && (
         <div className="mt-3 flex gap-2">
-          {isPendingPayment && !isActive && !isCompleted && (
-            <Link href={`/book?resume=${booking._id}`} className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-red-50 py-2 text-xs font-medium text-red-700 transition hover:bg-red-100">
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
-              Complete Payment
-            </Link>
-          )}
           {isActive && (
             <>
               <Link href={`/tracking/${booking._id}`} className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-brand-50 py-2 text-xs font-medium text-brand-700 transition hover:bg-brand-100">
@@ -323,12 +278,8 @@ export default function DashboardPage() {
     } catch { }
   }
 
-  function handleCancelClick(bookingId, inGrace) {
-    if (inGrace) {
-      executeCancel(bookingId);
-    } else {
-      setCancelConfirm(bookingId);
-    }
+  function handleCancelClick(bookingId) {
+    setCancelConfirm(bookingId);
   }
 
   async function executeCancel(bookingId) {
@@ -489,7 +440,7 @@ export default function DashboardPage() {
         {cancelConfirm && (
           <ConfirmModal
             title="Cancel Booking?"
-            message="A $1.00 cancellation fee will be deducted from your refund. Would you like to proceed?"
+            message="Are you sure you want to cancel this booking?"
             confirmLabel="Yes, Cancel"
             cancelLabel="Keep Booking"
             danger

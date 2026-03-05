@@ -44,11 +44,12 @@ describe('servicerService.completeWithPhoto', () => {
       .rejects.toMatchObject({ status: 400, code: 'INVALID_TRANSITION' });
   });
 
-  test('rejects when payment not paid', async () => {
+  test('allows completion when payment not yet paid (charge-on-completion model)', async () => {
     const fake = makeFakeBooking({ paymentStatus: 'pending_payment' });
     Booking.findOne.mockResolvedValue(fake);
-    await expect(completeWithPhoto(bookingId, servicerId, '/photo.jpg', ''))
-      .rejects.toMatchObject({ status: 400, code: 'PAYMENT_REQUIRED' });
+    await completeWithPhoto(bookingId, servicerId, '/photo.jpg', '');
+    expect(fake.status).toBe('completed');
+    expect(fake.save).toHaveBeenCalled();
   });
 
   test('completes successfully with valid inputs', async () => {

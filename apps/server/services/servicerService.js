@@ -1,5 +1,6 @@
 const Booking = require('../models/Booking');
 const Route = require('../models/Route');
+const { chargeBookingOnCompletion } = require('./bookingService');
 
 const GRACE_PERIOD_MS = 2 * 60 * 1000;
 
@@ -8,7 +9,6 @@ async function getAvailableJobs({ page = 1, limit = 20 } = {}) {
   const filter = {
     status: 'pending',
     assignedTo: null,
-    paymentStatus: { $ne: 'pending_payment' },
     createdAt: { $lte: graceThreshold },
   };
   const bookings = await Booking.find(filter)
@@ -75,13 +75,6 @@ async function acceptJob(bookingId, servicerId) {
     err.code = 'JOB_TAKEN';
     throw err;
   }
-  if (booking.paymentStatus === 'pending_payment') {
-    const err = new Error('This job is awaiting payment from the customer');
-    err.status = 400;
-    err.code = 'PAYMENT_PENDING';
-    throw err;
-  }
-
   const msSinceCreation = Date.now() - new Date(booking.createdAt).getTime();
   if (msSinceCreation < GRACE_PERIOD_MS) {
     const secsLeft = Math.ceil((GRACE_PERIOD_MS - msSinceCreation) / 1000);
@@ -169,17 +162,15 @@ async function updateJobStatus(bookingId, servicerId, newStatus) {
     throw err;
   }
 
-  if (newStatus === 'completed' && booking.paymentStatus !== 'paid') {
-    const err = new Error('Cannot complete a booking that has not been paid');
-    err.status = 400;
-    err.code = 'PAYMENT_REQUIRED';
-    throw err;
-  }
-
   booking.status = newStatus;
   booking.statusHistory.push({ status: newStatus, changedAt: new Date(), changedBy: servicerId });
-  if (newStatus === 'completed') booking.completedAt = new Date();
-  await booking.save();
+  if (newStatus === 'completed') {
+    booking.completedAt = new Date();
+    await booking.save();
+    await chargeBookingOnCompletion(booking._id);
+  } else {
+    await booking.save();
+  }
   await syncRouteStop(booking);
   await booking.populate('addressId serviceTypeId userId');
   return booking;
@@ -211,12 +202,6 @@ async function completeWithPhoto(bookingId, servicerId, photoUrl, completionNote
     err.code = 'INVALID_TRANSITION';
     throw err;
   }
-  if (booking.paymentStatus !== 'paid') {
-    const err = new Error('Cannot complete a booking that has not been paid');
-    err.status = 400;
-    err.code = 'PAYMENT_REQUIRED';
-    throw err;
-  }
 
   booking.status = 'completed';
   booking.completionPhotoUrl = photoUrl;
@@ -224,6 +209,7 @@ async function completeWithPhoto(bookingId, servicerId, photoUrl, completionNote
   booking.completedAt = new Date();
   booking.statusHistory.push({ status: 'completed', changedAt: new Date(), changedBy: servicerId });
   await booking.save();
+  await chargeBookingOnCompletion(booking._id);
 
   try { await syncRouteStop(booking); } catch (e) {
     console.error(`syncRouteStop failed for booking ${bookingId}:`, e.message);

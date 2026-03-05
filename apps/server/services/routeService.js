@@ -1,5 +1,6 @@
 const Route = require('../models/Route');
 const Booking = require('../models/Booking');
+const { chargeBookingOnCompletion } = require('./bookingService');
 
 const DEEP_POPULATE = {
   path: 'stops.bookingId',
@@ -113,18 +114,12 @@ async function completeCurrentStop(routeId, servicerId) {
     err.code = 'INVALID_TRANSITION';
     throw err;
   }
-  if (completedBooking.paymentStatus !== 'paid') {
-    const err = new Error('Cannot complete a booking that has not been paid');
-    err.status = 400;
-    err.code = 'PAYMENT_REQUIRED';
-    throw err;
-  }
-
   route.stops[idx].status = 'completed';
   completedBooking.status = 'completed';
   completedBooking.completedAt = new Date();
   completedBooking.statusHistory.push({ status: 'completed', changedAt: new Date(), changedBy: servicerId });
   await completedBooking.save();
+  await chargeBookingOnCompletion(completedBooking._id);
 
   const nextIdx = idx + 1;
   if (nextIdx < route.stops.length) {

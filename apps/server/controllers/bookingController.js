@@ -6,119 +6,44 @@ const Booking = require('../models/Booking');
 
 async function create(req, res, next) {
   try {
-    const result = await bookingService.create(req.user._id, req.body);
-    const bookings = Array.isArray(result) ? result : [result];
-    const totalAmount = bookings.reduce((sum, b) => sum + (b.amount || 0), 0);
-
-    let clientSecret = null;
-
-    if (totalAmount > 0) {
-      if (config.stripe.skip) {
-        clientSecret = 'dev_mock_secret';
-        for (const b of bookings) {
-          b.paymentStatus = 'paid';
-          await b.save();
-        }
-      } else {
-        const primaryBooking = bookings[0];
-        const intent = await stripeService.createPaymentIntent(req.user, totalAmount, primaryBooking._id.toString());
-        clientSecret = intent.client_secret;
-        for (const b of bookings) {
-          b.stripePaymentIntentId = intent.id;
-          await b.save();
-        }
+    const isSubscription = !!req.body.subscriptionId;
+    if (!isSubscription && !config.stripe.skip) {
+      const hasCard = await stripeService.hasDefaultPaymentMethod(req.user);
+      if (!hasCard) {
+        const err = new Error('Please add a payment method in your Profile before booking.');
+        err.status = 400;
+        err.code = 'NO_PAYMENT_METHOD';
+        return next(err);
       }
     }
 
-    if (totalAmount === 0 || config.stripe.skip) {
-      const io = req.app.locals.io;
-      const primary = Array.isArray(result) ? result[0] : result;
-      notificationService.notifyServicers({
-        title: 'New job available',
-        body: 'A new job is available for pickup.',
-        bookingId: primary._id,
-        io,
-      }).catch((err) => console.error('[Notify] notifyServicers error:', err.message));
-    }
+    const result = await bookingService.create(req.user._id, req.body);
+
+    const io = req.app.locals.io;
+    const primary = Array.isArray(result) ? result[0] : result;
+    notificationService.notifyServicers({
+      title: 'New job available',
+      body: 'A new job is available for pickup.',
+      bookingId: primary._id,
+      io,
+    }).catch((err) => console.error('[Notify] notifyServicers error:', err.message));
 
     if (Array.isArray(result)) {
-      return res.status(201).json({ success: true, data: { bookings: result, clientSecret } });
+      return res.status(201).json({ success: true, data: { bookings: result } });
     }
-    res.status(201).json({ success: true, data: { booking: result, clientSecret } });
+    res.status(201).json({ success: true, data: { booking: result } });
   } catch (err) { next(err); }
 }
 
 async function confirmPayment(req, res, next) {
   try {
-    const { paymentIntentId } = req.body;
     const booking = await Booking.findOne({ _id: req.params.id, userId: req.user._id });
     if (!booking) {
       const err = new Error('Booking not found');
       err.status = 404;
       throw err;
     }
-
-    if (booking.paymentStatus === 'paid') {
-      return res.json({ success: true, data: { booking } });
-    }
-
-    if (config.stripe.skip) {
-      booking.paymentStatus = 'paid';
-      await booking.save();
-      if (booking.linkedBookingId) {
-        await Booking.findByIdAndUpdate(booking.linkedBookingId, { paymentStatus: 'paid' });
-      }
-
-      const io = req.app.locals.io;
-      notificationService.notifyServicers({
-        title: 'New job available',
-        body: 'A new job is ready for pickup.',
-        bookingId: booking._id,
-        io,
-      }).catch((err) => console.error('[Notify] notifyServicers error:', err.message));
-
-      return res.json({ success: true, data: { booking } });
-    }
-
-    if (!paymentIntentId || booking.stripePaymentIntentId !== paymentIntentId) {
-      const err = new Error('Payment intent does not match this booking');
-      err.status = 400;
-      err.code = 'PAYMENT_MISMATCH';
-      throw err;
-    }
-
-    const stripe = require('stripe')(config.stripe.secretKey);
-    const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
-
-    if (intent.metadata?.userId !== req.user._id.toString()) {
-      const err = new Error('Payment intent does not belong to you');
-      err.status = 403;
-      err.code = 'PAYMENT_FORBIDDEN';
-      throw err;
-    }
-
-    if (intent.status === 'succeeded') {
-      booking.paymentStatus = 'paid';
-      await booking.save();
-      if (booking.linkedBookingId) {
-        await Booking.findByIdAndUpdate(booking.linkedBookingId, { paymentStatus: 'paid' });
-      }
-
-      const io = req.app.locals.io;
-      notificationService.notifyServicers({
-        title: 'New job available',
-        body: 'A new job is ready for pickup.',
-        bookingId: booking._id,
-        io,
-      }).catch((err) => console.error('[Notify] notifyServicers error:', err.message));
-
-      return res.json({ success: true, data: { booking } });
-    }
-
-    const err = new Error('Payment not completed');
-    err.status = 400;
-    err.code = 'PAYMENT_INCOMPLETE';
-    throw err;
+    res.json({ success: true, data: { booking } });
   } catch (err) { next(err); }
 }
 

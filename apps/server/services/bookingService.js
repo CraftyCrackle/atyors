@@ -188,9 +188,6 @@ async function updateStatus(bookingId, newStatus, changedBy) {
   return booking;
 }
 
-const GRACE_PERIOD_MS = 2 * 60 * 1000;
-const CANCELLATION_FEE = 1.00;
-
 async function cancel(bookingId, userId, reason) {
   const booking = await Booking.findOne({ _id: bookingId, userId });
   if (!booking) {
@@ -224,27 +221,10 @@ async function cancel(bookingId, userId, reason) {
     }
   }
 
-  const msSinceCreation = Date.now() - new Date(booking.createdAt).getTime();
-  const withinGrace = msSinceCreation < GRACE_PERIOD_MS;
-  const fee = withinGrace ? 0 : CANCELLATION_FEE;
-
   booking.status = 'cancelled';
   booking.cancelledAt = new Date();
-  booking.cancellationFee = fee;
   booking.cancellationReason = reason || undefined;
   booking.statusHistory.push({ status: 'cancelled', changedAt: new Date(), changedBy: userId });
-
-  if (booking.paymentStatus === 'paid' && booking.stripePaymentIntentId && !config.stripe.skip) {
-    try {
-      await stripeService.refundPaymentIntent(booking.stripePaymentIntentId, { deductAmountDollars: fee });
-      booking.paymentStatus = 'refunded';
-    } catch (refundErr) {
-      console.error('Refund failed for booking', bookingId, refundErr.message);
-    }
-  } else if (booking.paymentStatus === 'paid' && config.stripe.skip) {
-    booking.paymentStatus = 'refunded';
-  }
-
   await booking.save();
 
   if (booking.linkedBookingId) {
@@ -252,11 +232,7 @@ async function cancel(bookingId, userId, reason) {
     if (linked && linked.canTransitionTo('cancelled')) {
       linked.status = 'cancelled';
       linked.cancelledAt = new Date();
-      linked.cancellationFee = 0;
       linked.cancellationReason = booking.cancellationReason;
-      if (linked.paymentStatus === 'paid') {
-        linked.paymentStatus = 'refunded';
-      }
       linked.statusHistory.push({ status: 'cancelled', changedAt: new Date(), changedBy: userId });
       await linked.save();
     }
@@ -296,4 +272,42 @@ async function reschedule(bookingId, userId, { scheduledDate }) {
   return booking;
 }
 
-module.exports = { create, listByUser, getById, updateStatus, cancel, reschedule };
+async function chargeBookingOnCompletion(bookingId) {
+  const User = require('../models/User');
+  const booking = await Booking.findById(bookingId);
+  if (!booking) return;
+
+  if (booking.paymentStatus === 'paid') return;
+  if (booking.subscriptionId) return;
+  if (!booking.amount || booking.amount <= 0) return;
+  if (config.stripe.skip) {
+    booking.paymentStatus = 'paid';
+    await booking.save();
+    return;
+  }
+
+  const user = await User.findById(booking.userId);
+  if (!user) return;
+
+  try {
+    const intent = await stripeService.chargeOffSession(user, booking.amount, booking._id.toString());
+    booking.stripePaymentIntentId = intent.id;
+    booking.paymentStatus = 'paid';
+    await booking.save();
+
+    if (booking.linkedBookingId) {
+      const linked = await Booking.findById(booking.linkedBookingId);
+      if (linked && linked.paymentStatus !== 'paid') {
+        linked.stripePaymentIntentId = intent.id;
+        linked.paymentStatus = 'paid';
+        await linked.save();
+      }
+    }
+  } catch (err) {
+    console.error(`[Stripe] Off-session charge failed for booking ${bookingId}:`, err.message);
+    booking.paymentStatus = 'charge_failed';
+    await booking.save();
+  }
+}
+
+module.exports = { create, listByUser, getById, updateStatus, cancel, reschedule, chargeBookingOnCompletion };

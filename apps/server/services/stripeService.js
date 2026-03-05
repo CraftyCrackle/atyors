@@ -152,6 +152,34 @@ async function createStripeSubscription(user, priceId, metadata = {}) {
   return stripe.subscriptions.create(params);
 }
 
+async function hasDefaultPaymentMethod(user) {
+  const customerId = await ensureCustomer(user);
+  const stripe = getStripe();
+  const customer = await stripe.customers.retrieve(customerId);
+  return !!customer.invoice_settings?.default_payment_method;
+}
+
+async function chargeOffSession(user, amount, bookingId) {
+  const customerId = await ensureCustomer(user);
+  const stripe = getStripe();
+  const customer = await stripe.customers.retrieve(customerId);
+  const defaultPm = customer.invoice_settings?.default_payment_method;
+  if (!defaultPm) {
+    const err = new Error('No payment method on file');
+    err.code = 'NO_PAYMENT_METHOD';
+    throw err;
+  }
+  return stripe.paymentIntents.create({
+    amount: Math.round(amount * 100),
+    currency: 'usd',
+    customer: customerId,
+    payment_method: defaultPm,
+    off_session: true,
+    confirm: true,
+    metadata: { bookingId, userId: user._id?.toString() || user.toString() },
+  });
+}
+
 async function refundPaymentIntent(paymentIntentId, { deductAmountDollars = 0 } = {}) {
   if (!paymentIntentId) return null;
   const stripe = getStripe();
@@ -180,4 +208,6 @@ module.exports = {
   getOrCreatePrice,
   createStripeSubscription,
   refundPaymentIntent,
+  hasDefaultPaymentMethod,
+  chargeOffSession,
 };

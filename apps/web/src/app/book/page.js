@@ -2,19 +2,11 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements } from '@stripe/react-stripe-js';
 import AuthGuard from '../../components/AuthGuard';
 import BottomNav from '../../components/BottomNav';
-import CheckoutForm from '../../components/CheckoutForm';
 import { api } from '../../services/api';
 
-const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-const stripePromise = stripeKey ? loadStripe(stripeKey, {
-  developerTools: { assistant: { enabled: false } },
-}) : null;
-
-const STEPS = ['service', 'address', 'details', 'confirm', 'payment'];
+const STEPS = ['service', 'address', 'details', 'confirm'];
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const PUT_OUT_OPTIONS = ['5–7 PM (Afternoon)', '7–9 PM (Evening)', '9–11 PM (Night)'];
 const BRING_IN_OPTIONS = ['12–4 PM (Afternoon)', '4–9 PM (Evening)'];
@@ -29,9 +21,7 @@ export default function BookPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  const [clientSecret, setClientSecret] = useState(null);
-  const [createdBookingId, setCreatedBookingId] = useState(null);
-  const [paymentIntentId, setPaymentIntentId] = useState(null);
+  const [bookingConfirmed, setBookingConfirmed] = useState(false);
 
   const [selected, setSelected] = useState({
     serviceType: null,
@@ -116,12 +106,9 @@ export default function BookPage() {
     setSubmitting(true);
     setError('');
     try {
-      let secret = null;
-      let bookingId = null;
-
       if (selected.bookingType === 'subscription') {
         const dayOfWeek = new Date(selected.date + 'T12:00:00').getDay();
-        const res = await api.post('/subscriptions', {
+        await api.post('/subscriptions', {
           addressId: selected.addressId,
           serviceTypeId: selected.serviceType._id,
           dayOfWeek,
@@ -129,9 +116,8 @@ export default function BookPage() {
           putOutTime: selected.putOutTime,
           bringInTime: selected.bringInTime,
         });
-        secret = res.data.clientSecret;
       } else {
-        const res = await api.post('/bookings', {
+        await api.post('/bookings', {
           addressId: selected.addressId,
           serviceTypeId: selected.serviceType._id,
           scheduledDate: selected.date,
@@ -140,43 +126,16 @@ export default function BookPage() {
           bringInTime: selected.bringInTime,
           amount: oneTimePrice(),
         });
-        const data = res.data;
-        secret = data.clientSecret;
-        bookingId = data.booking?._id || data.bookings?.[0]?._id || null;
       }
 
-      if (!secret || secret === 'dev_mock_secret') {
-        setStep(STEPS.indexOf('payment'));
-        setClientSecret('mock');
-        setTimeout(() => router.push('/dashboard'), 2000);
-        return;
-      }
-
-      setClientSecret(secret);
-      setCreatedBookingId(bookingId);
-      setStep(STEPS.indexOf('payment'));
+      setBookingConfirmed(true);
+      setTimeout(() => router.push('/dashboard'), 2000);
     } catch (err) {
       setError(err.message);
     } finally {
       setSubmitting(false);
     }
   }
-
-  async function handlePaymentSuccess(pi) {
-    setPaymentIntentId(pi.id);
-    if (createdBookingId) {
-      try {
-        await api.post(`/bookings/${createdBookingId}/confirm-payment`, { paymentIntentId: pi.id });
-      } catch {}
-    }
-    router.push('/dashboard');
-  }
-
-  const stripeOptions = useMemo(() => {
-    if (!clientSecret || clientSecret === 'mock') return null;
-    return { clientSecret, appearance: { theme: 'stripe', variables: { colorPrimary: '#1b70f5' } } };
-  }, [clientSecret]);
-
 
   const selectedAddr = addresses.find((a) => a._id === selected.addressId);
 
@@ -573,18 +532,17 @@ export default function BookPage() {
                 </div>
               </div>
 
-              <button onClick={handleConfirm} disabled={submitting}
-                className="mt-6 w-full rounded-xl bg-brand-600 py-3.5 font-semibold text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700 active:scale-[0.98] disabled:opacity-50">
-                {submitting ? 'Processing...' : selected.bookingType === 'subscription' ? 'Start Subscription' : 'Proceed to Payment'}
-              </button>
-            </div>
-          )}
+              {selected.bookingType !== 'subscription' && (
+                <div className="mt-4 flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-3 text-sm text-blue-700">
+                  <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+                  </svg>
+                  <span>Your card on file will be charged <strong>${currentPrice().toFixed(2)}</strong> after service completion.</span>
+                </div>
+              )}
 
-          {/* Step 5: Payment */}
-          {step === 4 && clientSecret && (
-            <div>
-              {clientSecret === 'mock' ? (
-                <div className="flex flex-col items-center py-12 text-center">
+              {bookingConfirmed ? (
+                <div className="mt-6 flex flex-col items-center py-8 text-center">
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
                     <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -594,7 +552,7 @@ export default function BookPage() {
                   <p className="mt-2 text-sm text-gray-500">
                     {selected.bookingType === 'subscription'
                       ? `Your subscription ($${monthlyPrice().toFixed(2)}/mo) is active.`
-                      : `Your service ($${oneTimePrice().toFixed(2)}) has been booked.`}
+                      : `Your service ($${oneTimePrice().toFixed(2)}) has been scheduled.`}
                   </p>
                   <p className="mt-1 text-xs text-gray-400">Redirecting to your dashboard...</p>
                   <div className="mt-4 h-1 w-32 overflow-hidden rounded-full bg-gray-200">
@@ -602,30 +560,10 @@ export default function BookPage() {
                   </div>
                 </div>
               ) : (
-                <>
-                  <h2 className="text-lg font-bold">Complete Payment</h2>
-                  <p className="mt-1 text-sm text-gray-500">
-                    {selected.bookingType === 'subscription'
-                      ? `Monthly subscription — $${monthlyPrice().toFixed(2)}/mo`
-                      : `One-time payment — $${oneTimePrice().toFixed(2)}`}
-                  </p>
-
-                  <div className="mt-6">
-                    {stripePromise && stripeOptions ? (
-                      <Elements stripe={stripePromise} options={stripeOptions}>
-                        <CheckoutForm
-                          onSuccess={handlePaymentSuccess}
-                          amount={selected.bookingType === 'subscription' ? monthlyPrice() : oneTimePrice()}
-                          label={selected.bookingType === 'subscription' ? 'Subscribe' : 'Pay Now'}
-                        />
-                      </Elements>
-                    ) : (
-                      <div className="rounded-xl bg-yellow-50 p-4 text-center text-sm text-yellow-700">
-                        Stripe is not configured. Please set NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.
-                      </div>
-                    )}
-                  </div>
-                </>
+                <button onClick={handleConfirm} disabled={submitting}
+                  className="mt-6 w-full rounded-xl bg-brand-600 py-3.5 font-semibold text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700 active:scale-[0.98] disabled:opacity-50">
+                  {submitting ? 'Processing...' : selected.bookingType === 'subscription' ? 'Start Subscription' : 'Confirm Booking'}
+                </button>
               )}
             </div>
           )}
