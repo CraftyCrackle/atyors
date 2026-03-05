@@ -501,6 +501,9 @@ function PaymentMethodsSection() {
 
   useEffect(() => { loadMethods(); }, [loadMethods]);
 
+  const [showCardForm, setShowCardForm] = useState(false);
+  const [setupSecret, setSetupSecret] = useState(null);
+
   async function handleAddCard() {
     setAdding(true);
     try {
@@ -521,19 +524,16 @@ function PaymentMethodsSection() {
         return;
       }
 
-      const { loadStripe } = await import('@stripe/stripe-js');
-      const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, {
-        developerTools: { assistant: { enabled: false } },
-      });
-      if (!stripe) { setAdding(false); return; }
-
-      const { error } = await stripe.confirmCardSetup(clientSecret, {
-        payment_method: { card: { token: 'tok_visa' } },
-      });
-
-      if (!error) await loadMethods();
+      setSetupSecret(clientSecret);
+      setShowCardForm(true);
     } catch {}
     setAdding(false);
+  }
+
+  function handleCardSaved() {
+    setShowCardForm(false);
+    setSetupSecret(null);
+    loadMethods();
   }
 
   async function handleSetDefault(id) {
@@ -622,6 +622,98 @@ function PaymentMethodsSection() {
           ))}
         </div>
       )}
+
+      {showCardForm && setupSecret && (
+        <AddCardModal
+          clientSecret={setupSecret}
+          onSuccess={handleCardSaved}
+          onClose={() => { setShowCardForm(false); setSetupSecret(null); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function AddCardModal({ clientSecret, onSuccess, onClose }) {
+  const [stripe, setStripe] = useState(null);
+  const [elements, setElements] = useState(null);
+  const [cardReady, setCardReady] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const { loadStripe } = await import('@stripe/stripe-js');
+      const s = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+      if (!mounted || !s) return;
+      setStripe(s);
+      const el = s.elements({ clientSecret, appearance: { theme: 'stripe' } });
+      setElements(el);
+    })();
+    return () => { mounted = false; };
+  }, [clientSecret]);
+
+  useEffect(() => {
+    if (!elements) return;
+    const card = elements.create('card', {
+      style: {
+        base: { fontSize: '16px', color: '#1f2937', '::placeholder': { color: '#9ca3af' } },
+        invalid: { color: '#ef4444' },
+      },
+    });
+    card.mount('#card-element');
+    card.on('ready', () => setCardReady(true));
+    card.on('change', (e) => setError(e.error ? e.error.message : ''));
+    return () => card.unmount();
+  }, [elements]);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+    setSaving(true);
+    setError('');
+    const cardElement = elements.getElement('card');
+    const { error: err } = await stripe.confirmCardSetup(clientSecret, {
+      payment_method: { card: cardElement },
+    });
+    if (err) {
+      setError(err.message);
+      setSaving(false);
+    } else {
+      onSuccess();
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40" onClick={onClose}>
+      <div
+        className="w-full max-w-md rounded-t-2xl sm:rounded-2xl bg-white p-5 pb-8 shadow-xl animate-slide-up"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Add Card</h3>
+          <button onClick={onClose} className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div className="rounded-lg border border-gray-200 p-3">
+            <div id="card-element" className="min-h-[24px]" />
+          </div>
+          {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
+          <button
+            type="submit"
+            disabled={saving || !cardReady}
+            className="mt-4 w-full rounded-lg bg-brand-600 py-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50 transition"
+          >
+            {saving ? 'Saving...' : 'Save Card'}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
