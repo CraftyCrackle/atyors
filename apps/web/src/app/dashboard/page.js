@@ -337,7 +337,9 @@ export default function DashboardPage() {
     try {
       await api.patch(`/bookings/${bookingId}/cancel`, { reason: 'Cancelled by customer' });
       await loadBookings();
-    } catch {}
+    } catch (err) {
+      alert(err?.message || 'Failed to cancel booking. Please try again.');
+    }
     setCancelling(false);
   }
 

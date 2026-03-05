@@ -5,6 +5,7 @@ try {
     disable: process.env.NODE_ENV === 'development',
     register: true,
     skipWaiting: true,
+    navigateFallbackDenylist: [/^\/api\//, /^\/socket\.io\//],
     runtimeCaching: [
       {
         urlPattern: /^https:\/\/.*\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i,
@@ -23,7 +24,8 @@ try {
         },
       },
       {
-        urlPattern: /^https:\/\/.*\/api\/.*$/i,
+        urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
+        method: 'GET',
         handler: 'NetworkFirst',
         options: {
           cacheName: 'api-cache',
