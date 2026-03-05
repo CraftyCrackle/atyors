@@ -7,6 +7,8 @@ const config = require('../config');
 
 const DAILY_BOOKING_CAP = 400;
 const MAX_BARRELS = 50;
+const GRACE_PERIOD_MS = 2 * 60 * 1000;
+const CANCELLATION_FEE = 1.00;
 
 function todayInEastern() {
   const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -221,9 +223,27 @@ async function cancel(bookingId, userId, reason) {
     }
   }
 
+  const elapsed = Date.now() - new Date(booking.createdAt).getTime();
+  const pastGrace = elapsed > GRACE_PERIOD_MS;
+  let cancellationFeeCharged = false;
+
+  if (pastGrace && !config.stripe.skip) {
+    const User = require('../models/User');
+    const user = await User.findById(userId);
+    if (user) {
+      try {
+        await stripeService.chargeOffSession(user, CANCELLATION_FEE, `cancel-${booking._id}`);
+        cancellationFeeCharged = true;
+      } catch (err) {
+        console.error(`[Cancel] Failed to charge cancellation fee for booking ${booking._id}:`, err.message);
+      }
+    }
+  }
+
   booking.status = 'cancelled';
   booking.cancelledAt = new Date();
   booking.cancellationReason = reason || undefined;
+  booking.cancellationFee = cancellationFeeCharged ? CANCELLATION_FEE : 0;
   booking.statusHistory.push({ status: 'cancelled', changedAt: new Date(), changedBy: userId });
   await booking.save();
 

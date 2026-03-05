@@ -238,7 +238,10 @@ function BookingCard({ booking, onRate, alreadyRated, onCancel, cancelling }) {
               Free cancellation for <span className="font-semibold">{graceMin}:{String(graceSec).padStart(2, '0')}</span>
             </div>
           )}
-          <button onClick={() => onCancel(booking._id)} disabled={cancelling}
+          {!inGrace && (
+            <p className="mb-2 text-center text-[11px] text-gray-400">A $1.00 cancellation fee will apply</p>
+          )}
+          <button onClick={() => onCancel(booking._id, inGrace)} disabled={cancelling}
             className="w-full rounded-lg border border-red-200 bg-red-50 py-2 text-xs font-medium text-red-600 transition hover:bg-red-100 active:scale-[0.98] disabled:opacity-50">
             {cancelling ? 'Cancelling...' : 'Cancel Booking'}
           </button>
@@ -360,8 +363,11 @@ export default function DashboardPage() {
     } catch { }
   }
 
-  function handleCancelClick(bookingId) {
+  const [cancelInGrace, setCancelInGrace] = useState(false);
+
+  function handleCancelClick(bookingId, inGrace) {
     setCancelConfirm(bookingId);
+    setCancelInGrace(!!inGrace);
   }
 
   async function executeCancel(bookingId) {
@@ -545,8 +551,10 @@ export default function DashboardPage() {
         {cancelConfirm && (
           <ConfirmModal
             title="Cancel Booking?"
-            message="Are you sure you want to cancel this booking?"
-            confirmLabel="Yes, Cancel"
+            message={cancelInGrace
+              ? 'This is within your free cancellation window. No charge will apply.'
+              : 'A $1.00 cancellation fee will be charged to your card on file.'}
+            confirmLabel={cancelInGrace ? 'Yes, Cancel' : 'Cancel & Pay $1.00'}
             cancelLabel="Keep Booking"
             danger
             onConfirm={() => executeCancel(cancelConfirm)}
