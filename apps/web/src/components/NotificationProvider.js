@@ -109,6 +109,20 @@ export default function NotificationProvider({ children }) {
 
   useEffect(() => {
     if (!userId) return;
+    async function handleResume() {
+      if (document.visibilityState !== 'visible') return;
+      try {
+        const { clearNativeBadge, isNativeApp } = await import('../services/capacitorPush');
+        if (isNativeApp()) await clearNativeBadge();
+      } catch {}
+    }
+    handleResume();
+    document.addEventListener('visibilitychange', handleResume);
+    return () => document.removeEventListener('visibilitychange', handleResume);
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId) return;
 
     if (socketRef.current) {
       socketRef.current.disconnect();

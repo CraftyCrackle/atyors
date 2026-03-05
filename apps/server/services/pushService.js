@@ -109,4 +109,12 @@ async function sendToUser(rawUserId, { title, body, data }) {
   }
 }
 
-module.exports = { subscribe, unsubscribe, registerDevice, unregisterDevice, sendToUser };
+async function clearBadgeForUser(rawUserId) {
+  if (!apns.isConfigured()) return;
+  const userId = rawUserId?._id || rawUserId;
+  const devices = await NativeDevice.find({ userId }).lean();
+  if (!devices.length) return;
+  await Promise.allSettled(devices.map((d) => apns.clearBadge(d.token)));
+}
+
+module.exports = { subscribe, unsubscribe, registerDevice, unregisterDevice, sendToUser, clearBadgeForUser };

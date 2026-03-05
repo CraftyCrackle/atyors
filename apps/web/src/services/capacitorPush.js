@@ -124,8 +124,9 @@ export async function registerNativePush() {
       console.error('[Push] APNs registration error:', JSON.stringify(err));
     });
 
-    await PushNotifications.addListener('pushNotificationReceived', (notification) => {
+    await PushNotifications.addListener('pushNotificationReceived', async (notification) => {
       console.log('[Push] Foreground notification:', notification.title, notification.body);
+      try { await PushNotifications.removeAllDeliveredNotifications(); } catch {}
     });
 
     await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
@@ -181,4 +182,12 @@ export async function registerNativePush() {
     lastError = `register: ${err.message}`;
     console.error('[Push] register() failed:', err);
   }
+}
+
+export async function clearNativeBadge() {
+  await initCapacitor();
+  if (!PushNotifications || !isNativeApp()) return;
+  try {
+    await PushNotifications.removeAllDeliveredNotifications();
+  } catch {}
 }

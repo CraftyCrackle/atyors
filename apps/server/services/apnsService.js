@@ -45,7 +45,7 @@ function getToken() {
   return cachedToken;
 }
 
-function sendNotification(deviceToken, { title, body, data }) {
+function sendRaw(deviceToken, payload, pushType = 'alert', priority = '10') {
   return new Promise((resolve, reject) => {
     const token = getToken();
     if (!token) return reject(new Error('APNs not configured'));
@@ -58,23 +58,13 @@ function sendNotification(deviceToken, { title, body, data }) {
       reject(err);
     });
 
-    const payload = JSON.stringify({
-      aps: {
-        alert: { title, body },
-        sound: 'default',
-        badge: 1,
-        'mutable-content': 1,
-      },
-      ...(data || {}),
-    });
-
     const headers = {
       ':method': 'POST',
       ':path': `/3/device/${deviceToken}`,
       authorization: `bearer ${token}`,
       'apns-topic': BUNDLE_ID,
-      'apns-push-type': 'alert',
-      'apns-priority': '10',
+      'apns-push-type': pushType,
+      'apns-priority': priority,
       'apns-expiration': '0',
     };
 
@@ -82,10 +72,7 @@ function sendNotification(deviceToken, { title, body, data }) {
     let responseData = '';
     let statusCode;
 
-    req.on('response', (hdrs) => {
-      statusCode = hdrs[':status'];
-    });
-
+    req.on('response', (hdrs) => { statusCode = hdrs[':status']; });
     req.on('data', (chunk) => { responseData += chunk; });
 
     req.on('end', () => {
@@ -98,13 +85,31 @@ function sendNotification(deviceToken, { title, body, data }) {
       }
     });
 
-    req.write(payload);
+    req.write(JSON.stringify(payload));
     req.end();
   });
+}
+
+function sendNotification(deviceToken, { title, body, data, badge }) {
+  const payload = {
+    aps: {
+      alert: { title, body },
+      sound: 'default',
+      badge: typeof badge === 'number' ? badge : 1,
+      'mutable-content': 1,
+    },
+    ...(data || {}),
+  };
+  return sendRaw(deviceToken, payload, 'alert', '10');
+}
+
+function clearBadge(deviceToken) {
+  const payload = { aps: { badge: 0, 'content-available': 1 } };
+  return sendRaw(deviceToken, payload, 'background', '5');
 }
 
 function isConfigured() {
   return !!(KEY_ID && TEAM_ID && loadKey());
 }
 
-module.exports = { sendNotification, isConfigured };
+module.exports = { sendNotification, clearBadge, isConfigured };

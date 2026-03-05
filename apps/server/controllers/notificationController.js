@@ -1,4 +1,5 @@
 const notificationService = require('../services/notificationService');
+const pushService = require('../services/pushService');
 
 async function list(req, res, next) {
   try {
@@ -17,6 +18,8 @@ async function markRead(req, res, next) {
     if (!notification) {
       return res.status(404).json({ success: false, error: { message: 'Notification not found' } });
     }
+    const remaining = await notificationService.getUnreadCount(req.user._id);
+    if (remaining === 0) pushService.clearBadgeForUser(req.user._id).catch(() => {});
     res.json({ success: true, data: { notification } });
   } catch (err) { next(err); }
 }
@@ -24,6 +27,7 @@ async function markRead(req, res, next) {
 async function markAllRead(req, res, next) {
   try {
     await notificationService.markAllRead(req.user._id);
+    pushService.clearBadgeForUser(req.user._id).catch(() => {});
     res.json({ success: true });
   } catch (err) { next(err); }
 }
