@@ -144,6 +144,8 @@ export default function ProfilePage() {
 
           {isCustomer && <PaymentMethodsSection />}
 
+          {isCustomer && <InvoiceSection />}
+
           {canInstall && !isStandalone && (
             <button
               onClick={triggerInstall}
@@ -526,6 +528,105 @@ function PaymentMethodsSection() {
           onSuccess={handleCardSaved}
           onClose={() => { setShowCardForm(false); setSetupSecret(null); }}
         />
+      )}
+    </div>
+  );
+}
+
+function InvoiceSection() {
+  const [charges, setCharges] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await api.get('/payments/history');
+        setCharges(res.data.charges || []);
+      } catch {}
+      setLoading(false);
+    })();
+  }, []);
+
+  const visible = expanded ? charges : charges.slice(0, 3);
+
+  return (
+    <div className="mt-4 rounded-xl bg-white p-4 shadow-sm">
+      <div className="flex items-center justify-between">
+        <h2 className="font-semibold">Payment History</h2>
+        {charges.length > 0 && (
+          <span className="text-xs text-gray-400">{charges.length} transaction{charges.length !== 1 ? 's' : ''}</span>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="mt-4 flex justify-center py-4">
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
+        </div>
+      ) : charges.length === 0 ? (
+        <div className="mt-3 rounded-lg border-2 border-dashed border-gray-200 py-6 text-center">
+          <svg className="mx-auto h-8 w-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+          </svg>
+          <p className="mt-2 text-sm text-gray-400">No invoices yet</p>
+        </div>
+      ) : (
+        <>
+          <div className="mt-3 space-y-2">
+            {visible.map((c) => {
+              const date = new Date(c.created * 1000);
+              const succeeded = c.status === 'succeeded';
+              const refunded = c.refunded;
+              return (
+                <div key={c.id} className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
+                  <div className={`flex h-8 w-8 items-center justify-center rounded-full ${refunded ? 'bg-amber-100' : succeeded ? 'bg-green-100' : 'bg-red-100'}`}>
+                    {refunded ? (
+                      <svg className="h-4 w-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                      </svg>
+                    ) : succeeded ? (
+                      <svg className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <svg className="h-4 w-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900">
+                      {c.description || 'Service charge'}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      {' '}&middot;{' '}
+                      {c.payment_method_details?.card?.brand && (
+                        <span className="capitalize">{c.payment_method_details.card.brand} ····{c.payment_method_details.card.last4}</span>
+                      )}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className={`text-sm font-semibold ${refunded ? 'text-amber-600' : succeeded ? 'text-gray-900' : 'text-red-500'}`}>
+                      ${(c.amount / 100).toFixed(2)}
+                    </p>
+                    <p className={`text-[10px] font-medium ${refunded ? 'text-amber-500' : succeeded ? 'text-green-600' : 'text-red-400'}`}>
+                      {refunded ? 'Refunded' : succeeded ? 'Paid' : 'Failed'}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {charges.length > 3 && (
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="mt-3 w-full rounded-lg border border-gray-200 py-2 text-xs font-medium text-brand-600 transition hover:bg-brand-50"
+            >
+              {expanded ? 'Show less' : `View all ${charges.length} transactions`}
+            </button>
+          )}
+        </>
       )}
     </div>
   );

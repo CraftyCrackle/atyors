@@ -193,6 +193,7 @@ async function chargeOffSession(user, amount, bookingId) {
     payment_method: defaultPm,
     off_session: true,
     confirm: true,
+    description: `atyors service — booking ${bookingId}`,
     metadata: { bookingId, userId: user._id?.toString() || user.toString() },
   });
 }
