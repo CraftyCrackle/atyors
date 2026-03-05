@@ -23,7 +23,9 @@ export default function AuthGuard({ children }) {
     const onServicer = pathname.startsWith('/servicer');
     const onAdmin = pathname.startsWith('/admin');
 
-    if (role === 'servicer' && !onServicer && !onAdmin) {
+    const onProfile = pathname === '/profile';
+
+    if (role === 'servicer' && !onServicer && !onAdmin && !onProfile) {
       router.replace('/servicer/dashboard');
     } else if (['admin', 'superadmin'].includes(role) && !onAdmin) {
       router.replace('/admin/dashboard');
