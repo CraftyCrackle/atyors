@@ -29,12 +29,12 @@ export default function Logo({ size = 'md', variant = 'full', dark = false }) {
 
   const logoHeights = { sm: 28, md: 36, lg: 48, xl: 64 };
   const h = logoHeights[size] || logoHeights.md;
+  const src = dark ? '/icons/300x90dark.png' : '/logo.png';
   return (
     <img
-      src="/logo.png"
+      src={src}
       alt="atyors — At Your Service"
       height={h}
-      className={dark ? 'brightness-0 invert' : ''}
       style={{ height: h, width: 'auto' }}
     />
   );
