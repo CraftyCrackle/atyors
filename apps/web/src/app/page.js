@@ -68,7 +68,12 @@ function NativeAppLanding() {
       </div>
 
       <footer className="px-6 pb-safe pb-6">
-        <p className="text-center text-xs text-gray-400">
+        <div className="flex justify-center gap-4 text-xs text-gray-400">
+          <Link href="/privacy" className="hover:text-gray-600">Privacy</Link>
+          <Link href="/terms" className="hover:text-gray-600">Terms</Link>
+          <Link href="/support" className="hover:text-gray-600">Support</Link>
+        </div>
+        <p className="mt-2 text-center text-xs text-gray-400">
           &copy; {new Date().getFullYear()} atyors.com &middot; At Your Service
         </p>
       </footer>
@@ -176,6 +181,11 @@ function WebLanding() {
       <footer className="border-t border-gray-100 bg-white px-6 py-8">
         <div className="mx-auto flex max-w-lg flex-col items-center gap-4">
           <Logo size="sm" variant="wordmark" />
+          <div className="flex gap-4 text-xs text-gray-400">
+            <Link href="/privacy" className="hover:text-gray-600">Privacy</Link>
+            <Link href="/terms" className="hover:text-gray-600">Terms</Link>
+            <Link href="/support" className="hover:text-gray-600">Support</Link>
+          </div>
           <p className="text-center text-xs text-gray-400">
             &copy; {new Date().getFullYear()} atyors.com &middot; At Your Service
           </p>

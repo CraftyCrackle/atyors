@@ -1,204 +1,134 @@
 'use client';
 
 import Link from 'next/link';
-import Logo from '../../components/Logo';
 
-const LAST_UPDATED = 'February 25, 2026';
-
-export default function TermsPage() {
+export default function TermsOfService() {
   return (
-    <main className="min-h-screen-safe bg-white">
-      <nav className="flex items-center justify-between border-b border-gray-100 px-6 pb-4 pt-sticky-safe">
-        <Link href="/">
-          <Logo size="sm" variant="wordmark" />
-        </Link>
-        <Link href="/signup" className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700">
-          Sign Up
-        </Link>
-      </nav>
-
+    <div className="min-h-[100dvh] bg-white">
       <div className="mx-auto max-w-2xl px-6 py-12">
-        <h1 className="text-3xl font-bold text-gray-900">Terms of Service</h1>
-        <p className="mt-2 text-sm text-gray-400">Last updated: {LAST_UPDATED}</p>
+        <Link href="/" className="mb-8 inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700">
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+          Back
+        </Link>
 
-        <div className="mt-8 space-y-8 text-sm leading-relaxed text-gray-700">
+        <img src="/icons/favicon-48x48.png" alt="atyors" className="mb-4 h-10 w-10" />
+        <h1 className="text-3xl font-extrabold text-gray-900">Terms of Service</h1>
+        <p className="mt-2 text-sm text-gray-500">Last updated: March 6, 2026</p>
 
+        <div className="mt-8 space-y-8 text-[15px] leading-relaxed text-gray-700">
           <section>
-            <h2 className="text-lg font-semibold text-gray-900">1. What This Agreement Is</h2>
+            <h2 className="text-lg font-bold text-gray-900">1. Agreement to Terms</h2>
             <p className="mt-2">
-              These Terms of Service (&quot;Terms&quot;) are an agreement between you and atyors.com (&quot;atyors,&quot; &quot;we,&quot; &quot;us&quot;). By creating an account or using our services, you agree to follow these Terms. If you don&apos;t agree, please don&apos;t use our app.
-            </p>
-            <p className="mt-2">
-              We may update these Terms from time to time. If we make a big change, we&apos;ll let you know by email or through the app. If you keep using the service after a change, that means you accept the new Terms.
+              By creating an account or using atyors ("At Your Service"), you agree to these Terms of Service. 
+              If you do not agree, please do not use our services.
             </p>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900">2. What We Do</h2>
+            <h2 className="text-lg font-bold text-gray-900">2. Description of Service</h2>
             <p className="mt-2">
-              atyors.com is a platform that connects homeowners (&quot;Customers&quot;) with people who provide curbside trash barrel services (&quot;Servicers&quot;). Our services include:
+              atyors is a platform that connects customers with local servicers who perform curbside services, 
+              starting with trash barrel put out and bring in. The platform handles scheduling, payment processing, 
+              live tracking, and communication between customers and servicers.
             </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-bold text-gray-900">3. Accounts</h2>
+            <p className="mt-2">
+              You must provide accurate information when creating an account. You are responsible for 
+              keeping your login credentials secure. You must be at least 18 years old to use our services.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-bold text-gray-900">4. Bookings and Payments</h2>
             <ul className="mt-2 list-disc space-y-1 pl-5">
-              <li><strong>Put Out:</strong> We take your trash barrels from your property to the curb for pickup.</li>
-              <li><strong>Bring In:</strong> We bring your trash barrels back from the curb to your property after pickup.</li>
-              <li><strong>Both:</strong> Put out and bring in as two separate jobs.</li>
+              <li>A valid payment method must be on file before booking a service.</li>
+              <li>You are charged after a servicer completes your job.</li>
+              <li>Bookings cancelled within the first 2 minutes are free. After the grace period, a $1.00 cancellation fee applies.</li>
+              <li>Prices are shown before you confirm a booking. The amount charged will match the confirmed price.</li>
+              <li>Payments are processed securely by Stripe. atyors does not store your full card number.</li>
             </ul>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-bold text-gray-900">5. Service Expectations</h2>
             <p className="mt-2">
-              We are a technology platform. Servicers are independent workers, not employees of atyors.com.
+              Please provide accurate instructions and up-to-date photos for your service address. If conditions 
+              differ from the request when the servicer arrives, the servicer may use their best judgment or 
+              service only the barrels you requested.
+            </p>
+            <p className="mt-2">
+              atyors connects you with independent servicers. While we work to ensure quality, specific 
+              outcomes may vary based on conditions at the time of service.
             </p>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900">3. Who Can Use Our Service</h2>
+            <h2 className="text-lg font-bold text-gray-900">6. Servicer Terms</h2>
+            <p className="mt-2">
+              Servicers access the platform through accounts provided by atyors. Servicers agree to complete 
+              accepted jobs professionally and in a timely manner, provide accurate status updates, and respect 
+              customer property.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-bold text-gray-900">7. Prohibited Conduct</h2>
             <ul className="mt-2 list-disc space-y-1 pl-5">
-              <li>You must be at least 18 years old.</li>
-              <li>You must live in or own property in an area we currently serve (Massachusetts).</li>
-              <li>You must provide accurate information when you sign up.</li>
-              <li>You are responsible for keeping your account information and password safe.</li>
+              <li>Do not use the platform for any unlawful purpose</li>
+              <li>Do not create fake accounts or provide false information</li>
+              <li>Do not interfere with the platform's operation or other users' experience</li>
+              <li>Do not attempt to circumvent payment through the platform</li>
             </ul>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900">4. Your Account</h2>
+            <h2 className="text-lg font-bold text-gray-900">8. Limitation of Liability</h2>
             <p className="mt-2">
-              When you create an account, everything you enter must be truthful. You are responsible for all activity under your account. If you think someone else is using your account, contact us immediately.
-            </p>
-            <p className="mt-2">
-              We can suspend or close your account if you break these Terms, use the service to do something illegal, or behave in a way that is harmful to others.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-lg font-semibold text-gray-900">5. Booking and Scheduling</h2>
-            <ul className="mt-2 list-disc space-y-1 pl-5">
-              <li>Services are available Monday through Saturday. No services on Sundays.</li>
-              <li>There is a daily limit on how many homes we can serve. If a day is full, you&apos;ll need to pick another day.</li>
-              <li>Once you book, a Servicer will accept your job. You&apos;ll get a notification when someone accepts.</li>
-              <li>You can cancel a booking up to 24 hours before the scheduled date at no charge.</li>
-              <li>Cancellations made less than 24 hours before the scheduled date may not be refunded.</li>
-            </ul>
-          </section>
-
-          <section>
-            <h2 className="text-lg font-semibold text-gray-900">6. Pricing and Payment</h2>
-            <p className="mt-2">
-              We believe in honest, upfront pricing with no hidden fees. This is in line with Massachusetts consumer protection law (M.G.L. c. 93A).
-            </p>
-            <ul className="mt-2 list-disc space-y-1 pl-5">
-              <li><strong>One-Time Service:</strong> You pay per barrel, per service. The price is shown before you confirm your booking.</li>
-              <li><strong>Monthly Subscription:</strong> You pay a flat monthly rate that includes weekly service for up to 3 barrels. Extra barrels cost more, and that price is shown clearly when you sign up.</li>
-              <li>All prices are shown in U.S. dollars and include the full cost — no extra fees are added later.</li>
-              <li>Payment is collected through our payment processor (Stripe). We do not store your full credit card number.</li>
-            </ul>
-          </section>
-
-          <section>
-            <h2 className="text-lg font-semibold text-gray-900">7. Subscriptions</h2>
-            <ul className="mt-2 list-disc space-y-1 pl-5">
-              <li>Monthly subscriptions renew automatically each month until you cancel.</li>
-              <li>You can cancel your subscription at any time from your account. Cancellation takes effect at the end of your current billing period.</li>
-              <li>We do not offer partial refunds for unused portions of a billing period.</li>
-            </ul>
-          </section>
-
-          <section>
-            <h2 className="text-lg font-semibold text-gray-900">8. Ratings and Reviews</h2>
-            <p className="mt-2">
-              After a job is completed, both Customers and Servicers can rate each other. Ratings should be honest and fair. We may remove reviews that contain hateful language, threats, or false information.
+              atyors provides the platform "as is." We are not liable for damages arising from service delays, 
+              property damage during service, or servicer conduct beyond our reasonable control. Our total 
+              liability for any claim is limited to the amount you paid for the specific service in question.
             </p>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900">9. Your Responsibilities</h2>
-            <p className="mt-2"><strong>As a Customer, you agree to:</strong></p>
-            <ul className="mt-1 list-disc space-y-1 pl-5">
-              <li>Make sure your barrels are accessible and in the location you described.</li>
-              <li>Provide accurate address and barrel details.</li>
-              <li>Not place hazardous or prohibited materials in your barrels.</li>
-              <li>Treat Servicers with respect.</li>
-            </ul>
-            <p className="mt-3"><strong>As a Servicer, you agree to:</strong></p>
-            <ul className="mt-1 list-disc space-y-1 pl-5">
-              <li>Complete accepted jobs on time and as described.</li>
-              <li>Handle barrels with care and return them to the correct location.</li>
-              <li>Take a completion photo to confirm the job is done.</li>
-              <li>Treat Customers and their property with respect.</li>
-            </ul>
-          </section>
-
-          <section>
-            <h2 className="text-lg font-semibold text-gray-900">10. What We Are Not Responsible For</h2>
+            <h2 className="text-lg font-bold text-gray-900">9. Termination</h2>
             <p className="mt-2">
-              We do our best to provide a reliable service, but there are some things we can&apos;t guarantee:
-            </p>
-            <ul className="mt-2 list-disc space-y-1 pl-5">
-              <li>We are not responsible for damage to barrels that were already in poor condition.</li>
-              <li>We are not responsible for missed trash pickups by your city or town.</li>
-              <li>We are not responsible if a Servicer cannot access your barrels due to weather, blocked access, or safety concerns.</li>
-              <li>Our app may have downtime for maintenance or technical issues. We&apos;ll try to keep this to a minimum.</li>
-            </ul>
-            <p className="mt-2">
-              To the maximum extent allowed by Massachusetts law, atyors.com is not liable for indirect, incidental, or consequential damages arising from your use of the service.
+              You may close your account at any time. We may suspend or terminate accounts that violate these 
+              terms or engage in abusive behavior. Outstanding charges remain due after termination.
             </p>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900">11. Privacy</h2>
+            <h2 className="text-lg font-bold text-gray-900">10. Changes to Terms</h2>
             <p className="mt-2">
-              We collect personal information like your name, email, phone number, and address to provide our service. We also collect location data from Servicers during active jobs for live tracking.
-            </p>
-            <ul className="mt-2 list-disc space-y-1 pl-5">
-              <li>We will never sell your personal information to third parties.</li>
-              <li>We use your data only to operate the service, communicate with you, and improve the app.</li>
-              <li>Photos uploaded (barrel photos, completion photos, profile photos) are stored securely and only used for service purposes.</li>
-              <li>You can request deletion of your account and data by contacting us.</li>
-            </ul>
-            <p className="mt-2">
-              Our data practices comply with applicable Massachusetts privacy laws.
+              We may update these terms from time to time. Continued use of the platform after changes 
+              constitutes acceptance of the updated terms.
             </p>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900">12. Disputes</h2>
+            <h2 className="text-lg font-bold text-gray-900">11. Governing Law</h2>
             <p className="mt-2">
-              If you have a problem with a booking or a Servicer, contact us first and we&apos;ll try to help resolve it.
-            </p>
-            <p className="mt-2">
-              If we can&apos;t resolve a dispute informally, you agree that any legal claim will be handled under the laws of the Commonwealth of Massachusetts, and any legal proceedings will take place in the courts of Suffolk County, Massachusetts.
-            </p>
-            <p className="mt-2">
-              Nothing in these Terms limits your rights under the Massachusetts Consumer Protection Act (M.G.L. c. 93A).
+              These terms are governed by the laws of the Commonwealth of Massachusetts, United States.
             </p>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900">13. Ending Your Account</h2>
-            <ul className="mt-2 list-disc space-y-1 pl-5">
-              <li>You can stop using the service and close your account at any time.</li>
-              <li>If you have an active subscription, cancel it before closing your account to avoid future charges.</li>
-              <li>We may close accounts that are inactive for more than 12 months.</li>
-            </ul>
-          </section>
-
-          <section>
-            <h2 className="text-lg font-semibold text-gray-900">14. Contact Us</h2>
+            <h2 className="text-lg font-bold text-gray-900">12. Contact</h2>
             <p className="mt-2">
-              If you have questions about these Terms or need help with your account, reach out to us:
-            </p>
-            <div className="mt-2 rounded-xl bg-gray-50 p-4">
-              <p className="font-medium text-gray-900">atyors.com</p>
-              <p className="mt-1">Email: <a href="mailto:support@atyors.com" className="text-brand-600 hover:underline">support@atyors.com</a></p>
-              <p>Boston, Massachusetts</p>
-            </div>
-          </section>
-
-          <section className="rounded-xl border border-gray-200 bg-gray-50 p-5">
-            <p className="text-xs text-gray-500">
-              These Terms of Service are governed by the laws of the Commonwealth of Massachusetts. By using atyors.com, you acknowledge that you have read, understood, and agree to be bound by these Terms.
+              Questions about these terms? Contact us at{' '}
+              <a href="mailto:support@atyors.com" className="text-brand-600 hover:underline">support@atyors.com</a>.
             </p>
           </section>
         </div>
+
+        <div className="mt-12 border-t border-gray-100 pt-6 text-center text-xs text-gray-400">
+          &copy; {new Date().getFullYear()} atyors. At Your Service.
+        </div>
       </div>
-    </main>
+    </div>
   );
 }
