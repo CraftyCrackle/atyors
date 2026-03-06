@@ -22,6 +22,7 @@ export default function BookPage() {
   const [error, setError] = useState('');
 
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
+  const [hasCard, setHasCard] = useState(true);
 
   const [selected, setSelected] = useState({
     serviceType: null,
@@ -37,14 +38,16 @@ export default function BookPage() {
   useEffect(() => {
     async function load() {
       try {
-        const [svcRes, addrRes, priceRes] = await Promise.all([
+        const [svcRes, addrRes, priceRes, methodsRes] = await Promise.all([
           api.get('/services/types/trash-recycling'),
           api.get('/addresses'),
           api.get('/services/pricing'),
+          api.get('/payments/methods').catch(() => ({ data: { methods: [] } })),
         ]);
         setServices(svcRes.data.types);
         setAddresses(addrRes.data.addresses);
         setPricing(priceRes.data);
+        setHasCard((methodsRes.data.methods || []).length > 0);
       } catch { }
       setLoading(false);
     }
@@ -172,6 +175,25 @@ export default function BookPage() {
 
         <div className="mt-6 px-4">
 
+          {!hasCard && (
+            <div className="mb-6 rounded-xl border-2 border-amber-200 bg-amber-50 p-5">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100">
+                  <svg className="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-amber-900">Add a payment method first</h3>
+                  <p className="mt-1 text-sm text-amber-700">You need a credit or debit card on file before you can book a service. You won't be charged until the job is done.</p>
+                  <button onClick={() => router.push('/profile')} className="mt-3 rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-700 active:scale-[0.98]">
+                    Go to Profile to Add Card
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Step 1: Service Selection */}
           {step === 0 && (
             <div>
@@ -179,7 +201,7 @@ export default function BookPage() {
               <p className="mt-1 text-sm text-gray-500">Select what you need done with your trash barrels</p>
               <div className="mt-4 space-y-3">
                 {services.map((svc) => (
-                  <button key={svc._id} onClick={() => { setSelected({ ...selected, serviceType: svc }); next(); }}
+                  <button key={svc._id} disabled={!hasCard} onClick={() => { setSelected({ ...selected, serviceType: svc }); next(); }}
                     className={`w-full rounded-xl border-2 p-4 text-left transition active:scale-[0.98] ${selected.serviceType?._id === svc._id ? 'border-brand-600 bg-brand-50' : 'border-gray-100 hover:border-gray-200'}`}>
                     <div className="flex items-start justify-between">
                       <div>

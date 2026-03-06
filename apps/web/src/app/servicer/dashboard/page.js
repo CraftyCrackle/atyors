@@ -53,6 +53,23 @@ function JobCard({ booking, onAccept, accepting, onRate, alreadyRated }) {
         </span>
       </div>
 
+      {(booking.putOutTime || booking.bringInTime) && (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {booking.putOutTime && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-blue-900/30 border border-blue-800/40 px-2.5 py-1 text-xs text-blue-300">
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              Put out: {booking.putOutTime}
+            </span>
+          )}
+          {booking.bringInTime && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-900/30 border border-amber-800/40 px-2.5 py-1 text-xs text-amber-300">
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              Bring in: {booking.bringInTime}
+            </span>
+          )}
+        </div>
+      )}
+
       {addr && booking.status !== 'completed' && (
         <div className="mt-3 rounded-lg bg-gray-900/50 p-3">
           <p className="text-sm text-gray-300">{addr.street}{addr.unit ? `, ${addr.unit}` : ''}</p>
