@@ -17,7 +17,12 @@ async function request(path, options = {}) {
     }
   }
 
-  const data = await res.json();
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error(res.ok ? 'Invalid server response' : `Request failed (${res.status})`);
+  }
   if (!res.ok) throw new Error(data?.error?.message || 'Request failed');
   return data;
 }

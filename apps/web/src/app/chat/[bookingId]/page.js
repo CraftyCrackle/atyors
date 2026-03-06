@@ -112,7 +112,7 @@ export default function ChatPage() {
       });
       setInput('');
       inputRef.current?.focus();
-    } catch { }
+    } catch (err) { alert(err.message || 'Failed to send message'); }
     setSending(false);
   }
 

@@ -18,17 +18,17 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=${PORT:-8080}
-      - MONGODB_URI=${MONGODB_URI:-mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASS:-changeme_in_production}@mongodb:27017/atyors?authSource=admin}
-      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
-      - JWT_SECRET=${JWT_SECRET:-atyors-prod-default-jwt-secret-replace-via-ssm}
+      - MONGODB_URI=${MONGODB_URI}
+      - REDIS_URL=${REDIS_URL:-redis://:${REDIS_PASSWORD}@redis:6379}
+      - JWT_SECRET=${JWT_SECRET}
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-https://atyors.com,https://www.atyors.com}
       - SKIP_STRIPE=${SKIP_STRIPE:-false}
       - SKIP_TWILIO=${SKIP_TWILIO:-false}
-      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-BKvDs89OtKGPwo6wSt0-neFvJsU4R2kZWH2GgZRiESG4-iszXn30wtkO0mIO1lktbe7lKwLyjAV_exCeP1JusfI}
-      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY:-8JhnHTywkMJfQ-3EqFY6Aj9pmmAoGs1KGtF9A6z92Tw}
+      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY}
+      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY}
       - VAPID_SUBJECT=${VAPID_SUBJECT:-mailto:admin@atyors.com}
-      - APNS_KEY_ID=${APNS_KEY_ID:-RYDZ5XJHZW}
-      - APNS_TEAM_ID=${APNS_TEAM_ID:-T5TAYRAJRK}
+      - APNS_KEY_ID=${APNS_KEY_ID}
+      - APNS_TEAM_ID=${APNS_TEAM_ID}
       - APNS_BUNDLE_ID=${APNS_BUNDLE_ID:-com.atyors.app}
       - APNS_KEY_PATH=/app/config/AuthKey_RYDZ5XJHZW.p8
       - APNS_SANDBOX=${APNS_SANDBOX:-true}
@@ -55,7 +55,7 @@ services:
         - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-https://atyors.com}
         - NEXT_PUBLIC_SOCKET_URL=${NEXT_PUBLIC_SOCKET_URL:-https://atyors.com}
         - NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-}
-        - NEXT_PUBLIC_VAPID_PUBLIC_KEY=${NEXT_PUBLIC_VAPID_PUBLIC_KEY:-${VAPID_PUBLIC_KEY:-BKvDs89OtKGPwo6wSt0-neFvJsU4R2kZWH2GgZRiESG4-iszXn30wtkO0mIO1lktbe7lKwLyjAV_exCeP1JusfI}}
+        - NEXT_PUBLIC_VAPID_PUBLIC_KEY=${NEXT_PUBLIC_VAPID_PUBLIC_KEY:-${VAPID_PUBLIC_KEY}}
         - NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY:-}
         - NEXT_PUBLIC_COGNITO_USER_POOL_ID=${NEXT_PUBLIC_COGNITO_USER_POOL_ID:-}
         - NEXT_PUBLIC_COGNITO_CLIENT_ID=${NEXT_PUBLIC_COGNITO_CLIENT_ID:-}
@@ -73,8 +73,8 @@ services:
   mongodb:
     container_name: atyors-mongodb
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER:-admin}
-      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASS:-changeme_in_production}
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASS}
       - MONGO_INITDB_DATABASE=atyors
     volumes:
       - mongo-prod-data:/data/db
@@ -83,6 +83,7 @@ services:
 
   redis:
     container_name: atyors-redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
     ports:
       - "6379:6379"
 

@@ -701,6 +701,48 @@ ssh -i ~/.ssh/atyors-ec2-key.pem ec2-user@54.81.247.176
 sudo bash -c 'cd /root/atyors && docker compose -f docker-compose.yml -f docker-compose.ec2.yml ps'
 ```
 
+### Manual Deployment (When GitHub Actions Is Down)
+
+Use this when GitHub Actions fails to trigger or is experiencing an outage.
+
+**From your local machine (all-in-one):**
+```bash
+SSH_KEY=~/.ssh/atyors-ec2-key.pem
+EC2=ec2-user@54.81.247.176
+
+# 1. Pull latest code
+ssh -i $SSH_KEY $EC2 "sudo bash -c 'cd /root/atyors && git pull origin main'"
+
+# 2. Build containers (web first since it takes longest, then api)
+ssh -i $SSH_KEY $EC2 "sudo bash -c 'cd /root/atyors && set -a && source .env.ec2 && set +a && docker compose -f docker-compose.yml -f docker-compose.ec2.yml build web'"
+ssh -i $SSH_KEY $EC2 "sudo bash -c 'cd /root/atyors && set -a && source .env.ec2 && set +a && docker compose -f docker-compose.yml -f docker-compose.ec2.yml build api'"
+
+# 3. Restart services (only changed containers are recreated)
+ssh -i $SSH_KEY $EC2 "sudo bash -c 'cd /root/atyors && set -a && source .env.ec2 && set +a && docker compose -f docker-compose.yml -f docker-compose.ec2.yml up -d'"
+
+# 4. Verify health
+curl -s https://atyors.com/api/v1/health
+```
+
+**If already SSH'd into the EC2 instance:**
+```bash
+sudo su -
+cd /root/atyors
+git pull origin main
+set -a && source .env.ec2 && set +a
+docker compose -f docker-compose.yml -f docker-compose.ec2.yml build web
+docker compose -f docker-compose.yml -f docker-compose.ec2.yml build api
+docker compose -f docker-compose.yml -f docker-compose.ec2.yml up -d
+curl -s http://127.0.0.1:8080/api/v1/health
+```
+
+**Key notes:**
+- Always `source .env.ec2` before building — Next.js bakes `NEXT_PUBLIC_*` vars at build time
+- `up -d` only recreates containers whose images changed; MongoDB, Redis, Nginx stay running
+- Web build takes ~60-70s, API build is typically cached and instant
+- After `up -d`, wait for health checks (~30s) before verifying
+- If a container fails to start, check logs: `docker compose -f docker-compose.yml -f docker-compose.ec2.yml logs --tail 50 web`
+
 ### Rollback
 Use the GitHub Actions "rollback" workflow with a specific commit SHA, or manually:
 ```bash
@@ -735,9 +777,11 @@ ssh -i ~/.ssh/atyors-ec2-key.pem ec2-user@54.81.247.176
 sudo docker compose -f docker-compose.yml -f docker-compose.ec2.yml logs -f api
 curl https://atyors.com/api/v1/health
 
-# Emergency
-# Manual rollback via GitHub Actions "rollback" workflow
-# Manual SSH: ssh -i ~/.ssh/atyors-ec2-key.pem ec2-user@54.81.247.176
+# Manual deploy (when GitHub Actions is down)
+ssh -i ~/.ssh/atyors-ec2-key.pem ec2-user@54.81.247.176 "sudo bash -c 'cd /root/atyors && git pull origin main && set -a && source .env.ec2 && set +a && docker compose -f docker-compose.yml -f docker-compose.ec2.yml build web && docker compose -f docker-compose.yml -f docker-compose.ec2.yml build api && docker compose -f docker-compose.yml -f docker-compose.ec2.yml up -d'"
+
+# Emergency rollback
+# Via GitHub Actions "rollback" workflow, or manual SSH + git checkout <sha>
 ```
 
 ---
@@ -827,3 +871,129 @@ If Apple requests changes during review, common fixes include:
 | `apps/web/src/components/InstallContext.js` | PWA install state context (active but `InstallPrompt` disabled in layout) |
 | `apps/web/src/components/InstallPrompt.js` | PWA install overlay (not rendered during UAT) |
 | `nginx/ec2.conf` | Service worker headers, SSL, proxy rules |
+
+---
+
+## 18. Security Hardening (Go-Live)
+
+### 18.1 Secrets Management
+
+**Rule:** No hardcoded secrets in Docker Compose files. All secret values use `${VAR}` references with no fallback defaults in production (`docker-compose.ec2.yml`). The dev compose (`docker-compose.yml`) may use safe local-only defaults (e.g., `admin:password` for local MongoDB, `dev-secret-local-only` for JWT).
+
+**SSM as single source of truth:** All 29 production secrets live in AWS SSM Parameter Store under `/atyors/production/`. The deploy workflow auto-generates `.env.ec2` from SSM at deploy time by uppercasing parameter names and writing them to the file.
+
+**`env.local.example`** is the canonical template for all environment variables. Copy to `.env.local` for local development.
+
+**Complete SSM parameter list (29 parameters):**
+
+| Category | SSM Parameter | Env Var |
+|----------|--------------|---------|
+| **Core** | `port` | `PORT` |
+| | `cors_allowed_origins` | `CORS_ALLOWED_ORIGINS` |
+| | `from_email` | `FROM_EMAIL` |
+| **Auth** | `jwt_secret` | `JWT_SECRET` |
+| **MongoDB** | `mongodb_uri` | `MONGODB_URI` |
+| | `mongo_root_user` | `MONGO_ROOT_USER` |
+| | `mongo_root_pass` | `MONGO_ROOT_PASS` |
+| **Redis** | `redis_url` | `REDIS_URL` |
+| | `redis_password` | `REDIS_PASSWORD` |
+| **AWS** | `aws_access_key_id` | `AWS_ACCESS_KEY_ID` |
+| | `aws_secret_access_key` | `AWS_SECRET_ACCESS_KEY` |
+| | `SES_REGION` | `SES_REGION` |
+| **Stripe** | `STRIPE_SECRET_KEY` | `STRIPE_SECRET_KEY` |
+| | `STRIPE_WEBHOOK_SECRET` | `STRIPE_WEBHOOK_SECRET` |
+| | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` |
+| | `SKIP_STRIPE` | `SKIP_STRIPE` |
+| **Twilio** | `skip_twilio` | `SKIP_TWILIO` |
+| **VAPID (Web Push)** | `vapid_public_key` | `VAPID_PUBLIC_KEY` |
+| | `vapid_private_key` | `VAPID_PRIVATE_KEY` |
+| | `vapid_subject` | `VAPID_SUBJECT` |
+| | `next_public_vapid_public_key` | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` |
+| **APNs (iOS Push)** | `apns_key_id` | `APNS_KEY_ID` |
+| | `apns_team_id` | `APNS_TEAM_ID` |
+| | `apns_bundle_id` | `APNS_BUNDLE_ID` |
+| | `apns_key_path` | `APNS_KEY_PATH` |
+| | `apns_sandbox` | `APNS_SANDBOX` |
+| **Frontend URLs** | `next_public_api_url` | `NEXT_PUBLIC_API_URL` |
+| | `next_public_app_url` | `NEXT_PUBLIC_APP_URL` |
+| | `next_public_socket_url` | `NEXT_PUBLIC_SOCKET_URL` |
+
+### 18.2 Key Rotation Procedure
+
+When rotating secrets (JWT, VAPID, Redis password), follow these steps:
+
+```bash
+# 1. Generate new values
+node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"           # JWT_SECRET
+node -e "const wp=require('web-push'); console.log(JSON.stringify(wp.generateVAPIDKeys()))"  # VAPID keys
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"           # Redis password
+
+# 2. Store in SSM (--overwrite for existing parameters)
+aws ssm put-parameter --name "/atyors/production/jwt_secret" --value "NEW_VALUE" --type "SecureString" --overwrite
+aws ssm put-parameter --name "/atyors/production/vapid_public_key" --value "NEW_PUB" --type "String" --overwrite
+aws ssm put-parameter --name "/atyors/production/vapid_private_key" --value "NEW_PRIV" --type "SecureString" --overwrite
+aws ssm put-parameter --name "/atyors/production/next_public_vapid_public_key" --value "NEW_PUB" --type "String" --overwrite
+aws ssm put-parameter --name "/atyors/production/redis_password" --value "NEW_PASS" --type "SecureString" --overwrite
+aws ssm put-parameter --name "/atyors/production/redis_url" --value "redis://:NEW_PASS@redis:6379" --type "SecureString" --overwrite
+
+# 3. Redeploy to pick up new .env.ec2
+git push origin main   # or manual deploy via SSH
+```
+
+**Side effects of rotation:**
+- **JWT_SECRET:** All existing sessions are invalidated. Users must log in again.
+- **VAPID keys:** Existing web push subscriptions become invalid. Re-registration happens automatically on next app open.
+- **Redis password:** Must be deployed atomically (Redis container and API restart together via `docker compose up -d`).
+
+### 18.3 Authentication Security
+
+**Account lockout:** After 5 consecutive failed login attempts, the account is locked for 15 minutes. Implemented via `failedLoginAttempts` and `lockUntil` fields on the `User` model (both `select: false`). A successful login resets the counter. Password reset also clears lockout state.
+
+**Password policy:** Minimum 8 characters, at least 1 uppercase letter, 1 lowercase letter, and 1 number. Enforced on both registration (`authService.register`) and password reset (`authService.resetPassword`) via `validatePasswordStrength()`. Regex: `/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/`.
+
+**Rate limiting tiers** (defined in `api-server.js`):
+
+| Tier | Routes | Limit |
+|------|--------|-------|
+| Auth | `/auth/login`, `/auth/register` | 50 requests / 15 min |
+| Sensitive auth | `/auth/refresh` | 10 requests / 15 min |
+| Password reset | `/auth/forgot-password`, `/auth/reset-password` | 5 requests / 15 min |
+| General API | `/api/v1/*` | 100 requests / 1 min |
+
+**Config validation:** `apps/server/config/index.js` throws on startup if critical secrets (`JWT_SECRET`, `STRIPE_SECRET_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`) are missing in production. Non-critical vars fall back to empty strings.
+
+### 18.4 Redis Production Security
+
+Redis is password-protected in production via `--requirepass ${REDIS_PASSWORD}` in `docker-compose.ec2.yml`. The `REDIS_URL` includes the password in the connection string (`redis://:PASSWORD@redis:6379`). `REDIS_PASSWORD` is stored as a separate SSM parameter so the compose `--requirepass` flag can reference it directly.
+
+In local development, Redis runs without a password for simplicity.
+
+### 18.5 Stripe Payment Safety
+
+**Idempotency keys:** All `paymentIntents.create` calls in `apps/server/services/stripeService.js` include an `idempotencyKey` option. This prevents duplicate charges if a request is retried due to network issues or timeouts. Format: `pi_{bookingId}_{customerId}_{timestamp}` for standard intents, `off_{bookingId}_{randomHex}` for off-session charges.
+
+**Default payment method fallback:** Both `hasDefaultPaymentMethod()` and `chargeOffSession()` check `customer.invoice_settings.default_payment_method` first. If null, they list attached cards and auto-promote the first one as the default. This prevents "No payment method" errors when a card was added via `SetupIntent` but not explicitly set as default.
+
+**Descriptive charges:** Off-session charges include a human-readable `description` (e.g., "Put Out Only — Everett (Mar 5) — 2 barrels") and cancellation fees are labeled "Cancellation fee" so they appear clearly on customer invoices.
+
+### 18.6 Error Handling Patterns
+
+**Global error handler** (`api-server.js`): Mongoose errors are mapped to appropriate HTTP status codes before the generic handler runs:
+- `ValidationError` (Mongoose schema validation) → 400 with `VALIDATION_ERROR` code
+- `CastError` (invalid ObjectId) → 400 with `INVALID_ID` code
+- Duplicate key error (MongoDB code 11000) → 409 with `DUPLICATE_KEY` code
+
+**Frontend API resilience** (`apps/web/src/services/api.js`): `res.json()` is wrapped in try/catch. If the server returns non-JSON (e.g., HTML error page from Nginx), the client throws a readable error instead of crashing on JSON parse failure.
+
+**User-facing error feedback:** All critical write operations (profile save, card add/remove/set-default, address delete, photo upload, job status update, message send, address creation in booking flow) show `alert(err.message)` on failure instead of silently swallowing errors via empty `catch {}`.
+
+**Branded error pages:** `apps/web/src/app/not-found.js` (404) and `apps/web/src/app/error.js` (runtime errors) display the atyors favicon, a clear message, and a navigation button.
+
+### 18.7 File Upload Validation
+
+The `validateUpload` middleware (`apps/server/middleware/validateUpload.js`) supports both single-file (`req.file`) and multi-file (`req.files`) uploads. It validates:
+- **File size:** Max 10MB per file
+- **MIME type:** Checked via magic bytes using the `file-type` package (not just the file extension), preventing spoofed uploads
+- **Allowed types:** JPEG, PNG, WebP, HEIC, HEIF
+
+On validation failure, all uploaded files are cleaned up from disk before returning the error response. The middleware is applied to both `/addresses/:id/photo` (single) and `/addresses/:id/photos` (multi) routes.

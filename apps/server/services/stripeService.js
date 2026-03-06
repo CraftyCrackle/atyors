@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const config = require('../config');
 const User = require('../models/User');
 
@@ -97,7 +98,8 @@ async function createPaymentIntent(user, amount, bookingId) {
     params.payment_method = defaultPm;
   }
 
-  const intent = await stripe.paymentIntents.create(params);
+  const idempotencyKey = `pi_${bookingId}_${customerId}_${Date.now()}`;
+  const intent = await stripe.paymentIntents.create(params, { idempotencyKey });
   return intent;
 }
 
@@ -186,6 +188,7 @@ async function chargeOffSession(user, amount, bookingId, { description } = {}) {
       throw err;
     }
   }
+  const idempotencyKey = `off_${bookingId}_${crypto.randomBytes(8).toString('hex')}`;
   return stripe.paymentIntents.create({
     amount: Math.round(amount * 100),
     currency: 'usd',
@@ -195,7 +198,7 @@ async function chargeOffSession(user, amount, bookingId, { description } = {}) {
     confirm: true,
     description: description || `atyors service — booking ${bookingId}`,
     metadata: { bookingId, userId: user._id?.toString() || user.toString() },
-  });
+  }, { idempotencyKey });
 }
 
 async function refundPaymentIntent(paymentIntentId, { deductAmountDollars = 0 } = {}) {

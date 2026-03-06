@@ -882,7 +882,7 @@ function AddAddressForm({ onAdded }) {
       }
 
       onAdded(addr);
-    } catch { }
+    } catch (err) { alert(err.message || 'Failed to add address'); }
     setSubmitting(false);
   }
 

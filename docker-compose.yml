@@ -30,9 +30,9 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - PORT=8080
-      - MONGODB_URI=mongodb://admin:password@mongodb:27017/atyors?authSource=admin
-      - REDIS_URL=redis://redis:6379
-      - JWT_SECRET=${JWT_SECRET:-atyors-dev-jwt-secret}
+      - MONGODB_URI=${MONGODB_URI:-mongodb://admin:password@mongodb:27017/atyors?authSource=admin}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-local-only}
       - CORS_ALLOWED_ORIGINS=http://localhost:3001,http://localhost:8000
       - AWS_REGION=${AWS_REGION:-us-east-1}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
@@ -50,13 +50,13 @@ services:
       - SKIP_STRIPE=${SKIP_STRIPE:-true}
       - SKIP_TWILIO=${SKIP_TWILIO:-true}
       - LOG_LEVEL=${LOG_LEVEL:-debug}
-      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-BKvDs89OtKGPwo6wSt0-neFvJsU4R2kZWH2GgZRiESG4-iszXn30wtkO0mIO1lktbe7lKwLyjAV_exCeP1JusfI}
-      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY:-8JhnHTywkMJfQ-3EqFY6Aj9pmmAoGs1KGtF9A6z92Tw}
+      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-}
+      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY:-}
       - VAPID_SUBJECT=${VAPID_SUBJECT:-mailto:admin@atyors.com}
-      - APNS_KEY_ID=${APNS_KEY_ID:-FB84XXH3HQ}
-      - APNS_TEAM_ID=${APNS_TEAM_ID:-T5TAYRAJRK}
+      - APNS_KEY_ID=${APNS_KEY_ID:-}
+      - APNS_TEAM_ID=${APNS_TEAM_ID:-}
       - APNS_BUNDLE_ID=${APNS_BUNDLE_ID:-com.atyors.app}
-      - APNS_KEY_PATH=/app/apps/server/config/AuthKey_FB84XXH3HQ.p8
+      - APNS_KEY_PATH=${APNS_KEY_PATH:-}
       - APNS_SANDBOX=${APNS_SANDBOX:-true}
     volumes:
       - ./apps/server:/app/apps/server
@@ -97,7 +97,7 @@ services:
       - NEXT_PUBLIC_COGNITO_REGION=${AWS_REGION:-us-east-1}
       - NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY:-}
       - NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY:-}
-      - NEXT_PUBLIC_VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-BKvDs89OtKGPwo6wSt0-neFvJsU4R2kZWH2GgZRiESG4-iszXn30wtkO0mIO1lktbe7lKwLyjAV_exCeP1JusfI}
+      - NEXT_PUBLIC_VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-}
     command: ["node", "server.js"]
     depends_on:
       api:

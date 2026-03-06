@@ -37,7 +37,7 @@ export default function ProfilePage() {
       });
       const data = await res.json();
       if (data.success) updateUser(data.data.user);
-    } catch { }
+    } catch (err) { alert(err.message || 'Failed to upload photo'); }
     setUploadingPhoto(false);
   }
 
@@ -47,7 +47,7 @@ export default function ProfilePage() {
       const res = await api.patch('/users/me', form);
       updateUser(res.data.user);
       setEditing(false);
-    } catch { }
+    } catch (err) { alert(err.message || 'Failed to save profile'); }
     setSaving(false);
   }
 
@@ -55,7 +55,7 @@ export default function ProfilePage() {
     try {
       await api.delete(`/addresses/${id}`);
       setAddresses(addresses.filter((a) => a._id !== id));
-    } catch { }
+    } catch (err) { alert(err.message || 'Failed to delete address'); }
   }
 
   const dark = !isCustomer;
@@ -203,7 +203,7 @@ function AddressCard({ address, dark, onUpdated, onDelete }) {
       });
       onUpdated(res.data.address);
       setEditing(false);
-    } catch { }
+    } catch (err) { alert(err.message || 'Failed to save address'); }
     setSaving(false);
   }
 
@@ -222,7 +222,7 @@ function AddressCard({ address, dark, onUpdated, onDelete }) {
       });
       const data = await res.json();
       if (data.success) onUpdated(data.data.address);
-    } catch { }
+    } catch (err) { alert(err.message || 'Failed to upload photo'); }
     setUploadingBarrelPhoto(false);
     e.target.value = '';
   }
@@ -242,7 +242,7 @@ function AddressCard({ address, dark, onUpdated, onDelete }) {
       });
       const data = await res.json();
       if (data.success) onUpdated(data.data.address);
-    } catch { }
+    } catch (err) { alert(err.message || 'Failed to upload photos'); }
     setUploadingBarrelPhoto(false);
     e.target.value = '';
   }
@@ -251,7 +251,7 @@ function AddressCard({ address, dark, onUpdated, onDelete }) {
     try {
       const res = await api.delete(`/addresses/${address._id}/photos/${idx}`);
       if (res.data) onUpdated(res.data.address);
-    } catch { }
+    } catch (err) { alert(err.message || 'Failed to remove photo'); }
   }
 
   const update = (f) => (e) => setForm({ ...form, [f]: e.target.value });
@@ -468,7 +468,7 @@ function PaymentMethodsSection() {
 
       setSetupSecret(clientSecret);
       setShowCardForm(true);
-    } catch {}
+    } catch (err) { alert(err.message || 'Failed to set up card'); }
     setAdding(false);
   }
 
@@ -483,7 +483,7 @@ function PaymentMethodsSection() {
     try {
       await api.patch(`/payments/methods/${id}/default`);
       setMethods((prev) => prev.map((m) => ({ ...m, isDefault: m.id === id })));
-    } catch {}
+    } catch (err) { alert(err.message || 'Failed to set default card'); }
     setSettingDefault(null);
   }
 
@@ -493,7 +493,7 @@ function PaymentMethodsSection() {
     try {
       await api.delete(`/payments/methods/${id}`);
       setMethods((prev) => prev.filter((m) => m.id !== id));
-    } catch {}
+    } catch (err) { alert(err.message || 'Failed to remove card'); }
     setRemoving(null);
   }
 

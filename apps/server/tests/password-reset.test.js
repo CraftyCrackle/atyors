@@ -94,13 +94,13 @@ describe('Password Reset', () => {
         select: jest.fn().mockResolvedValue(user),
       });
 
-      const result = await resetPassword(rawToken, 'newpassword123');
+      const result = await resetPassword(rawToken, 'NewPass123');
 
       expect(result.message).toContain('successfully');
       expect(saveFn).toHaveBeenCalled();
       expect(user.passwordResetToken).toBeUndefined();
       expect(user.passwordResetExpires).toBeUndefined();
-      const passwordUpdated = await bcrypt.compare('newpassword123', user.passwordHash);
+      const passwordUpdated = await bcrypt.compare('NewPass123', user.passwordHash);
       expect(passwordUpdated).toBe(true);
     });
 
@@ -109,7 +109,7 @@ describe('Password Reset', () => {
         select: jest.fn().mockResolvedValue(null),
       });
 
-      await expect(resetPassword('bad-token', 'newpassword123'))
+      await expect(resetPassword('bad-token', 'NewPass123'))
         .rejects
         .toThrow('Reset link is invalid or has expired');
     });

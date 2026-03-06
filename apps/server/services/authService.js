@@ -9,6 +9,19 @@ const emailService = require('./emailService');
 const SALT_ROUNDS = 12;
 const ACCESS_TOKEN_EXPIRY = '1h';
 const REFRESH_TOKEN_DAYS = 7;
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCK_DURATION_MS = 15 * 60 * 1000;
+
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+
+function validatePasswordStrength(password) {
+  if (!PASSWORD_REGEX.test(password)) {
+    const err = new Error('Password must be at least 8 characters with 1 uppercase letter, 1 lowercase letter, and 1 number');
+    err.status = 400;
+    err.code = 'WEAK_PASSWORD';
+    throw err;
+  }
+}
 
 function generateAccessToken(user) {
   return jwt.sign(
@@ -38,6 +51,8 @@ async function generateTokens(user) {
 }
 
 async function register({ email, phone, password, firstName, lastName }) {
+  validatePasswordStrength(password);
+
   const existing = await User.findOne({ email: email.toLowerCase() });
   if (existing) {
     const err = new Error('Email already registered');
@@ -64,7 +79,7 @@ async function register({ email, phone, password, firstName, lastName }) {
 }
 
 async function login({ email, password }) {
-  const user = await User.findOne({ email: email.toLowerCase() }).select('+passwordHash');
+  const user = await User.findOne({ email: email.toLowerCase() }).select('+passwordHash +failedLoginAttempts +lockUntil');
   if (!user) {
     const err = new Error('Invalid email or password');
     err.status = 401;
@@ -72,13 +87,34 @@ async function login({ email, password }) {
     throw err;
   }
 
+  if (user.lockUntil && user.lockUntil > new Date()) {
+    const remaining = Math.ceil((user.lockUntil - Date.now()) / 60000);
+    const err = new Error(`Account locked. Try again in ${remaining} minute${remaining === 1 ? '' : 's'}`);
+    err.status = 423;
+    err.code = 'ACCOUNT_LOCKED';
+    throw err;
+  }
+
+  if (user.lockUntil && user.lockUntil <= new Date()) {
+    user.failedLoginAttempts = 0;
+    user.lockUntil = undefined;
+  }
+
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) {
+    user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
+    if (user.failedLoginAttempts >= MAX_FAILED_ATTEMPTS) {
+      user.lockUntil = new Date(Date.now() + LOCK_DURATION_MS);
+    }
+    await user.save();
     const err = new Error('Invalid email or password');
     err.status = 401;
     err.code = 'INVALID_CREDENTIALS';
     throw err;
   }
+
+  user.failedLoginAttempts = 0;
+  user.lockUntil = undefined;
 
   const tokens = await generateTokens(user);
   user.lastLoginAt = new Date();
@@ -134,6 +170,8 @@ async function revokeUserTokens(userId) {
 function sanitizeUser(user) {
   const obj = user.toObject();
   delete obj.passwordHash;
+  delete obj.failedLoginAttempts;
+  delete obj.lockUntil;
   delete obj.__v;
   return obj;
 }
@@ -215,6 +253,8 @@ async function forgotPassword(email) {
 }
 
 async function resetPassword(token, newPassword) {
+  validatePasswordStrength(newPassword);
+
   const hashed = crypto.createHash('sha256').update(token).digest('hex');
 
   const user = await User.findOne({
@@ -232,6 +272,8 @@ async function resetPassword(token, newPassword) {
   user.passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
   user.passwordResetToken = undefined;
   user.passwordResetExpires = undefined;
+  user.failedLoginAttempts = 0;
+  user.lockUntil = undefined;
   await user.save();
 
   await revokeUserTokens(user._id);

@@ -40,6 +40,13 @@ const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 50, message: { su
 app.use('/api/v1/auth/login', authLimiter);
 app.use('/api/v1/auth/register', authLimiter);
 
+const sensitiveAuthLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many attempts. Please try again later.' } } });
+app.use('/api/v1/auth/refresh', sensitiveAuthLimiter);
+
+const passwordResetLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 5, message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many password reset attempts. Please try again later.' } } });
+app.use('/api/v1/auth/forgot-password', passwordResetLimiter);
+app.use('/api/v1/auth/reset-password', passwordResetLimiter);
+
 const apiLimiter = rateLimit({ windowMs: 1 * 60 * 1000, max: 100, message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many requests. Please slow down.' } } });
 app.use('/api/v1', apiLimiter);
 
@@ -78,6 +85,23 @@ app.use((req, res) => {
 
 // --- Error handler ---
 app.use((err, req, res, _next) => {
+  if (err.name === 'ValidationError') {
+    err.status = 400;
+    err.code = 'VALIDATION_ERROR';
+    err.message = Object.values(err.errors).map(e => e.message).join(', ');
+  }
+  if (err.name === 'CastError') {
+    err.status = 400;
+    err.code = 'INVALID_ID';
+    err.message = `Invalid ${err.path}: ${err.value}`;
+  }
+  if (err.code === 11000) {
+    err.status = 409;
+    err.code = 'DUPLICATE_KEY';
+    const field = Object.keys(err.keyValue || {})[0] || 'field';
+    err.message = `Duplicate value for ${field}`;
+  }
+
   const status = err.status || 500;
   if (status >= 500) console.error(`[${req.id}] ${req.method} ${req.path}:`, err.message, err.stack);
   const isDev = process.env.NODE_ENV === 'development';

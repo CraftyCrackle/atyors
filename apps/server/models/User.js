@@ -23,6 +23,8 @@ const userSchema = new mongoose.Schema({
   totalReviews: { type: Number, default: 0 },
   passwordResetToken: { type: String, select: false },
   passwordResetExpires: { type: Date, select: false },
+  failedLoginAttempts: { type: Number, default: 0, select: false },
+  lockUntil: { type: Date, select: false },
   isActive: { type: Boolean, default: true },
   lastLoginAt: { type: Date },
 }, {

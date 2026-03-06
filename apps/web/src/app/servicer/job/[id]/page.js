@@ -81,7 +81,7 @@ export default function ServicerJobPage() {
     try {
       const res = await api.patch(`/servicer/jobs/${id}/status`, { status: flow.next });
       setBooking(res.data.booking);
-    } catch { }
+    } catch (err) { alert(err.message || 'Failed to update job status'); }
     setUpdating(false);
   }
 
