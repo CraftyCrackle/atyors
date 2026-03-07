@@ -8,7 +8,7 @@ import { api } from '../../services/api';
 
 const STEPS = ['service', 'address', 'details', 'confirm'];
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const PUT_OUT_OPTIONS = ['5–7 PM (Afternoon)', '7–9 PM (Evening)', '9–11 PM (Night)'];
+const PUT_OUT_OPTIONS = ['4–9 PM (Evening)', '5–7 AM (Early Morning)'];
 const BRING_IN_OPTIONS = ['12–4 PM (Afternoon)', '4–9 PM (Evening)'];
 
 export default function BookPage() {
