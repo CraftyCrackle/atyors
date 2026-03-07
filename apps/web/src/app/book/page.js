@@ -66,6 +66,9 @@ export default function BookPage() {
   const monthlyBaseBoth = pricing?.monthlyBaseBoth ?? 25;
   const monthlyIncluded = pricing?.monthlyIncludedBarrels ?? 3;
   const extraBarrelMonthly = pricing?.extraBarrelMonthly ?? 2;
+  const subDiscount = pricing?.subscriptionDiscount ?? 1;
+  const subDiscountLarge = pricing?.subscriptionDiscountLarge ?? 2;
+  const subDiscountThreshold = pricing?.subscriptionDiscountThreshold ?? 3;
 
   function isBothSvc(svc) {
     return svc?.slug === 'both';
@@ -101,11 +104,15 @@ export default function BookPage() {
     return isBoth() ? perBarrel * 2 * selected.barrelCount : perBarrel * selected.barrelCount;
   }
 
+  function getSubscriptionDiscount() {
+    return selected.barrelCount <= subDiscountThreshold ? subDiscount : subDiscountLarge;
+  }
+
   function monthlyPrice() {
     const base = isBoth() ? monthlyBaseBoth : monthlyBase;
     const extra = Math.max(0, selected.barrelCount - monthlyIncluded);
     const extraCost = isBoth() ? extra * extraBarrelMonthly * 2 : extra * extraBarrelMonthly;
-    return base + extraCost;
+    return base + extraCost - getSubscriptionDiscount();
   }
 
   function currentPrice() {
@@ -546,6 +553,10 @@ export default function BookPage() {
                         <span className="font-medium">${((selected.barrelCount - monthlyIncluded) * (isBoth() ? extraBarrelMonthly * 2 : extraBarrelMonthly))}/mo</span>
                       </div>
                     )}
+                    <div className="flex justify-between text-sm text-green-700">
+                      <span>Subscription discount</span>
+                      <span className="font-medium">-${getSubscriptionDiscount()}/mo</span>
+                    </div>
                     <hr className="border-brand-200" />
                     <div className="flex items-baseline justify-between">
                       <span className="font-semibold text-gray-700">Monthly total</span>

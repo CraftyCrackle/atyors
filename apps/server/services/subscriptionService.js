@@ -4,7 +4,7 @@ const ServiceType = require('../models/ServiceType');
 const User = require('../models/User');
 const stripeService = require('./stripeService');
 const config = require('../config');
-const { calculateMonthlyPrice, calculateMonthlyPriceBoth, calculateOneTimePrice } = require('./pricingService');
+const { calculateMonthlyPriceWithDiscount, calculateMonthlyPriceBothWithDiscount, calculateOneTimePrice } = require('./pricingService');
 
 async function create(userId, data) {
   const barrelCount = Math.max(1, parseInt(data.barrelCount) || 1);
@@ -12,8 +12,8 @@ async function create(userId, data) {
   const svcType = await ServiceType.findById(data.serviceTypeId);
   const isBoth = svcType && (svcType.slug === 'both' || (svcType.name || '').toLowerCase().includes('both'));
   const monthlyPrice = isBoth
-    ? calculateMonthlyPriceBoth(barrelCount)
-    : calculateMonthlyPrice(barrelCount);
+    ? calculateMonthlyPriceBothWithDiscount(barrelCount)
+    : calculateMonthlyPriceWithDiscount(barrelCount);
 
   let stripeSubscriptionId = null;
   let stripePriceId = null;
