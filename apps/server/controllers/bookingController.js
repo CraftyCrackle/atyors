@@ -130,4 +130,16 @@ async function getQueuePosition(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { create, confirmPayment, list, getById, cancel, reschedule, getQueuePosition };
+async function uploadCurbItemPhotos(req, res, next) {
+  try {
+    if (!req.files || req.files.length === 0) {
+      const err = new Error('No photos uploaded');
+      err.status = 400;
+      throw err;
+    }
+    const urls = req.files.map((f) => `/uploads/${f.filename}`);
+    res.json({ success: true, data: { photos: urls } });
+  } catch (err) { next(err); }
+}
+
+module.exports = { create, confirmPayment, list, getById, cancel, reschedule, getQueuePosition, uploadCurbItemPhotos };

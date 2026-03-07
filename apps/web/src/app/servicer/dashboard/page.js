@@ -44,7 +44,10 @@ function JobCard({ booking, onAccept, accepting, onRate, alreadyRated }) {
           <p className="font-semibold text-white">{svc?.name || 'Service'}</p>
           <p className="mt-0.5 text-sm text-gray-400">
             {date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-            {booking.barrelCount > 0 && <span className="mx-1">&middot; {booking.barrelCount} barrel{booking.barrelCount > 1 ? 's' : ''}</span>}
+            {svc?.slug === 'curb-items'
+              ? <span className="mx-1">&middot; {booking.itemCount || 1} item{(booking.itemCount || 1) > 1 ? 's' : ''}</span>
+              : booking.barrelCount > 0 && <span className="mx-1">&middot; {booking.barrelCount} barrel{booking.barrelCount > 1 ? 's' : ''}</span>
+            }
             <span className="mx-1">&middot; ${Number(booking.serviceValue ?? booking.amount ?? 0).toFixed(2)}</span>
           </p>
         </div>
@@ -95,6 +98,17 @@ function JobCard({ booking, onAccept, accepting, onRate, alreadyRated }) {
             <div className="mt-2 flex gap-1.5 overflow-x-auto">
               {addr.barrelPhotoUrl && <img src={addr.barrelPhotoUrl} alt="Barrel" className="h-20 w-24 shrink-0 rounded-lg object-cover" />}
               {addr.photos?.map((url, i) => <img key={i} src={url} alt={`Photo ${i + 1}`} className="h-20 w-24 shrink-0 rounded-lg object-cover" />)}
+            </div>
+          )}
+          {svc?.slug === 'curb-items' && (
+            <div className="mt-2 border-t border-gray-700 pt-2">
+              <p className="text-xs font-medium text-brand-400">Curb Items ({booking.itemCount || 1})</p>
+              {booking.curbItemNotes && <p className="mt-1 text-xs text-gray-400 italic">"{booking.curbItemNotes}"</p>}
+              {booking.curbItemPhotos?.length > 0 && (
+                <div className="mt-1.5 flex gap-1.5 overflow-x-auto">
+                  {booking.curbItemPhotos.map((url, i) => <img key={i} src={url} alt={`Item ${i + 1}`} className="h-20 w-24 shrink-0 rounded-lg object-cover" />)}
+                </div>
+              )}
             </div>
           )}
         </div>

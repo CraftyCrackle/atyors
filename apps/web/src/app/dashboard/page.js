@@ -187,7 +187,10 @@ function BookingCard({ booking, onRate, alreadyRated, onCancel, cancelling }) {
             <p className="font-semibold text-gray-900">{svc?.name || 'Service'}</p>
             <p className="mt-0.5 text-sm text-gray-500">
               {date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-              {booking.barrelCount > 0 && <span className="mx-1">&middot; {booking.barrelCount} barrel{booking.barrelCount > 1 ? 's' : ''}</span>}
+              {svc?.slug === 'curb-items'
+                ? <span className="mx-1">&middot; {booking.itemCount || 1} item{(booking.itemCount || 1) > 1 ? 's' : ''}</span>
+                : booking.barrelCount > 0 && <span className="mx-1">&middot; {booking.barrelCount} barrel{booking.barrelCount > 1 ? 's' : ''}</span>
+              }
               {booking.subscriptionId
                 ? <span className="mx-1 text-accent-600 font-medium">&middot; Subscription</span>
                 : booking.amount != null && <span className="mx-1">&middot; ${Number(booking.amount).toFixed(2)}</span>

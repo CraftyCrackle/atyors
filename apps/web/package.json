@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest --passWithNoTests",
-    "test:coverage": "vitest --coverage"
+    "test:coverage": "vitest --coverage",
+    "postinstall": "sed -i '' 's/from: \"7.0.0\"/from: \"8.0.0\"/' node_modules/@capacitor-community/background-geolocation/Package.swift 2>/dev/null || true"
   },
   "dependencies": {
     "@capacitor-community/background-geolocation": "^1.2.26",

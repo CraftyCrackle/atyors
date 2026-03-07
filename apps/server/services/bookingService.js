@@ -55,14 +55,53 @@ async function create(userId, data) {
     }
   }
 
+  const svcType = await ServiceType.findById(data.serviceTypeId);
+  const isCurbItems = svcType && svcType.slug === 'curb-items';
+  const isBoth = svcType && svcType.slug === 'both';
+
+  if (isCurbItems) {
+    const itemCount = Math.min(5, Math.max(1, parseInt(data.itemCount) || 1));
+    if (!data.curbItemPhotos || data.curbItemPhotos.length === 0) {
+      const err = new Error('At least one photo of the item(s) is required for Curb Items service.');
+      err.status = 400;
+      err.code = 'PHOTOS_REQUIRED';
+      throw err;
+    }
+
+    const dayStart = new Date(scheduledDate);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayEnd.getDate() + 1);
+    const dayFilter = { scheduledDate: { $gte: dayStart, $lt: dayEnd }, status: { $in: ['pending', 'active', 'en-route', 'arrived', 'completed'] } };
+    const dailyCount = await Booking.countDocuments(dayFilter);
+    if (dailyCount >= DAILY_BOOKING_CAP) {
+      const err = new Error('This date is fully booked. Please select another day.');
+      err.status = 400;
+      err.code = 'DAY_FULL';
+      throw err;
+    }
+
+    const booking = await Booking.create({
+      userId,
+      addressId: data.addressId,
+      serviceTypeId: data.serviceTypeId,
+      scheduledDate,
+      itemCount,
+      curbItemPhotos: data.curbItemPhotos,
+      curbItemNotes: data.curbItemNotes || '',
+      amount: svcType.basePrice,
+      serviceValue: svcType.basePrice,
+      paymentStatus: 'pending_payment',
+      statusHistory: [{ status: 'pending', changedAt: new Date() }],
+    });
+    return booking.populate(['addressId', 'serviceTypeId']);
+  }
+
   const barrelCount = Math.min(MAX_BARRELS, Math.max(1, parseInt(data.barrelCount) || 1));
   const perBarrelAmount = calculateOneTimePrice(barrelCount);
   const isSubscription = !!data.subscriptionId;
   const clientAmount = isSubscription ? 0 : perBarrelAmount;
   const paymentStatus = isSubscription ? 'paid' : 'pending_payment';
-
-  const svcType = await ServiceType.findById(data.serviceTypeId);
-  const isBoth = svcType && svcType.slug === 'both';
 
   const dayStart = new Date(scheduledDate);
   dayStart.setHours(0, 0, 0, 0);
@@ -318,7 +357,11 @@ async function chargeBookingOnCompletion(bookingId) {
   const svcName = svcType?.name || 'Service';
   const city = addr?.city || '';
   const dateStr = booking.scheduledDate ? new Date(booking.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
-  const desc = `${svcName}${city ? ` — ${city}` : ''}${dateStr ? ` (${dateStr})` : ''} — ${booking.barrelCount || 1} barrel${(booking.barrelCount || 1) > 1 ? 's' : ''}`;
+  const isCurbItem = svcType && svcType.slug === 'curb-items';
+  const countLabel = isCurbItem
+    ? `${booking.itemCount || 1} item${(booking.itemCount || 1) > 1 ? 's' : ''}`
+    : `${booking.barrelCount || 1} barrel${(booking.barrelCount || 1) > 1 ? 's' : ''}`;
+  const desc = `${svcName}${city ? ` — ${city}` : ''}${dateStr ? ` (${dateStr})` : ''} — ${countLabel}`;
 
   try {
     const intent = await stripeService.chargeOffSession(user, booking.amount, booking._id.toString(), { description: desc });

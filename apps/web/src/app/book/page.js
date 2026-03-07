@@ -33,7 +33,11 @@ export default function BookPage() {
     bringInTime: '',
     date: '',
     addressId: '',
+    itemCount: 1,
+    curbItemNotes: '',
   });
+  const [curbItemPhotos, setCurbItemPhotos] = useState([]);
+  const [curbItemPreviews, setCurbItemPreviews] = useState([]);
 
   useEffect(() => {
     async function load() {
@@ -67,8 +71,30 @@ export default function BookPage() {
     return svc?.slug === 'both';
   }
 
+  function isCurbItemsSvc(svc) {
+    return svc?.slug === 'curb-items';
+  }
+
   function isBoth() {
     return isBothSvc(selected.serviceType);
+  }
+
+  function isCurbItems() {
+    return isCurbItemsSvc(selected.serviceType);
+  }
+
+  function handleCurbItemPhotos(e) {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    const allowed = 5 - curbItemPhotos.length;
+    const toAdd = files.slice(0, allowed);
+    setCurbItemPhotos((prev) => [...prev, ...toAdd]);
+    setCurbItemPreviews((prev) => [...prev, ...toAdd.map((f) => URL.createObjectURL(f))]);
+  }
+
+  function removeCurbItemPhoto(idx) {
+    setCurbItemPhotos((prev) => prev.filter((_, i) => i !== idx));
+    setCurbItemPreviews((prev) => prev.filter((_, i) => i !== idx));
   }
 
   function oneTimePrice() {
@@ -109,7 +135,34 @@ export default function BookPage() {
     setSubmitting(true);
     setError('');
     try {
-      if (selected.bookingType === 'subscription') {
+      if (isCurbItems()) {
+        const token = localStorage.getItem('accessToken');
+        let photoUrls = [];
+
+        if (curbItemPhotos.length > 0) {
+          const fd = new FormData();
+          curbItemPhotos.forEach((f) => fd.append('photos', f));
+          const uploadRes = await fetch('/api/v1/bookings/upload-curb-photos', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            body: fd,
+          });
+          const uploadData = await uploadRes.json();
+          if (!uploadData.success) throw new Error(uploadData.error?.message || 'Failed to upload photos');
+          photoUrls = uploadData.data.photos;
+        }
+
+        if (photoUrls.length === 0) throw new Error('At least one photo is required');
+
+        await api.post('/bookings', {
+          addressId: selected.addressId,
+          serviceTypeId: selected.serviceType._id,
+          scheduledDate: selected.date,
+          itemCount: selected.itemCount,
+          curbItemNotes: selected.curbItemNotes,
+          curbItemPhotos: photoUrls,
+        });
+      } else if (selected.bookingType === 'subscription') {
         const dayOfWeek = new Date(selected.date + 'T12:00:00').getDay();
         await api.post('/subscriptions', {
           addressId: selected.addressId,
@@ -198,7 +251,7 @@ export default function BookPage() {
           {step === 0 && (
             <div>
               <h2 className="text-lg font-bold">Choose a Service</h2>
-              <p className="mt-1 text-sm text-gray-500">Select what you need done with your trash barrels</p>
+              <p className="mt-1 text-sm text-gray-500">What do you need help with?</p>
               <div className="mt-4 space-y-3">
                 {services.map((svc) => (
                   <button key={svc._id} disabled={!hasCard} onClick={() => { setSelected({ ...selected, serviceType: svc }); next(); }}
@@ -209,8 +262,17 @@ export default function BookPage() {
                         <p className="mt-0.5 text-sm text-gray-500">{svc.description}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-brand-600">${isBothSvc(svc) ? (perBarrel * 2).toFixed(2) : perBarrel.toFixed(2)}/barrel</p>
-                        <p className="text-xs text-gray-400">{isBothSvc(svc) ? '2 jobs created' : 'per service'}</p>
+                        {isCurbItemsSvc(svc) ? (
+                          <>
+                            <p className="font-bold text-brand-600">${Number(svc.basePrice).toFixed(2)}</p>
+                            <p className="text-xs text-gray-400">flat rate, up to 5 items</p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="font-bold text-brand-600">${isBothSvc(svc) ? (perBarrel * 2).toFixed(2) : perBarrel.toFixed(2)}/barrel</p>
+                            <p className="text-xs text-gray-400">{isBothSvc(svc) ? '2 jobs created' : 'per service'}</p>
+                          </>
+                        )}
                       </div>
                     </div>
                   </button>
@@ -275,7 +337,114 @@ export default function BookPage() {
           )}
 
           {/* Step 3: Service Details (pre-filled from address) */}
-          {step === 2 && (
+          {step === 2 && isCurbItems() && (
+            <div>
+              <h2 className="text-lg font-bold">Curb Item Details</h2>
+              <p className="mt-1 text-sm text-gray-500">Tell us what needs to go to the curb</p>
+
+              {selectedAddr && (
+                <div className="mt-3 rounded-xl bg-gray-50 p-3">
+                  <div className="flex items-center gap-2">
+                    <svg className="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    </svg>
+                    <p className="text-sm text-gray-600">{selectedAddr.street}{selectedAddr.unit ? `, ${selectedAddr.unit}` : ''}, {selectedAddr.city}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-5">
+                <label className="text-sm font-medium text-gray-700">How many items? (max 5)</label>
+                <div className="mt-2 flex items-center gap-4">
+                  <button onClick={() => setSelected({ ...selected, itemCount: Math.max(1, selected.itemCount - 1) })}
+                    className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-gray-200 text-lg font-bold text-gray-600 transition hover:border-brand-400 active:scale-95 disabled:opacity-30" disabled={selected.itemCount <= 1}>
+                    −
+                  </button>
+                  <span className="min-w-[3rem] text-center text-2xl font-bold">{selected.itemCount}</span>
+                  <button onClick={() => setSelected({ ...selected, itemCount: Math.min(5, selected.itemCount + 1) })}
+                    className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-gray-200 text-lg font-bold text-gray-600 transition hover:border-brand-400 active:scale-95 disabled:opacity-30" disabled={selected.itemCount >= 5}>
+                    +
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-5">
+                <label className="text-sm font-medium text-gray-700">What are the items?</label>
+                <textarea
+                  placeholder="Describe the items (e.g., 2 bags of yard waste, 1 box of recycling)"
+                  value={selected.curbItemNotes}
+                  onChange={(e) => setSelected({ ...selected, curbItemNotes: e.target.value })}
+                  rows={3}
+                  className="mt-2 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none resize-none"
+                />
+              </div>
+
+              <div className="mt-5">
+                <label className="text-sm font-medium text-gray-700">Photos of item(s) <span className="text-red-500">*</span></label>
+                <p className="mt-0.5 text-xs text-gray-400">Take a photo showing the item(s) and where they are located. At least 1 photo is required.</p>
+                {curbItemPreviews.length > 0 && (
+                  <div className="mt-2 grid grid-cols-3 gap-2">
+                    {curbItemPreviews.map((url, i) => (
+                      <div key={i} className="relative">
+                        <img src={url} alt={`Item ${i + 1}`} className="h-24 w-full rounded-lg object-cover" />
+                        <button type="button" onClick={() => removeCurbItemPhoto(i)} className="absolute top-1 right-1 rounded-full bg-black/50 p-1 text-white">
+                          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {curbItemPhotos.length < 5 && (
+                  <label className="mt-2 flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-gray-300 px-3 py-3 text-sm text-gray-500 hover:border-brand-400 hover:text-brand-600 transition">
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    {curbItemPhotos.length === 0 ? 'Add photos of your items' : `Add more (${curbItemPhotos.length}/5)`}
+                    <input type="file" accept="image/*" multiple onChange={handleCurbItemPhotos} className="hidden" />
+                  </label>
+                )}
+              </div>
+
+              {selected.date && (
+                <div className="mt-5">
+                  <label className="text-sm font-bold text-gray-900">Service date</label>
+                  <div className="mt-2 flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3">
+                    <svg className="h-5 w-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                    </svg>
+                    <p className="font-semibold text-brand-700">
+                      {new Date(selected.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-4 rounded-xl bg-brand-50 p-4">
+                <div className="flex items-baseline justify-between">
+                  <span className="font-semibold text-gray-700">Total</span>
+                  <span className="text-xl font-bold text-brand-600">${Number(selected.serviceType.basePrice).toFixed(2)}</span>
+                </div>
+                <p className="mt-1 text-xs text-gray-500">Flat rate for up to {selected.itemCount} item{selected.itemCount > 1 ? 's' : ''}, each under 25 lbs</p>
+              </div>
+
+              <div className="mt-4 flex gap-2.5 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+                <svg className="h-5 w-5 shrink-0 text-amber-500 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                </svg>
+                <p className="text-xs text-amber-800 leading-relaxed">
+                  <strong>Requirements:</strong> Each item must be under 25 lbs. Items must have a valid permit or be legally allowed at the curb for garbage or recycling collection on the scheduled pickup day.
+                </p>
+              </div>
+
+              <button onClick={next} disabled={curbItemPhotos.length === 0}
+                className="mt-6 w-full rounded-xl bg-brand-600 py-3.5 font-semibold text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700 active:scale-[0.98] disabled:opacity-40">
+                {curbItemPhotos.length === 0 ? 'Add at least 1 photo to continue' : 'Continue'}
+              </button>
+            </div>
+          )}
+
+          {step === 2 && !isCurbItems() && (
             <div>
               <h2 className="text-lg font-bold">Service Details</h2>
               <p className="mt-1 text-sm text-gray-500">Review and adjust your barrel details</p>
@@ -467,7 +636,82 @@ export default function BookPage() {
           )}
 
           {/* Step 4: Confirm */}
-          {step === 3 && (
+          {step === 3 && isCurbItems() && (
+            <div>
+              <h2 className="text-lg font-bold">Confirm Booking</h2>
+              <p className="mt-1 text-sm text-gray-500">Review your curb item service</p>
+
+              <div className="mt-4 space-y-3 rounded-xl bg-gray-50 p-4">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">Service</span>
+                  <span className="text-sm font-medium">Curb Items</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">Address</span>
+                  <span className="text-sm font-medium text-right">{selectedAddr?.street}{selectedAddr?.unit ? `, ${selectedAddr.unit}` : ''}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">Items</span>
+                  <span className="text-sm font-medium">{selected.itemCount}</span>
+                </div>
+                {selected.curbItemNotes && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-500">Description</span>
+                    <span className="text-sm font-medium text-right max-w-[60%]">{selected.curbItemNotes}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">Date</span>
+                  <span className="text-sm font-medium">{new Date(selected.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                </div>
+                {curbItemPreviews.length > 0 && (
+                  <div>
+                    <p className="text-xs text-gray-400 mb-1">Item photos ({curbItemPreviews.length})</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {curbItemPreviews.map((url, i) => (
+                        <img key={i} src={url} alt={`Item ${i + 1}`} className="h-20 w-full rounded-lg object-cover" />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <hr className="border-gray-200" />
+                <div className="flex justify-between">
+                  <span className="font-semibold">Total</span>
+                  <span className="font-bold text-brand-600">${Number(selected.serviceType.basePrice).toFixed(2)}</span>
+                </div>
+              </div>
+
+              <div className="mt-4 flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-3 text-sm text-blue-700">
+                <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+                </svg>
+                <span>Your card on file will be charged <strong>${Number(selected.serviceType.basePrice).toFixed(2)}</strong> after service completion.</span>
+              </div>
+
+              {bookingConfirmed ? (
+                <div className="mt-6 flex flex-col items-center py-8 text-center">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+                    <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h2 className="mt-4 text-xl font-bold text-gray-900">Booking Confirmed!</h2>
+                  <p className="mt-2 text-sm text-gray-500">Your curb item service (${ Number(selected.serviceType.basePrice).toFixed(2)}) has been scheduled.</p>
+                  <p className="mt-1 text-xs text-gray-400">Redirecting to your dashboard...</p>
+                  <div className="mt-4 h-1 w-32 overflow-hidden rounded-full bg-gray-200">
+                    <div className="h-full animate-pulse rounded-full bg-brand-600" style={{ width: '100%' }} />
+                  </div>
+                </div>
+              ) : (
+                <button onClick={handleConfirm} disabled={submitting}
+                  className="mt-6 w-full rounded-xl bg-brand-600 py-3.5 font-semibold text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700 active:scale-[0.98] disabled:opacity-50">
+                  {submitting ? 'Processing...' : 'Confirm Booking'}
+                </button>
+              )}
+            </div>
+          )}
+
+          {step === 3 && !isCurbItems() && (
             <div>
               <h2 className="text-lg font-bold">Confirm Booking</h2>
               <p className="mt-1 text-sm text-gray-500">Review your service details</p>
