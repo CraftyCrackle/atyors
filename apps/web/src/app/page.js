@@ -169,56 +169,48 @@ function WebLanding() {
 
       <section className="px-6 py-16 bg-gray-50">
         <div className="mx-auto max-w-lg">
-          <h2 className="text-center text-sm font-semibold uppercase tracking-widest text-brand-600">Simple Pricing</h2>
-          <p className="mt-2 text-center text-2xl font-bold text-gray-900">Pick what works for you</p>
+          <p className="text-center text-2xl font-bold text-gray-900">What does it cost?</p>
+          <p className="mt-2 text-center text-gray-500">You pick what you need. We don&apos;t charge you until the job is done.</p>
 
-          <div className="mt-10 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-sm">
-              <p className="text-sm font-semibold uppercase tracking-wide text-gray-400">One-Time</p>
-              <p className="mt-3 text-4xl font-extrabold text-gray-900">$1<span className="text-2xl">.50</span></p>
-              <p className="mt-1 text-sm text-gray-500">per barrel, per service</p>
-              <ul className="mt-5 space-y-2 text-left text-sm text-gray-600">
-                <li className="flex items-start gap-2">
-                  <svg className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                  No commitment — book when you need it
-                </li>
-                <li className="flex items-start gap-2">
-                  <svg className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                  You only pay after the job is done
-                </li>
-                <li className="flex items-start gap-2">
-                  <svg className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                  Cancel free within 2 minutes
-                </li>
-              </ul>
-              <Link href="/signup" className="mt-6 block rounded-xl border-2 border-brand-600 py-3 text-sm font-semibold text-brand-600 transition hover:bg-brand-50 active:scale-[0.98]">
-                Get Started
-              </Link>
+          <div className="mt-8 space-y-3">
+            <div className="flex items-center justify-between rounded-xl bg-white px-5 py-4 border border-gray-200">
+              <div>
+                <p className="font-semibold text-gray-900">Take barrels out</p>
+                <p className="text-sm text-gray-500">We bring them to the curb for you</p>
+              </div>
+              <p className="text-xl font-bold text-brand-600">$1.50<span className="text-sm font-normal text-gray-400">/barrel</span></p>
             </div>
 
-            <div className="relative rounded-2xl border-2 border-green-500 bg-white p-6 text-center shadow-md">
-              <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-green-500 px-3 py-0.5 text-xs font-bold text-white">BEST VALUE</span>
-              <p className="text-sm font-semibold uppercase tracking-wide text-green-600">Monthly Plan</p>
-              <p className="mt-3 text-4xl font-extrabold text-gray-900">$14<span className="text-2xl">/mo</span></p>
-              <p className="mt-1 text-sm text-gray-500">up to 3 barrels, every week</p>
-              <ul className="mt-5 space-y-2 text-left text-sm text-gray-600">
-                <li className="flex items-start gap-2">
-                  <svg className="mt-0.5 h-4 w-4 shrink-0 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                  4 weekly services included
-                </li>
-                <li className="flex items-start gap-2">
-                  <svg className="mt-0.5 h-4 w-4 shrink-0 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                  Never forget trash day again
-                </li>
-                <li className="flex items-start gap-2">
-                  <svg className="mt-0.5 h-4 w-4 shrink-0 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                  Save up to $1–$2 off every month
-                </li>
-              </ul>
-              <Link href="/signup" className="mt-6 block rounded-xl bg-green-500 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-green-600 active:scale-[0.98]">
-                Start Saving
-              </Link>
+            <div className="flex items-center justify-between rounded-xl bg-white px-5 py-4 border border-gray-200">
+              <div>
+                <p className="font-semibold text-gray-900">Bring barrels back</p>
+                <p className="text-sm text-gray-500">We put them back where they belong</p>
+              </div>
+              <p className="text-xl font-bold text-brand-600">$1.50<span className="text-sm font-normal text-gray-400">/barrel</span></p>
             </div>
+
+            <div className="flex items-center justify-between rounded-xl bg-white px-5 py-4 border-2 border-brand-400">
+              <div>
+                <p className="font-semibold text-gray-900">Both (out &amp; back)</p>
+                <p className="text-sm text-gray-500">The whole thing, start to finish</p>
+              </div>
+              <p className="text-xl font-bold text-brand-600">$3.00<span className="text-sm font-normal text-gray-400">/barrel</span></p>
+            </div>
+
+            <div className="flex items-center justify-between rounded-xl bg-white px-5 py-4 border border-gray-200">
+              <div>
+                <p className="font-semibold text-gray-900">Curb items</p>
+                <p className="text-sm text-gray-500">Got stuff to put out? Up to 5 small items</p>
+              </div>
+              <p className="text-xl font-bold text-brand-600">$5.00<span className="text-sm font-normal text-gray-400"> flat</span></p>
+            </div>
+          </div>
+
+          <div className="mt-8 text-center">
+            <Link href="/signup" className="inline-block rounded-xl bg-brand-600 px-10 py-3.5 font-semibold text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700 active:scale-[0.98]">
+              Sign Up Free
+            </Link>
+            <p className="mt-3 text-xs text-gray-400">No card needed to sign up. Cancel anytime.</p>
           </div>
         </div>
       </section>
