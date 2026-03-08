@@ -58,6 +58,14 @@ export default function BookPage() {
     load();
   }, []);
 
+  useEffect(() => {
+    if (!selected.date) return;
+    const updates = {};
+    if (selected.putOutTime && isTimeWindowPast(selected.putOutTime, false)) updates.putOutTime = '';
+    if (selected.bringInTime && isTimeWindowPast(selected.bringInTime, true)) updates.bringInTime = '';
+    if (Object.keys(updates).length) setSelected((prev) => ({ ...prev, ...updates }));
+  }, [selected.date]);
+
   function next() { setStep((s) => Math.min(s + 1, STEPS.length - 1)); }
   function back() { step === 0 ? router.back() : setStep((s) => s - 1); }
 
@@ -127,6 +135,19 @@ export default function BookPage() {
   function needsBringIn() {
     const slug = selected.serviceType?.slug || '';
     return slug === 'bring-in' || slug === 'both';
+  }
+
+  function isTimeWindowPast(opt, isBringIn) {
+    if (!selected.date) return false;
+    const base = new Date(selected.date + 'T12:00:00');
+    if (isBringIn) base.setDate(base.getDate() + 1);
+    const endHours = { '4–9 PM': 21, '5–7 AM': 7, '12–4 PM': 16, '5–7 PM': 19, '7–9 PM': 21, '9–11 PM': 23 };
+    let hour = 23;
+    for (const [key, h] of Object.entries(endHours)) {
+      if (opt.includes(key)) { hour = h; break; }
+    }
+    base.setHours(hour, 0, 0, 0);
+    return new Date() > base;
   }
 
   function selectAddress(addr) {
@@ -606,12 +627,15 @@ export default function BookPage() {
                 <div className="mt-5">
                   <label className="text-sm font-medium text-gray-700">When should barrels be placed on the curb?</label>
                   <div className="mt-2 grid grid-cols-2 gap-2">
-                    {PUT_OUT_OPTIONS.map((opt) => (
-                      <button key={opt} onClick={() => setSelected({ ...selected, putOutTime: opt })}
-                        className={`rounded-lg border-2 px-3 py-2.5 text-sm transition ${selected.putOutTime === opt ? 'border-brand-600 bg-brand-50 text-brand-700 font-medium' : 'border-gray-100 text-gray-500'}`}>
-                        {opt}
-                      </button>
-                    ))}
+                    {PUT_OUT_OPTIONS.map((opt) => {
+                      const past = isTimeWindowPast(opt, false);
+                      return (
+                        <button key={opt} disabled={past} onClick={() => !past && setSelected({ ...selected, putOutTime: opt })}
+                          className={`rounded-lg border-2 px-3 py-2.5 text-sm transition ${past ? 'border-gray-100 text-gray-300 line-through cursor-not-allowed' : selected.putOutTime === opt ? 'border-brand-600 bg-brand-50 text-brand-700 font-medium' : 'border-gray-100 text-gray-500'}`}>
+                          {opt}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -629,12 +653,15 @@ export default function BookPage() {
                     </p>
                   )}
                   <div className="mt-2 grid grid-cols-2 gap-2">
-                    {BRING_IN_OPTIONS.map((opt) => (
-                      <button key={opt} onClick={() => setSelected({ ...selected, bringInTime: opt })}
-                        className={`rounded-lg border-2 px-3 py-2.5 text-sm transition ${selected.bringInTime === opt ? 'border-brand-600 bg-brand-50 text-brand-700 font-medium' : 'border-gray-100 text-gray-500'}`}>
-                        {opt}
-                      </button>
-                    ))}
+                    {BRING_IN_OPTIONS.map((opt) => {
+                      const past = isTimeWindowPast(opt, true);
+                      return (
+                        <button key={opt} disabled={past} onClick={() => !past && setSelected({ ...selected, bringInTime: opt })}
+                          className={`rounded-lg border-2 px-3 py-2.5 text-sm transition ${past ? 'border-gray-100 text-gray-300 line-through cursor-not-allowed' : selected.bringInTime === opt ? 'border-brand-600 bg-brand-50 text-brand-700 font-medium' : 'border-gray-100 text-gray-500'}`}>
+                          {opt}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
