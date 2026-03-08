@@ -3,6 +3,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const Booking = require('../models/Booking');
 const User = require('../models/User');
 const ServiceZone = require('../models/ServiceZone');
+const userService = require('../services/userService');
 
 router.use(authenticate, requireRole('admin', 'superadmin'));
 
@@ -96,6 +97,54 @@ router.delete('/zones/:id', async (req, res, next) => {
   try {
     await ServiceZone.findByIdAndDelete(req.params.id);
     res.json({ success: true, data: { message: 'Zone deleted' } });
+  } catch (err) { next(err); }
+});
+
+router.get('/users', async (req, res, next) => {
+  try {
+    const { search, role, page = 1, limit = 50 } = req.query;
+    const query = {};
+    if (role) query.role = role;
+    if (search) {
+      query.$or = [
+        { firstName: { $regex: search, $options: 'i' } },
+        { lastName: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { phone: { $regex: search, $options: 'i' } },
+      ];
+    }
+    const users = await User.find(query)
+      .select('-passwordHash -__v')
+      .populate('addresses')
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+    const total = await User.countDocuments(query);
+    res.json({ success: true, data: { users, total, page: parseInt(page), pages: Math.ceil(total / limit) } });
+  } catch (err) { next(err); }
+});
+
+router.delete('/users/:id', async (req, res, next) => {
+  try {
+    const deleted = await userService.deleteUser(req.params.id, req.user._id);
+    res.json({ success: true, data: { message: `User ${deleted.email} deleted`, ...deleted } });
+  } catch (err) { next(err); }
+});
+
+router.patch('/users/:id/role', async (req, res, next) => {
+  try {
+    if (!req.body.role) {
+      return res.status(400).json({ success: false, error: { code: 'MISSING_FIELD', message: 'role is required' } });
+    }
+    const user = await userService.updateRole(req.params.id, req.body.role);
+    res.json({ success: true, data: { user } });
+  } catch (err) { next(err); }
+});
+
+router.patch('/users/:id/deactivate', async (req, res, next) => {
+  try {
+    const user = await userService.deactivate(req.params.id);
+    res.json({ success: true, data: { user } });
   } catch (err) { next(err); }
 });
 

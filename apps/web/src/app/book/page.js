@@ -1080,7 +1080,7 @@ function CascadingDatePicker({ trashDay: initialTrashDay, selectedDate, onChange
             <select
               value={month}
               onChange={(e) => handleMonthChange(Number(e.target.value))}
-              className="flex-1 rounded-lg border border-gray-200 bg-brand-50 px-3 py-2.5 text-sm font-medium text-brand-700 focus:border-brand-500 focus:outline-none"
+              className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-brand-50 px-3 py-2.5 text-sm font-medium text-brand-700 focus:border-brand-500 focus:outline-none"
             >
               {months.map((m) => {
                 const hasDates = getDaysForMonth(m).length > 0;
@@ -1094,7 +1094,7 @@ function CascadingDatePicker({ trashDay: initialTrashDay, selectedDate, onChange
             <select
               value={selectedDate || ''}
               onChange={(e) => handleDayChange(e.target.value)}
-              className="flex-1 rounded-lg border border-gray-200 bg-brand-50 px-3 py-2.5 text-sm font-medium text-brand-700 focus:border-brand-500 focus:outline-none"
+              className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-brand-50 px-3 py-2.5 text-sm font-medium text-brand-700 focus:border-brand-500 focus:outline-none"
             >
               {availableDays.length === 0 && <option value="">No dates</option>}
               {availableDays.map((d) => (
@@ -1103,7 +1103,7 @@ function CascadingDatePicker({ trashDay: initialTrashDay, selectedDate, onChange
                 </option>
               ))}
             </select>
-            <div className="rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5 text-sm font-medium text-gray-500">
+            <div className="shrink-0 rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5 text-sm font-medium text-gray-500">
               {currentYear}
             </div>
           </div>
@@ -1190,11 +1190,13 @@ function AddAddressForm({ onAdded }) {
     <form onSubmit={handleSubmit} className="space-y-3 rounded-xl border border-gray-200 p-4">
       <p className="text-xs font-medium text-gray-500 uppercase">Address</p>
       <input type="text" placeholder="Street address" value={form.street} onChange={update('street')} required className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
-      <input type="text" placeholder="Apt / Unit (optional)" value={form.unit} onChange={update('unit')} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
       <div className="flex gap-2">
-        <input type="text" placeholder="City" value={form.city} onChange={update('city')} required className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
-        <input type="text" placeholder="State" value={form.state} onChange={update('state')} required className="w-16 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
-        <input type="text" placeholder="ZIP" value={form.zip} onChange={update('zip')} required className="w-20 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+        <input type="text" placeholder="Apt / Unit" value={form.unit} onChange={update('unit')} className="w-24 shrink-0 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+        <input type="text" placeholder="City" value={form.city} onChange={update('city')} required className="min-w-0 flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+      </div>
+      <div className="flex gap-2">
+        <input type="text" placeholder="State" value={form.state} onChange={update('state')} required className="w-20 shrink-0 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+        <input type="text" placeholder="ZIP" value={form.zip} onChange={update('zip')} required className="min-w-0 flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
       </div>
 
       <hr className="border-gray-100" />

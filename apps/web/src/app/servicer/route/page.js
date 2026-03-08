@@ -59,9 +59,13 @@ function JobCard({ booking, onRate, alreadyRated }) {
           {addr.barrelNotes && (
             <p className="mt-1 text-xs text-gray-500 italic">"{addr.barrelNotes}"</p>
           )}
-          {addr.barrelPhotoUrl && (
+          {(addr.barrelPhotoUrl || addr.photos?.length > 0) && (
             <div className="mt-2">
-              <PhotoViewer src={addr.barrelPhotoUrl} alt="Barrel location" className="h-24 w-full rounded-lg object-cover" />
+              <p className="mb-1 text-[10px] uppercase font-medium text-gray-500">Customer Photos</p>
+              <div className="flex gap-1.5 overflow-x-auto">
+                {addr.barrelPhotoUrl && <PhotoViewer src={addr.barrelPhotoUrl} alt="Barrel location" className="h-20 w-24 shrink-0 rounded-lg object-cover" />}
+                {addr.photos?.map((url, i) => <PhotoViewer key={i} src={url} alt={`Photo ${i + 1}`} className="h-20 w-24 shrink-0 rounded-lg object-cover" />)}
+              </div>
             </div>
           )}
         </div>

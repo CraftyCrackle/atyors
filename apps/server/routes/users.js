@@ -27,6 +27,15 @@ const upload = multer({
 router.get('/me', authenticate, userController.getProfile);
 router.patch('/me', authenticate, userController.updateProfile);
 router.post('/me/photo', authenticate, upload.single('photo'), validateUpload, userController.uploadPhoto);
+
+router.delete('/me', authenticate, async (req, res, next) => {
+  try {
+    const userService = require('../services/userService');
+    const deleted = await userService.deleteUser(req.user._id, req.user._id);
+    res.json({ success: true, data: { message: `Account deleted for ${deleted.email}` } });
+  } catch (err) { next(err); }
+});
+
 router.get('/:id/reviews', authenticate, reviewController.getByUser);
 
 module.exports = router;

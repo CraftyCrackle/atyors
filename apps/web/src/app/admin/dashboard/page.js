@@ -92,6 +92,9 @@ export default function AdminDashboardPage() {
               <Link href="/admin/bookings" className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700">
                 All Bookings
               </Link>
+              <Link href="/admin/users" className="rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-800">
+                Users
+              </Link>
               <Link href="/admin/customers" className="rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-800">
                 Customers
               </Link>
