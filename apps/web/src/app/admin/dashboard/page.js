@@ -25,16 +25,16 @@ const STATUS_LABELS = {
 
 function StatCard({ label, value, icon, color }) {
   return (
-    <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
-      <div className="flex items-center gap-3">
-        <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${color}`}>
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <div className="rounded-xl border border-gray-700 bg-gray-800 p-3 sm:p-5">
+      <div className="flex items-center gap-2.5 sm:gap-3">
+        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg sm:h-10 sm:w-10 ${color}`}>
+          <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d={icon} />
           </svg>
         </div>
-        <div>
-          <p className="text-sm text-gray-400">{label}</p>
-          <p className="text-2xl font-bold text-white">{value ?? '—'}</p>
+        <div className="min-w-0">
+          <p className="text-xs text-gray-400 sm:text-sm">{label}</p>
+          <p className="text-xl font-bold text-white sm:text-2xl">{value ?? '—'}</p>
         </div>
       </div>
     </div>
@@ -68,16 +68,14 @@ export default function AdminDashboardPage() {
   return (
     <AdminGuard>
       <div className="flex min-h-[100dvh] min-h-[100vh] flex-col bg-gray-900">
-        <header className="sticky top-0 z-10 border-b border-gray-800 bg-gray-900 px-6 pb-4 pt-header-safe">
+        <header className="sticky top-0 z-10 border-b border-gray-800 bg-gray-900 px-4 pb-3 pt-header-safe">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <Logo size="sm" variant="wordmark" dark />
-              <div>
-                <p className="text-xs text-gray-500">Admin Portal</p>
-              </div>
+              <span className="hidden text-xs text-gray-500 sm:inline">Admin Portal</span>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-400">{user?.firstName} {user?.lastName}</span>
+            <div className="flex items-center gap-2">
+              <span className="hidden text-sm text-gray-400 sm:inline">{user?.firstName} {user?.lastName}</span>
               <button onClick={logout} className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-400 hover:bg-gray-800">
                 Sign Out
               </button>
@@ -85,27 +83,25 @@ export default function AdminDashboardPage() {
           </div>
         </header>
 
-        <div className="mx-auto max-w-5xl px-4 py-6">
-          <div className="mb-6 flex items-center justify-between">
-            <h1 className="text-xl font-bold text-white">Dashboard</h1>
-            <div className="flex gap-2">
-              <Link href="/admin/bookings" className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700">
-                All Bookings
-              </Link>
-              <Link href="/admin/users" className="rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-800">
-                Users
-              </Link>
-              <Link href="/admin/customers" className="rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-800">
-                Customers
-              </Link>
-            </div>
+        <div className="mx-auto max-w-5xl px-4 py-4">
+          <h1 className="text-xl font-bold text-white">Dashboard</h1>
+          <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+            <Link href="/admin/bookings" className="shrink-0 rounded-lg bg-brand-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-brand-700">
+              All Bookings
+            </Link>
+            <Link href="/admin/users" className="shrink-0 rounded-lg border border-gray-700 px-3.5 py-2 text-sm font-medium text-gray-300 hover:bg-gray-800">
+              Users
+            </Link>
+            <Link href="/admin/customers" className="shrink-0 rounded-lg border border-gray-700 px-3.5 py-2 text-sm font-medium text-gray-300 hover:bg-gray-800">
+              Customers
+            </Link>
           </div>
 
           {loading ? (
             <div className="py-20 text-center text-gray-500">Loading...</div>
           ) : (
             <>
-              <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+              <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
                 <StatCard label="Total Bookings" value={stats?.totalBookings} icon="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" color="bg-brand-500/20 text-brand-400" />
                 <StatCard label="Active" value={stats?.activeBookings} icon="M13 10V3L4 14h7v7l9-11h-7z" color="bg-yellow-500/20 text-yellow-400" />
                 <StatCard label="Completed" value={stats?.completedBookings} icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" color="bg-green-500/20 text-green-400" />
