@@ -19,6 +19,7 @@ router.get('/pricing', (req, res) => {
       subscriptionDiscount: pricingService.SUBSCRIPTION_DISCOUNT_STANDARD,
       subscriptionDiscountLarge: pricingService.SUBSCRIPTION_DISCOUNT_LARGE,
       subscriptionDiscountThreshold: pricingService.SUBSCRIPTION_DISCOUNT_THRESHOLD,
+      curbItemPrice: pricingService.CURB_ITEM_PRICE,
     },
   });
 });

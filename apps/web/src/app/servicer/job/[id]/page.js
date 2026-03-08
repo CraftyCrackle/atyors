@@ -29,6 +29,7 @@ export default function ServicerJobPage() {
   const [completionPhoto, setCompletionPhoto] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [completionNotes, setCompletionNotes] = useState('');
+  const [placementNotes, setPlacementNotes] = useState('');
   const [completeError, setCompleteError] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
@@ -129,12 +130,18 @@ export default function ServicerJobPage() {
 
   async function handleComplete() {
     if (!completionPhoto) return;
+    const isCurbItems = booking?.serviceTypeId?.slug === 'curb-items';
+    if (isCurbItems && !placementNotes.trim()) {
+      setCompleteError('Please describe where you placed the items.');
+      return;
+    }
     setUploading(true);
     setCompleteError(null);
     try {
       const formData = new FormData();
       formData.append('photo', completionPhoto);
       if (completionNotes.trim()) formData.append('notes', completionNotes.trim());
+      if (isCurbItems && placementNotes.trim()) formData.append('placementNotes', placementNotes.trim());
       const token = localStorage.getItem('accessToken');
       const res = await fetch(`/api/v1/servicer/jobs/${id}/complete`, {
         method: 'POST',
@@ -151,6 +158,7 @@ export default function ServicerJobPage() {
       setCompletionPhoto(null);
       setPhotoPreview(null);
       setCompletionNotes('');
+      setPlacementNotes('');
     } catch (err) {
       setCompleteError('Network error. Please check your connection and try again.');
     }
@@ -400,6 +408,20 @@ export default function ServicerJobPage() {
 
             <canvas ref={canvasRef} className="hidden" />
 
+            {booking?.serviceTypeId?.slug === 'curb-items' && (
+              <div>
+                <label className="text-xs font-medium text-gray-400">Where did you place the items? <span className="text-red-400">*</span></label>
+                <textarea
+                  value={placementNotes}
+                  onChange={(e) => setPlacementNotes(e.target.value)}
+                  placeholder="e.g., Left by the mailbox on the sidewalk..."
+                  rows={2}
+                  maxLength={500}
+                  className="mt-1 w-full rounded-lg border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-brand-500 focus:outline-none"
+                />
+              </div>
+            )}
+
             <div>
               <label className="text-xs font-medium text-gray-400">Notes (optional)</label>
               <textarea
@@ -418,7 +440,7 @@ export default function ServicerJobPage() {
               </div>
             )}
 
-            <button onClick={handleComplete} disabled={!completionPhoto || uploading}
+            <button onClick={handleComplete} disabled={!completionPhoto || uploading || (booking?.serviceTypeId?.slug === 'curb-items' && !placementNotes.trim())}
               className="w-full rounded-xl bg-green-600 py-4 text-center font-semibold text-white shadow-lg transition hover:bg-green-700 active:scale-[0.98] disabled:opacity-50">
               {uploading ? 'Submitting...' : 'Mark Job Complete'}
             </button>

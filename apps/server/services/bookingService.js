@@ -1,7 +1,7 @@
 const Booking = require('../models/Booking');
 const Address = require('../models/Address');
 const ServiceType = require('../models/ServiceType');
-const { calculateOneTimePrice } = require('./pricingService');
+const { calculateOneTimePrice, calculateCurbItemPrice } = require('./pricingService');
 const stripeService = require('./stripeService');
 const config = require('../config');
 
@@ -60,7 +60,7 @@ async function create(userId, data) {
   const isBoth = svcType && svcType.slug === 'both';
 
   if (isCurbItems) {
-    const itemCount = Math.min(5, Math.max(1, parseInt(data.itemCount) || 1));
+    const itemCount = Math.min(10, Math.max(1, parseInt(data.itemCount) || 1));
     if (!data.curbItemPhotos || data.curbItemPhotos.length === 0) {
       const err = new Error('At least one photo of the item(s) is required for Curb Items service.');
       err.status = 400;
@@ -89,8 +89,8 @@ async function create(userId, data) {
       itemCount,
       curbItemPhotos: data.curbItemPhotos,
       curbItemNotes: data.curbItemNotes || '',
-      amount: svcType.basePrice,
-      serviceValue: svcType.basePrice,
+      amount: calculateCurbItemPrice(itemCount),
+      serviceValue: calculateCurbItemPrice(itemCount),
       paymentStatus: 'pending_payment',
       statusHistory: [{ status: 'pending', changedAt: new Date() }],
     });

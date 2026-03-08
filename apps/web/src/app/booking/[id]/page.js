@@ -170,6 +170,17 @@ export default function BookingSummaryPage() {
             </div>
           )}
 
+          {/* Placement confirmation (curb items) */}
+          {booking.placementConfirmed && booking.placementNotes && (
+            <div className="rounded-xl border border-green-200 bg-green-50 p-4">
+              <div className="flex items-center gap-2">
+                <svg className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <h3 className="text-xs font-medium uppercase text-green-700">Placement Confirmed</h3>
+              </div>
+              <p className="mt-1 text-sm text-gray-700">{booking.placementNotes}</p>
+            </div>
+          )}
+
           {/* Servicer notes */}
           {booking.notes && (
             <div className="rounded-xl border border-gray-200 bg-white p-4">

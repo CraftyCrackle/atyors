@@ -200,9 +200,9 @@ function WebLanding() {
             <div className="flex items-center justify-between rounded-xl bg-white px-5 py-4 border border-gray-200">
               <div>
                 <p className="font-semibold text-gray-900">Curb items</p>
-                <p className="text-sm text-gray-500">Got stuff to put out? Up to 5 small items</p>
+                <p className="text-sm text-gray-500">Got stuff to put out? Up to 10 items</p>
               </div>
-              <p className="text-xl font-bold text-brand-600">$5.00<span className="text-sm font-normal text-gray-400"> flat</span></p>
+              <p className="text-xl font-bold text-brand-600">$0.80<span className="text-sm font-normal text-gray-400">/item</span></p>
             </div>
           </div>
 

@@ -77,6 +77,7 @@ export default function BookPage() {
   const subDiscount = pricing?.subscriptionDiscount ?? 1;
   const subDiscountLarge = pricing?.subscriptionDiscountLarge ?? 2;
   const subDiscountThreshold = pricing?.subscriptionDiscountThreshold ?? 3;
+  const curbItemPrice = pricing?.curbItemPrice ?? 0.80;
 
   function isBothSvc(svc) {
     return svc?.slug === 'both';
@@ -292,8 +293,8 @@ export default function BookPage() {
                       <div className="text-right">
                         {isCurbItemsSvc(svc) ? (
                           <>
-                            <p className="font-bold text-brand-600">${Number(svc.basePrice).toFixed(2)}</p>
-                            <p className="text-xs text-gray-400">flat rate, up to 5 items</p>
+                            <p className="font-bold text-brand-600">${curbItemPrice.toFixed(2)}</p>
+                            <p className="text-xs text-gray-400">per item, up to 10</p>
                           </>
                         ) : (
                           <>
@@ -382,15 +383,15 @@ export default function BookPage() {
               )}
 
               <div className="mt-5">
-                <label className="text-sm font-medium text-gray-700">How many items? (max 5)</label>
+                <label className="text-sm font-medium text-gray-700">How many items? (max 10)</label>
                 <div className="mt-2 flex items-center gap-4">
                   <button onClick={() => setSelected({ ...selected, itemCount: Math.max(1, selected.itemCount - 1) })}
                     className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-gray-200 text-lg font-bold text-gray-600 transition hover:border-brand-400 active:scale-95 disabled:opacity-30" disabled={selected.itemCount <= 1}>
                     −
                   </button>
                   <span className="min-w-[3rem] text-center text-2xl font-bold">{selected.itemCount}</span>
-                  <button onClick={() => setSelected({ ...selected, itemCount: Math.min(5, selected.itemCount + 1) })}
-                    className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-gray-200 text-lg font-bold text-gray-600 transition hover:border-brand-400 active:scale-95 disabled:opacity-30" disabled={selected.itemCount >= 5}>
+                  <button onClick={() => setSelected({ ...selected, itemCount: Math.min(10, selected.itemCount + 1) })}
+                    className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-gray-200 text-lg font-bold text-gray-600 transition hover:border-brand-400 active:scale-95 disabled:opacity-30" disabled={selected.itemCount >= 10}>
                     +
                   </button>
                 </div>
@@ -451,9 +452,9 @@ export default function BookPage() {
               <div className="mt-4 rounded-xl bg-brand-50 p-4">
                 <div className="flex items-baseline justify-between">
                   <span className="font-semibold text-gray-700">Total</span>
-                  <span className="text-xl font-bold text-brand-600">${Number(selected.serviceType.basePrice).toFixed(2)}</span>
+                  <span className="text-xl font-bold text-brand-600">${(curbItemPrice * selected.itemCount).toFixed(2)}</span>
                 </div>
-                <p className="mt-1 text-xs text-gray-500">Flat rate for up to {selected.itemCount} item{selected.itemCount > 1 ? 's' : ''}, each under 25 lbs</p>
+                <p className="mt-1 text-xs text-gray-500">${curbItemPrice.toFixed(2)} &times; {selected.itemCount} item{selected.itemCount > 1 ? 's' : ''}, each under 25 lbs</p>
               </div>
 
               <div className="mt-4 flex gap-2.5 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
@@ -715,7 +716,7 @@ export default function BookPage() {
                 <hr className="border-gray-200" />
                 <div className="flex justify-between">
                   <span className="font-semibold">Total</span>
-                  <span className="font-bold text-brand-600">${Number(selected.serviceType.basePrice).toFixed(2)}</span>
+                  <span className="font-bold text-brand-600">${(curbItemPrice * selected.itemCount).toFixed(2)}</span>
                 </div>
               </div>
 
@@ -723,7 +724,7 @@ export default function BookPage() {
                 <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
                 </svg>
-                <span>Your card on file will be charged <strong>${Number(selected.serviceType.basePrice).toFixed(2)}</strong> after service completion.</span>
+                <span>Your card on file will be charged <strong>${(curbItemPrice * selected.itemCount).toFixed(2)}</strong> after service completion.</span>
               </div>
 
               {bookingConfirmed ? (
@@ -734,7 +735,7 @@ export default function BookPage() {
                     </svg>
                   </div>
                   <h2 className="mt-4 text-xl font-bold text-gray-900">Booking Confirmed!</h2>
-                  <p className="mt-2 text-sm text-gray-500">Your curb item service (${ Number(selected.serviceType.basePrice).toFixed(2)}) has been scheduled.</p>
+                  <p className="mt-2 text-sm text-gray-500">Your curb item service (${(curbItemPrice * selected.itemCount).toFixed(2)}) has been scheduled.</p>
                   <p className="mt-1 text-xs text-gray-400">Redirecting to your dashboard...</p>
                   <div className="mt-4 h-1 w-32 overflow-hidden rounded-full bg-gray-200">
                     <div className="h-full animate-pulse rounded-full bg-brand-600" style={{ width: '100%' }} />

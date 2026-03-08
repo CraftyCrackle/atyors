@@ -29,10 +29,12 @@ async function seed() {
         categoryId: existing._id,
         name: 'Curb Items',
         slug: 'curb-items',
-        description: 'We move your items to the curb for pickup (up to 5 items, under 25 lbs each)',
-        basePrice: 5.00,
+        description: 'We move your items to the curb for pickup (up to 10 items, under 25 lbs each)',
+        basePrice: 0.80,
         sortOrder: 4,
       });
+    } else {
+      await ServiceType.updateOne({ slug: 'curb-items' }, { $set: { basePrice: 0.80, description: 'We move your items to the curb for pickup (up to 10 items, under 25 lbs each)' } });
     }
 
     return { seeded: false, message: 'Names updated' };
@@ -49,7 +51,7 @@ async function seed() {
     { categoryId: category._id, name: 'Put Out Only', slug: 'put-out', description: 'We take your barrels to the curb', basePrice: 1.50, sortOrder: 1 },
     { categoryId: category._id, name: 'Bring In Only', slug: 'bring-in', description: 'We bring your barrels back from the curb', basePrice: 1.50, sortOrder: 2 },
     { categoryId: category._id, name: 'Both (Put Out and Bring In)', slug: 'both', description: 'We take your barrels to the curb and bring them back', basePrice: 3.00, recurringPrice: 25.00, isDefault: true, sortOrder: 0 },
-    { categoryId: category._id, name: 'Curb Items', slug: 'curb-items', description: 'We move your items to the curb for pickup (up to 5 items, under 25 lbs each)', basePrice: 5.00, sortOrder: 4 },
+    { categoryId: category._id, name: 'Curb Items', slug: 'curb-items', description: 'We move your items to the curb for pickup (up to 10 items, under 25 lbs each)', basePrice: 0.80, sortOrder: 4 },
   ]);
 
   return { seeded: true, message: 'Seed data created' };

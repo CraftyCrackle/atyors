@@ -1,5 +1,6 @@
 const {
   PRICE_PER_BARREL,
+  CURB_ITEM_PRICE,
   MONTHLY_BASE,
   MONTHLY_BASE_BOTH,
   MONTHLY_INCLUDED_BARRELS,
@@ -7,6 +8,7 @@ const {
   SUBSCRIPTION_DISCOUNT_LARGE,
   SUBSCRIPTION_DISCOUNT_THRESHOLD,
   calculateOneTimePrice,
+  calculateCurbItemPrice,
   calculateSubscriptionDiscount,
   calculateMonthlyPrice,
   calculateMonthlyPriceBoth,
@@ -20,6 +22,7 @@ describe('Pricing Service', () => {
     expect(MONTHLY_BASE).toBe(15);
     expect(MONTHLY_BASE_BOTH).toBe(25);
     expect(MONTHLY_INCLUDED_BARRELS).toBe(3);
+    expect(CURB_ITEM_PRICE).toBe(0.80);
     expect(SUBSCRIPTION_DISCOUNT_STANDARD).toBe(1);
     expect(SUBSCRIPTION_DISCOUNT_LARGE).toBe(2);
     expect(SUBSCRIPTION_DISCOUNT_THRESHOLD).toBe(3);
@@ -36,6 +39,20 @@ describe('Pricing Service', () => {
 
     test('5 barrels = $7.50', () => {
       expect(calculateOneTimePrice(5)).toBe(7.50);
+    });
+  });
+
+  describe('calculateCurbItemPrice', () => {
+    test('1 item = $0.80', () => {
+      expect(calculateCurbItemPrice(1)).toBeCloseTo(0.80);
+    });
+
+    test('5 items = $4.00', () => {
+      expect(calculateCurbItemPrice(5)).toBeCloseTo(4.00);
+    });
+
+    test('10 items = $8.00', () => {
+      expect(calculateCurbItemPrice(10)).toBeCloseTo(8.00);
     });
   });
 

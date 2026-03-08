@@ -107,7 +107,8 @@ async function completeWithPhoto(req, res, next) {
 
     const photoUrl = `/uploads/${req.file.filename}`;
     const completionNotes = req.body.notes || '';
-    const booking = await servicerService.completeWithPhoto(req.params.id, req.user._id, photoUrl, completionNotes);
+    const placementNotes = req.body.placementNotes || '';
+    const booking = await servicerService.completeWithPhoto(req.params.id, req.user._id, photoUrl, completionNotes, { placementNotes });
 
     const customerId = booking.userId?._id || booking.userId;
     const svcName = booking.serviceTypeId?.name || 'Service';

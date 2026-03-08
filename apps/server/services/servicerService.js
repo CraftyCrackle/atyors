@@ -189,8 +189,8 @@ async function getJobDetail(bookingId, servicerId) {
   return booking;
 }
 
-async function completeWithPhoto(bookingId, servicerId, photoUrl, completionNotes) {
-  const booking = await Booking.findOne({ _id: bookingId, assignedTo: servicerId });
+async function completeWithPhoto(bookingId, servicerId, photoUrl, completionNotes, { placementNotes } = {}) {
+  const booking = await Booking.findOne({ _id: bookingId, assignedTo: servicerId }).populate('serviceTypeId');
   if (!booking) {
     const err = new Error('Booking not found or not assigned to you');
     err.status = 404;
@@ -203,9 +203,21 @@ async function completeWithPhoto(bookingId, servicerId, photoUrl, completionNote
     throw err;
   }
 
+  const isCurbItems = booking.serviceTypeId?.slug === 'curb-items';
+  if (isCurbItems && !placementNotes) {
+    const err = new Error('Placement notes are required for Curb Items jobs');
+    err.status = 400;
+    err.code = 'PLACEMENT_NOTES_REQUIRED';
+    throw err;
+  }
+
   booking.status = 'completed';
   booking.completionPhotoUrl = photoUrl;
   if (completionNotes) booking.notes = completionNotes;
+  if (isCurbItems && placementNotes) {
+    booking.placementConfirmed = true;
+    booking.placementNotes = placementNotes;
+  }
   booking.completedAt = new Date();
   booking.statusHistory.push({ status: 'completed', changedAt: new Date(), changedBy: servicerId });
   await booking.save();
