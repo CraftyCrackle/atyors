@@ -136,20 +136,31 @@ async function createStripeSubscription(user, priceId, metadata = {}) {
   const stripe = getStripe();
 
   const customer = await stripe.customers.retrieve(customerId);
-  const defaultPm = customer.invoice_settings?.default_payment_method;
+  let defaultPm = customer.invoice_settings?.default_payment_method;
+
+  if (!defaultPm) {
+    const methods = await stripe.paymentMethods.list({ customer: customerId, type: 'card', limit: 1 });
+    if (methods.data.length > 0) {
+      defaultPm = methods.data[0].id;
+      await stripe.customers.update(customerId, {
+        invoice_settings: { default_payment_method: defaultPm },
+      });
+    } else {
+      const err = new Error('A payment method is required to subscribe. Please add a card first.');
+      err.status = 400;
+      err.code = 'NO_PAYMENT_METHOD';
+      throw err;
+    }
+  }
 
   const params = {
     customer: customerId,
     items: [{ price: priceId }],
-    payment_behavior: 'default_incomplete',
+    default_payment_method: defaultPm,
     payment_settings: { save_default_payment_method: 'on_subscription' },
     expand: ['latest_invoice.payment_intent'],
     metadata,
   };
-
-  if (defaultPm) {
-    params.default_payment_method = defaultPm;
-  }
 
   return stripe.subscriptions.create(params);
 }
