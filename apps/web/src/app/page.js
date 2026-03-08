@@ -99,7 +99,7 @@ function WebLanding() {
         <div className="relative mx-auto max-w-lg text-center">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-accent-50 px-4 py-1.5 text-sm font-medium text-accent-700">
             <span className="h-1.5 w-1.5 rounded-full bg-accent-500" />
-            Now serving Boston &amp; surrounding areas
+            Now serving Everett, MA &amp; surrounding areas
           </div>
 
           <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-gray-900 sm:text-5xl">
@@ -169,8 +169,14 @@ function WebLanding() {
 
       <section className="px-6 py-16 bg-gray-50">
         <div className="mx-auto max-w-lg">
+          <div className="mx-auto mb-4 flex items-center justify-center">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-yellow-100 px-4 py-1.5 text-sm font-semibold text-yellow-800">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>
+              Launch pricing &mdash; try us cheap!
+            </span>
+          </div>
           <p className="text-center text-2xl font-bold text-gray-900">What does it cost?</p>
-          <p className="mt-2 text-center text-gray-500">You pick what you need. We don&apos;t charge you until the job is done.</p>
+          <p className="mt-2 text-center text-gray-500">We&apos;re brand new, so we made prices super low so you can try us out. You only pay after the job is done.</p>
 
           <div className="mt-8 space-y-3">
             <div className="flex items-center justify-between rounded-xl bg-white px-5 py-4 border border-gray-200">
@@ -210,7 +216,7 @@ function WebLanding() {
             <Link href="/signup" className="inline-block rounded-xl bg-brand-600 px-10 py-3.5 font-semibold text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700 active:scale-[0.98]">
               Sign Up Free
             </Link>
-            <p className="mt-3 text-xs text-gray-400">No card needed to sign up. Cancel anytime.</p>
+            <p className="mt-3 text-xs text-gray-400">No card needed to sign up. Cancel anytime. Prices this low won&apos;t last forever!</p>
           </div>
         </div>
       </section>
