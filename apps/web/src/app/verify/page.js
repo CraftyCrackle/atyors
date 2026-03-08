@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { Suspense, useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Logo from '../../components/Logo';
@@ -10,6 +10,14 @@ import { useAuthStore } from '../../stores/authStore';
 const RESEND_COOLDOWN = 60;
 
 export default function VerifyPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" /></div>}>
+      <VerifyContent />
+    </Suspense>
+  );
+}
+
+function VerifyContent() {
   const router = useRouter();
   const params = useSearchParams();
 
