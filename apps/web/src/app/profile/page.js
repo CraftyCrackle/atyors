@@ -13,6 +13,7 @@ export default function ProfilePage() {
   const { canInstall, isStandalone, triggerInstall } = useInstall();
   const [addresses, setAddresses] = useState([]);
   const [editing, setEditing] = useState(false);
+  const [addingAddress, setAddingAddress] = useState(false);
   const [form, setForm] = useState({ firstName: '', lastName: '', phone: '' });
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -132,8 +133,13 @@ export default function ProfilePage() {
           <div className={`mt-4 ${cardCls}`}>
             <div className="flex items-center justify-between">
               <h2 className={`font-semibold ${dark ? 'text-white' : ''}`}>Addresses</h2>
-              <AddAddressButton dark={dark} onAdded={(addr) => setAddresses((prev) => [...prev, addr])} />
+              <button onClick={() => setAddingAddress(!addingAddress)} className="text-sm font-medium text-brand-600">
+                {addingAddress ? 'Cancel' : '+ Add'}
+              </button>
             </div>
+            {addingAddress && (
+              <AddAddressForm dark={dark} onAdded={(addr) => { setAddresses((prev) => [...prev, addr]); setAddingAddress(false); }} onCancel={() => setAddingAddress(false)} />
+            )}
             {addresses.length === 0 ? (
               <p className="mt-2 text-sm text-gray-400">No addresses saved</p>
             ) : (
@@ -421,8 +427,7 @@ function AddressCard({ address, dark, onUpdated, onDelete }) {
   );
 }
 
-function AddAddressButton({ dark, onAdded }) {
-  const [open, setOpen] = useState(false);
+function AddAddressForm({ dark, onAdded, onCancel }) {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ street: '', unit: '', city: '', state: '', zip: '', barrelCount: 1, barrelLocation: '', trashDay: '' });
   const [photos, setPhotos] = useState([]);
@@ -430,9 +435,9 @@ function AddAddressButton({ dark, onAdded }) {
   const [uploading, setUploading] = useState(false);
   const update = (f) => (e) => setForm({ ...form, [f]: e.target.value });
 
-  const inputCls = dark
-    ? 'w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white placeholder-gray-400 focus:border-brand-500 focus:outline-none'
-    : 'w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none';
+  const baseCls = dark
+    ? 'rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white placeholder-gray-400 focus:border-brand-500 focus:outline-none'
+    : 'rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none';
 
   function handlePhotos(e) {
     const files = Array.from(e.target.files || []);
@@ -489,89 +494,74 @@ function AddAddressButton({ dark, onAdded }) {
       }
 
       onAdded(addr);
-      setOpen(false);
-      setForm({ street: '', unit: '', city: '', state: '', zip: '', barrelCount: 1, barrelLocation: '', trashDay: '' });
-      setPhotos([]);
-      setPhotoPreviews([]);
     } catch (err) { alert(err.message || 'Failed to add address'); }
     setSaving(false);
     setUploading(false);
   }
 
-  if (!open) {
-    return (
-      <button onClick={() => setOpen(true)} className="text-sm font-medium text-brand-600">
-        + Add
-      </button>
-    );
-  }
-
   return (
-    <>
-      <button onClick={() => setOpen(false)} className="text-sm font-medium text-brand-600">Cancel</button>
-      <div className={`mt-3 space-y-3 rounded-lg border p-4 ${dark ? 'border-brand-500/30 bg-gray-900/50' : 'border-brand-200 bg-brand-50/30'}`}>
-        <p className={`text-xs font-semibold uppercase ${dark ? 'text-gray-400' : 'text-gray-500'}`}>New Address</p>
-        <input type="text" placeholder="Street address" value={form.street} onChange={update('street')} className={inputCls} />
-        <div className="flex gap-2">
-          <input type="text" placeholder="Apt / Unit" value={form.unit} onChange={update('unit')} className={`w-24 shrink-0 ${inputCls}`} />
-          <input type="text" placeholder="City" value={form.city} onChange={update('city')} className={`min-w-0 flex-1 ${inputCls}`} />
-        </div>
-        <div className="flex gap-2">
-          <input type="text" placeholder="State" value={form.state} onChange={update('state')} className={`w-20 shrink-0 ${inputCls}`} />
-          <input type="text" placeholder="ZIP" value={form.zip} onChange={update('zip')} className={`min-w-0 flex-1 ${inputCls}`} />
-        </div>
-        <div className="flex gap-2">
-          <div className="flex-1">
-            <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Barrels</label>
-            <input type="number" min="1" value={form.barrelCount} onChange={(e) => setForm({ ...form, barrelCount: e.target.value })} className={inputCls} />
-          </div>
-          <div className="flex-1">
-            <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Trash day</label>
-            <select value={form.trashDay} onChange={update('trashDay')} className={inputCls}>
-              <option value="">Select</option>
-              {DAYS_OF_WEEK.map((d) => <option key={d} value={d}>{d}</option>)}
-            </select>
-          </div>
-        </div>
-        <input type="text" placeholder='Barrel location (e.g. "Left side of garage")' value={form.barrelLocation} onChange={update('barrelLocation')} className={inputCls} />
-
-        <div>
-          <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Photos to help your servicer (up to 10)</label>
-          <p className={`text-[11px] mt-0.5 ${dark ? 'text-gray-500' : 'text-gray-400'}`}>Show barrel location, curb spot, driveway, or anything helpful.</p>
-          {photoPreviews.length > 0 && (
-            <div className="mt-2 grid grid-cols-3 gap-2">
-              {photoPreviews.map((url, i) => (
-                <div key={i} className="relative">
-                  <PhotoViewer src={url} alt={`Photo ${i + 1}`} className="h-20 w-full rounded-lg object-cover" />
-                  <button type="button" onClick={(e) => { e.stopPropagation(); removePhoto(i); }}
-                    className="absolute top-1 right-1 z-10 rounded-full bg-black/50 p-1 text-white hover:bg-red-600">
-                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-          {photos.length < 10 && (
-            <label className={`mt-2 flex cursor-pointer items-center gap-2 rounded-lg border border-dashed px-3 py-2.5 text-sm transition ${dark ? 'border-gray-600 text-gray-400 hover:border-brand-400 hover:text-brand-400' : 'border-gray-300 text-gray-500 hover:border-brand-400 hover:text-brand-600'}`}>
-              {uploading ? (
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
-              ) : (
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              )}
-              {photos.length === 0 ? 'Add photos' : `Add more (${photos.length}/10)`}
-              <input type="file" accept="image/*" multiple onChange={handlePhotos} className="hidden" disabled={uploading} />
-            </label>
-          )}
-        </div>
-
-        <button onClick={handleSave} disabled={saving || uploading} className="w-full rounded-lg bg-brand-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
-          {uploading ? 'Uploading photos...' : saving ? 'Saving...' : 'Save Address'}
-        </button>
+    <div className={`mt-3 space-y-3 rounded-lg border p-4 ${dark ? 'border-brand-500/30 bg-gray-900/50' : 'border-brand-200 bg-brand-50/30'}`}>
+      <p className={`text-xs font-semibold uppercase ${dark ? 'text-gray-400' : 'text-gray-500'}`}>New Address</p>
+      <input type="text" placeholder="Street address" value={form.street} onChange={update('street')} className={`w-full ${baseCls}`} />
+      <div className="flex gap-2">
+        <input type="text" placeholder="Apt / Unit" value={form.unit} onChange={update('unit')} className={`w-24 shrink-0 ${baseCls}`} />
+        <input type="text" placeholder="City" value={form.city} onChange={update('city')} className={`min-w-0 flex-1 ${baseCls}`} />
       </div>
-    </>
+      <div className="flex gap-2">
+        <input type="text" placeholder="State" value={form.state} onChange={update('state')} className={`w-20 shrink-0 ${baseCls}`} />
+        <input type="text" placeholder="ZIP" value={form.zip} onChange={update('zip')} className={`min-w-0 flex-1 ${baseCls}`} />
+      </div>
+      <div className="flex gap-2">
+        <div className="flex-1 min-w-0">
+          <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Barrels</label>
+          <input type="number" min="1" value={form.barrelCount} onChange={(e) => setForm({ ...form, barrelCount: e.target.value })} className={`w-full ${baseCls}`} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Trash day</label>
+          <select value={form.trashDay} onChange={update('trashDay')} className={`w-full ${baseCls}`}>
+            <option value="">Select</option>
+            {DAYS_OF_WEEK.map((d) => <option key={d} value={d}>{d}</option>)}
+          </select>
+        </div>
+      </div>
+      <input type="text" placeholder='Barrel location (e.g. "Left side of garage")' value={form.barrelLocation} onChange={update('barrelLocation')} className={`w-full ${baseCls}`} />
+
+      <div>
+        <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Photos to help your servicer (up to 10)</label>
+        <p className={`text-[11px] mt-0.5 ${dark ? 'text-gray-500' : 'text-gray-400'}`}>Show barrel location, curb spot, driveway, or anything helpful.</p>
+        {photoPreviews.length > 0 && (
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            {photoPreviews.map((url, i) => (
+              <div key={i} className="relative">
+                <PhotoViewer src={url} alt={`Photo ${i + 1}`} className="h-20 w-full rounded-lg object-cover" />
+                <button type="button" onClick={(e) => { e.stopPropagation(); removePhoto(i); }}
+                  className="absolute top-1 right-1 z-10 rounded-full bg-black/50 p-1 text-white hover:bg-red-600">
+                  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        {photos.length < 10 && (
+          <label className={`mt-2 flex cursor-pointer items-center gap-2 rounded-lg border border-dashed px-3 py-2.5 text-sm transition ${dark ? 'border-gray-600 text-gray-400 hover:border-brand-400 hover:text-brand-400' : 'border-gray-300 text-gray-500 hover:border-brand-400 hover:text-brand-600'}`}>
+            {uploading ? (
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
+            ) : (
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            )}
+            {photos.length === 0 ? 'Add photos' : `Add more (${photos.length}/10)`}
+            <input type="file" accept="image/*" multiple onChange={handlePhotos} className="hidden" disabled={uploading} />
+          </label>
+        )}
+      </div>
+
+      <button onClick={handleSave} disabled={saving || uploading} className="w-full rounded-lg bg-brand-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
+        {uploading ? 'Uploading photos...' : saving ? 'Saving...' : 'Save Address'}
+      </button>
+    </div>
   );
 }
 
