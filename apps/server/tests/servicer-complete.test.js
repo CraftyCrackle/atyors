@@ -5,7 +5,7 @@ jest.mock('../models/Route', () => ({}));
 
 const Booking = require('../models/Booking');
 
-const { completeWithPhoto } = (() => {
+const { completeWithPhoto, denyJob } = (() => {
   let mod;
   jest.isolateModules(() => { mod = require('../services/servicerService'); });
   return mod;
@@ -82,6 +82,39 @@ describe('servicerService.completeWithPhoto', () => {
     expect(fake.placementConfirmed).toBe(true);
     expect(fake.placementNotes).toBe('By the mailbox');
     expect(fake.status).toBe('completed');
+    expect(fake.save).toHaveBeenCalled();
+  });
+});
+
+describe('servicerService.denyJob', () => {
+  test('rejects when booking not found', async () => {
+    mockFindOneChain(null);
+    await expect(denyJob(bookingId, servicerId, 'Too heavy'))
+      .rejects.toMatchObject({ status: 404, message: expect.stringContaining('not found') });
+  });
+
+  test('rejects non-curb-items bookings', async () => {
+    const fake = makeFakeBooking({ serviceTypeId: { slug: 'put-out', name: 'Put Out Only' } });
+    mockFindOneChain(fake);
+    await expect(denyJob(bookingId, servicerId, 'Too heavy'))
+      .rejects.toMatchObject({ status: 400, code: 'NOT_CURB_ITEMS' });
+  });
+
+  test('rejects invalid status transition', async () => {
+    const fake = makeFakeBooking({ serviceTypeId: { slug: 'curb-items' }, status: 'completed', canTransitionTo: jest.fn().mockReturnValue(false) });
+    mockFindOneChain(fake);
+    await expect(denyJob(bookingId, servicerId, 'Too heavy'))
+      .rejects.toMatchObject({ status: 400, code: 'INVALID_TRANSITION' });
+  });
+
+  test('denies curb-items job successfully', async () => {
+    const fake = makeFakeBooking({ serviceTypeId: { slug: 'curb-items', name: 'Curb Items' }, status: 'active' });
+    mockFindOneChain(fake);
+    await denyJob(bookingId, servicerId, 'Items are hazardous');
+    expect(fake.status).toBe('denied');
+    expect(fake.denialReason).toBe('Items are hazardous');
+    expect(fake.assignedTo).toBeNull();
+    expect(fake.statusHistory).toHaveLength(1);
     expect(fake.save).toHaveBeenCalled();
   });
 });

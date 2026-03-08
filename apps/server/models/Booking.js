@@ -1,14 +1,15 @@
 const mongoose = require('mongoose');
 
 const STATUS_FLOW = {
-  pending: ['active', 'cancelled', 'expired'],
-  active: ['en-route', 'cancelled', 'expired'],
+  pending: ['active', 'cancelled', 'expired', 'denied'],
+  active: ['en-route', 'cancelled', 'expired', 'denied'],
   'en-route': ['arrived', 'cancelled'],
-  arrived: ['completed', 'no-show'],
+  arrived: ['completed', 'no-show', 'denied'],
   completed: [],
   cancelled: [],
   'no-show': [],
   expired: [],
+  denied: [],
 };
 
 const bookingSchema = new mongoose.Schema({
@@ -53,6 +54,7 @@ const bookingSchema = new mongoose.Schema({
   cancelledAt: { type: Date },
   cancellationFee: { type: Number, default: 0 },
   cancellationReason: { type: String, trim: true },
+  denialReason: { type: String, trim: true },
 }, {
   timestamps: true,
 });

@@ -17,6 +17,7 @@ const STATUS_LABELS = {
   'en-route': 'En Route',
   arrived: 'Arrived',
   completed: 'Done',
+  denied: 'Denied',
 };
 
 export default function ServicerJobPage() {
@@ -32,6 +33,10 @@ export default function ServicerJobPage() {
   const [placementNotes, setPlacementNotes] = useState('');
   const [completeError, setCompleteError] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [showDeny, setShowDeny] = useState(false);
+  const [denyReason, setDenyReason] = useState('');
+  const [denyError, setDenyError] = useState(null);
+  const [denying, setDenying] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraError, setCameraError] = useState(null);
   const videoRef = useRef(null);
@@ -163,6 +168,24 @@ export default function ServicerJobPage() {
       setCompleteError('Network error. Please check your connection and try again.');
     }
     setUploading(false);
+  }
+
+  async function handleDeny() {
+    if (!denyReason.trim()) {
+      setDenyError('Please explain why you are denying this request.');
+      return;
+    }
+    setDenying(true);
+    setDenyError(null);
+    try {
+      const res = await api.patch(`/servicer/jobs/${id}/deny`, { reason: denyReason.trim() });
+      setBooking(res.data.booking);
+      setShowDeny(false);
+      setDenyReason('');
+    } catch (err) {
+      setDenyError(err.response?.data?.error?.message || err.message || 'Failed to deny request.');
+    }
+    setDenying(false);
   }
 
   if (authLoading || loading) {
@@ -447,6 +470,48 @@ export default function ServicerJobPage() {
           </div>
         )}
 
+        {/* Deny curb items request */}
+        {svc?.slug === 'curb-items' && ['active', 'en-route', 'arrived'].includes(booking.status) && (
+          <div className="rounded-xl border border-gray-700 bg-gray-800 p-4 space-y-3">
+            {!showDeny ? (
+              <button onClick={() => setShowDeny(true)}
+                className="w-full rounded-xl border border-red-700 py-3 text-center text-sm font-medium text-red-400 transition hover:bg-red-900/30 active:scale-[0.98]">
+                Deny Request
+              </button>
+            ) : (
+              <>
+                <div>
+                  <h3 className="text-sm font-semibold text-red-400">Deny this request</h3>
+                  <p className="mt-1 text-xs text-gray-400">Explain why the items cannot be moved to the curb. The client will see this note.</p>
+                </div>
+                <textarea
+                  value={denyReason}
+                  onChange={(e) => setDenyReason(e.target.value)}
+                  placeholder="e.g., Items are too heavy, hazardous materials, etc."
+                  rows={3}
+                  maxLength={500}
+                  className="w-full rounded-lg border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-red-500 focus:outline-none"
+                />
+                {denyError && (
+                  <div className="rounded-lg border border-red-800/50 bg-red-900/30 p-3">
+                    <p className="text-sm text-red-300">{denyError}</p>
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <button onClick={() => { setShowDeny(false); setDenyReason(''); setDenyError(null); }}
+                    className="flex-1 rounded-xl border border-gray-600 py-3 text-sm font-medium text-gray-400 transition hover:bg-gray-700">
+                    Cancel
+                  </button>
+                  <button onClick={handleDeny} disabled={!denyReason.trim() || denying}
+                    className="flex-1 rounded-xl bg-red-600 py-3 text-sm font-semibold text-white transition hover:bg-red-700 active:scale-[0.98] disabled:opacity-50">
+                    {denying ? 'Denying...' : 'Confirm Deny'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
         {/* Completed state */}
         {booking.status === 'completed' && (
           <div className="rounded-xl bg-green-900/30 border border-green-800/50 p-4 text-center space-y-3">
@@ -458,6 +523,17 @@ export default function ServicerJobPage() {
                 <img src={booking.completionPhotoUrl} alt="Completed" className="w-full rounded-lg object-cover max-h-48" />
               </div>
             )}
+            <button onClick={() => router.push('/servicer/dashboard')} className="rounded-lg bg-gray-800 px-6 py-2 text-sm font-medium text-white">
+              Back to Dashboard
+            </button>
+          </div>
+        )}
+
+        {/* Denied state */}
+        {booking.status === 'denied' && (
+          <div className="rounded-xl bg-red-900/30 border border-red-800/50 p-4 text-center space-y-3">
+            <p className="text-lg font-bold text-red-400">Request Denied</p>
+            {booking.denialReason && <p className="text-sm text-gray-400">&ldquo;{booking.denialReason}&rdquo;</p>}
             <button onClick={() => router.push('/servicer/dashboard')} className="rounded-lg bg-gray-800 px-6 py-2 text-sm font-medium text-white">
               Back to Dashboard
             </button>

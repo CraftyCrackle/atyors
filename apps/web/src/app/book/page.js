@@ -457,13 +457,21 @@ export default function BookPage() {
                 <p className="mt-1 text-xs text-gray-500">${curbItemPrice.toFixed(2)} &times; {selected.itemCount} item{selected.itemCount > 1 ? 's' : ''}, each under 25 lbs</p>
               </div>
 
-              <div className="mt-4 flex gap-2.5 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+              <div className="mt-4 rounded-xl bg-gray-50 border border-gray-200 p-4">
+                <p className="text-xs font-semibold text-gray-700 uppercase">Common items</p>
+                <p className="mt-1 text-xs text-gray-500 leading-relaxed">
+                  Bags of yard waste, boxes of recycling, small furniture, broken appliances, old electronics, or anything under 25 lbs with a valid permit or that can legally be left at the curb for pickup.
+                </p>
+              </div>
+
+              <div className="mt-3 flex gap-2.5 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
                 <svg className="h-5 w-5 shrink-0 text-amber-500 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
                 </svg>
-                <p className="text-xs text-amber-800 leading-relaxed">
-                  <strong>Requirements:</strong> Each item must be under 25 lbs. Items must have a valid permit or be legally allowed at the curb for garbage or recycling collection on the scheduled pickup day.
-                </p>
+                <div className="text-xs text-amber-800 leading-relaxed">
+                  <p><strong>This service is not for barrel rollout.</strong> Use &ldquo;Put Out&rdquo; or &ldquo;Bring In&rdquo; for barrel services.</p>
+                  <p className="mt-1">Each item must be under 25 lbs and legally allowed at the curb. Your servicer may deny the request if items are unreasonable (too heavy, hazardous, etc.). You will not be charged if denied.</p>
+                </div>
               </div>
 
               <button onClick={next} disabled={curbItemPhotos.length === 0}

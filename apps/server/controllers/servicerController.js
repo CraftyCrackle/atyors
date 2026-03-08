@@ -193,4 +193,45 @@ async function updateLocation(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { getAvailableJobs, getMyJobs, getJobDetail, acceptJob, updateJobStatus, completeWithPhoto, getEarnings, updateLocation };
+async function denyJob(req, res, next) {
+  try {
+    const { reason } = req.body;
+    if (!reason || !reason.trim()) {
+      const err = new Error('A reason is required when denying a request');
+      err.status = 400;
+      return next(err);
+    }
+
+    const booking = await servicerService.denyJob(req.params.id, req.user._id, reason.trim());
+
+    const customerId = booking.userId?._id || booking.userId;
+    const svcName = booking.serviceTypeId?.name || 'Curb Items';
+    const msg = `Your ${svcName} request was denied: "${reason.trim()}"`;
+
+    try {
+      await notificationService.create({
+        userId: customerId,
+        type: 'booking:denied',
+        title: 'Request Denied',
+        body: msg,
+        bookingId: booking._id,
+        meta: { status: 'denied' },
+      });
+
+      const io = req.app.locals.io;
+      if (io) {
+        io.of('/notifications').to(`user:${customerId}`).emit('booking:status', {
+          bookingId: booking._id,
+          status: 'denied',
+          message: msg,
+        });
+      }
+    } catch (notifyErr) {
+      console.error(`Deny notification failed for booking ${req.params.id}:`, notifyErr.message);
+    }
+
+    res.json({ success: true, data: { booking } });
+  } catch (err) { next(err); }
+}
+
+module.exports = { getAvailableJobs, getMyJobs, getJobDetail, acceptJob, updateJobStatus, completeWithPhoto, getEarnings, updateLocation, denyJob };

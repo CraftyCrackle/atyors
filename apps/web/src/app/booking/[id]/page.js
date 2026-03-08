@@ -14,6 +14,7 @@ const STATUS_LABELS = {
   completed: 'Completed',
   cancelled: 'Cancelled',
   'no-show': 'No Show',
+  denied: 'Denied',
 };
 
 export default function BookingSummaryPage() {
@@ -159,6 +160,18 @@ export default function BookingSummaryPage() {
               <h3 className="text-xs font-medium uppercase text-gray-500">Service Address</h3>
               <p className="mt-1 text-sm font-medium text-gray-900">{addr.street}{addr.unit ? `, ${addr.unit}` : ''}</p>
               <p className="text-sm text-gray-500">{addr.city}, {addr.state} {addr.zip}</p>
+            </div>
+          )}
+
+          {/* Request denied */}
+          {booking.status === 'denied' && booking.denialReason && (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+              <div className="flex items-center gap-2">
+                <svg className="h-4 w-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                <h3 className="text-xs font-medium uppercase text-red-700">Request Denied</h3>
+              </div>
+              <p className="mt-1 text-sm text-gray-700">{booking.denialReason}</p>
+              <p className="mt-2 text-xs text-gray-500">You have not been charged for this service.</p>
             </div>
           )}
 

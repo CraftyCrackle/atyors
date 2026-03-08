@@ -231,4 +231,34 @@ async function completeWithPhoto(bookingId, servicerId, photoUrl, completionNote
   return booking;
 }
 
-module.exports = { getAvailableJobs, getMyJobs, acceptJob, updateJobStatus, completeWithPhoto, getJobDetail };
+async function denyJob(bookingId, servicerId, reason) {
+  const booking = await Booking.findOne({ _id: bookingId, assignedTo: servicerId }).populate('serviceTypeId');
+  if (!booking) {
+    const err = new Error('Booking not found or not assigned to you');
+    err.status = 404;
+    throw err;
+  }
+  if (booking.serviceTypeId?.slug !== 'curb-items') {
+    const err = new Error('Only Curb Items requests can be denied');
+    err.status = 400;
+    err.code = 'NOT_CURB_ITEMS';
+    throw err;
+  }
+  if (!booking.canTransitionTo('denied')) {
+    const err = new Error(`Cannot deny from status: ${booking.status}`);
+    err.status = 400;
+    err.code = 'INVALID_TRANSITION';
+    throw err;
+  }
+
+  booking.status = 'denied';
+  booking.denialReason = reason;
+  booking.assignedTo = null;
+  booking.statusHistory.push({ status: 'denied', changedAt: new Date(), changedBy: servicerId });
+  await booking.save();
+
+  await booking.populate('addressId serviceTypeId userId');
+  return booking;
+}
+
+module.exports = { getAvailableJobs, getMyJobs, acceptJob, updateJobStatus, completeWithPhoto, getJobDetail, denyJob };
