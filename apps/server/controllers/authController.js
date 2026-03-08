@@ -1,4 +1,5 @@
 const authService = require('../services/authService');
+const verificationService = require('../services/verificationService');
 
 async function register(req, res, next) {
   try {
@@ -64,4 +65,33 @@ async function resetPassword(req, res, next) {
   }
 }
 
-module.exports = { register, login, refresh, me, forgotPassword, resetPassword };
+async function sendVerification(req, res, next) {
+  try {
+    const { userId } = req.body;
+    if (!userId) {
+      return res.status(400).json({ success: false, error: { code: 'MISSING_FIELDS', message: 'userId is required' } });
+    }
+    const result = await verificationService.sendCode(userId);
+    res.json({ success: true, data: result });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function verify(req, res, next) {
+  try {
+    const { userId, code } = req.body;
+    if (!userId || !code) {
+      return res.status(400).json({ success: false, error: { code: 'MISSING_FIELDS', message: 'userId and code are required' } });
+    }
+    const user = await verificationService.verifyCode(userId, code);
+    const tokens = await authService.generateTokens(user);
+    user.lastLoginAt = new Date();
+    await user.save();
+    res.json({ success: true, data: { user, ...tokens } });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { register, login, refresh, me, forgotPassword, resetPassword, sendVerification, verify };

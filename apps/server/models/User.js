@@ -25,6 +25,11 @@ const userSchema = new mongoose.Schema({
   passwordResetExpires: { type: Date, select: false },
   failedLoginAttempts: { type: Number, default: 0, select: false },
   lockUntil: { type: Date, select: false },
+  isVerified: { type: Boolean, default: false },
+  verificationCode: { type: String, select: false },
+  verificationCodeExpires: { type: Date, select: false },
+  verificationAttempts: { type: Number, default: 0, select: false },
+  verificationAttemptsResetAt: { type: Date, select: false },
   isActive: { type: Boolean, default: true },
   lastLoginAt: { type: Date },
 }, {

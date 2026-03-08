@@ -71,11 +71,12 @@ async function register({ email, phone, password, firstName, lastName }) {
     passwordHash,
   });
 
-  const tokens = await generateTokens(user);
-  user.lastLoginAt = new Date();
-  await user.save();
-
-  return { user: sanitizeUser(user), ...tokens };
+  return {
+    pendingVerification: true,
+    userId: user._id,
+    email: user.email,
+    phone: user.phone || null,
+  };
 }
 
 async function login({ email, password }) {
@@ -115,6 +116,16 @@ async function login({ email, password }) {
 
   user.failedLoginAttempts = 0;
   user.lockUntil = undefined;
+  await user.save();
+
+  if (!user.isVerified) {
+    return {
+      pendingVerification: true,
+      userId: user._id,
+      email: user.email,
+      phone: user.phone || null,
+    };
+  }
 
   const tokens = await generateTokens(user);
   user.lastLoginAt = new Date();

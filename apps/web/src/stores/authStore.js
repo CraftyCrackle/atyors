@@ -20,6 +20,9 @@ export const useAuthStore = create((set, get) => ({
 
   login: async (email, password) => {
     const res = await api.post('/auth/login', { email, password });
+    if (res.data.pendingVerification) {
+      return res.data;
+    }
     localStorage.setItem('accessToken', res.data.accessToken);
     localStorage.setItem('refreshToken', res.data.refreshToken);
     set({ user: res.data.user });
@@ -28,6 +31,9 @@ export const useAuthStore = create((set, get) => ({
 
   register: async (data) => {
     const res = await api.post('/auth/register', data);
+    if (res.data.pendingVerification) {
+      return res.data;
+    }
     localStorage.setItem('accessToken', res.data.accessToken);
     localStorage.setItem('refreshToken', res.data.refreshToken);
     set({ user: res.data.user });

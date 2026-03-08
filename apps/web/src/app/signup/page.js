@@ -25,6 +25,11 @@ export default function SignupPage() {
     setSubmitting(true);
     try {
       const data = await register({ firstName: form.firstName, lastName: form.lastName, email: form.email, phone: form.phone, password: form.password });
+      if (data.pendingVerification) {
+        const qs = new URLSearchParams({ userId: data.userId, email: data.email });
+        router.push(`/verify?${qs.toString()}`);
+        return;
+      }
       const role = data.user?.role;
       if (['admin', 'superadmin'].includes(role)) router.push('/admin/dashboard');
       else router.push('/dashboard');

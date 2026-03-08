@@ -20,6 +20,12 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       const data = await login(email, password);
+      if (data.pendingVerification) {
+        const qs = new URLSearchParams({ userId: data.userId });
+        if (data.email) qs.set('email', data.email);
+        router.push(`/verify?${qs.toString()}`);
+        return;
+      }
       const role = data.user?.role;
       if (['admin', 'superadmin'].includes(role)) router.push('/admin/dashboard');
       else if (role === 'servicer') router.push('/servicer/dashboard');
