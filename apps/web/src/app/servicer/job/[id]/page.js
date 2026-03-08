@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAuthStore } from '../../../../stores/authStore';
 import { api } from '../../../../services/api';
 import useGpsTracking from '../../../../hooks/useGpsTracking';
+import PhotoViewer from '../../../../components/PhotoViewer';
 
 const STATUS_FLOW = {
   active: { next: 'en-route', label: 'Start Route', color: 'bg-purple-600 hover:bg-purple-700' },
@@ -313,10 +314,10 @@ export default function ServicerJobPage() {
                 <p className="mb-1 text-xs font-medium text-gray-500">Customer Photos</p>
                 <div className="grid grid-cols-2 gap-2">
                   {addr.barrelPhotoUrl && (
-                    <img src={addr.barrelPhotoUrl} alt="Barrel location" className="w-full rounded-lg object-cover" />
+                    <PhotoViewer src={addr.barrelPhotoUrl} alt="Barrel location" className="w-full rounded-lg object-cover" />
                   )}
                   {addr.photos?.map((url, i) => (
-                    <img key={i} src={url} alt={`Photo ${i + 1}`} className="w-full rounded-lg object-cover" />
+                    <PhotoViewer key={i} src={url} alt={`Photo ${i + 1}`} className="w-full rounded-lg object-cover" />
                   ))}
                 </div>
               </div>
@@ -520,7 +521,7 @@ export default function ServicerJobPage() {
             {booking.completionPhotoUrl && (
               <div className="mt-2">
                 <p className="mb-1 text-xs font-medium text-gray-500">Completion Photo</p>
-                <img src={booking.completionPhotoUrl} alt="Completed" className="w-full rounded-lg object-cover max-h-48" />
+                <PhotoViewer src={booking.completionPhotoUrl} alt="Completed" className="w-full rounded-lg object-cover max-h-48" />
               </div>
             )}
             <button onClick={() => router.push('/servicer/dashboard')} className="rounded-lg bg-gray-800 px-6 py-2 text-sm font-medium text-white">

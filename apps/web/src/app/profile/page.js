@@ -6,6 +6,7 @@ import BottomNav from '../../components/BottomNav';
 import { useAuthStore } from '../../stores/authStore';
 import { api } from '../../services/api';
 import { useInstall } from '../../components/InstallContext';
+import PhotoViewer from '../../components/PhotoViewer';
 
 export default function ProfilePage() {
   const { user, logout, updateUser } = useAuthStore();
@@ -221,7 +222,11 @@ function AddressCard({ address, dark, onUpdated, onDelete }) {
         body: fd,
       });
       const data = await res.json();
-      if (data.success) onUpdated(data.data.address);
+      if (data.success) {
+        onUpdated(data.data.address);
+      } else {
+        alert(data.error?.message || 'Failed to upload photo');
+      }
     } catch (err) { alert(err.message || 'Failed to upload photo'); }
     setUploadingBarrelPhoto(false);
     e.target.value = '';
@@ -241,7 +246,11 @@ function AddressCard({ address, dark, onUpdated, onDelete }) {
         body: fd,
       });
       const data = await res.json();
-      if (data.success) onUpdated(data.data.address);
+      if (data.success) {
+        onUpdated(data.data.address);
+      } else {
+        alert(data.error?.message || 'Failed to upload photos');
+      }
     } catch (err) { alert(err.message || 'Failed to upload photos'); }
     setUploadingBarrelPhoto(false);
     e.target.value = '';
@@ -320,14 +329,14 @@ function AddressCard({ address, dark, onUpdated, onDelete }) {
             <div className="mt-2 grid grid-cols-3 gap-2">
               {address.barrelPhotoUrl && (
                 <div className="relative">
-                  <img src={address.barrelPhotoUrl} alt="Main barrel photo" className="h-24 w-full rounded-lg object-cover" />
-                  <span className="absolute bottom-1 left-1 rounded bg-black/60 px-1.5 py-0.5 text-[9px] font-medium text-white">Main</span>
+                  <PhotoViewer src={address.barrelPhotoUrl} alt="Main barrel photo" className="h-24 w-full rounded-lg object-cover" />
+                  <span className="absolute bottom-1 left-1 rounded bg-black/60 px-1.5 py-0.5 text-[9px] font-medium text-white pointer-events-none">Main</span>
                 </div>
               )}
               {address.photos?.map((url, i) => (
                 <div key={i} className="relative">
-                  <img src={url} alt={`Photo ${i + 1}`} className="h-24 w-full rounded-lg object-cover" />
-                  <button type="button" onClick={() => handleRemovePhoto(i)} className="absolute top-1 right-1 rounded-full bg-black/50 p-1 text-white hover:bg-red-600">
+                  <PhotoViewer src={url} alt={`Photo ${i + 1}`} className="h-24 w-full rounded-lg object-cover" />
+                  <button type="button" onClick={() => handleRemovePhoto(i)} className="absolute top-1 right-1 z-10 rounded-full bg-black/50 p-1 text-white hover:bg-red-600">
                     <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                   </button>
                 </div>
@@ -371,8 +380,8 @@ function AddressCard({ address, dark, onUpdated, onDelete }) {
       </div>
       {(address.barrelPhotoUrl || address.photos?.length > 0) ? (
         <div className="mt-2 flex gap-1.5 overflow-x-auto">
-          {address.barrelPhotoUrl && <img src={address.barrelPhotoUrl} alt="Barrel" className="h-16 w-20 shrink-0 rounded-lg object-cover" />}
-          {address.photos?.map((url, i) => <img key={i} src={url} alt={`Photo ${i + 1}`} className="h-16 w-20 shrink-0 rounded-lg object-cover" />)}
+          {address.barrelPhotoUrl && <PhotoViewer src={address.barrelPhotoUrl} alt="Barrel" className="h-16 w-20 shrink-0 rounded-lg object-cover" />}
+          {address.photos?.map((url, i) => <PhotoViewer key={i} src={url} alt={`Photo ${i + 1}`} className="h-16 w-20 shrink-0 rounded-lg object-cover" />)}
         </div>
       ) : (
         <label className="mt-2 flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-gray-200 px-3 py-2 text-xs text-gray-400 hover:border-brand-300 hover:text-brand-500 transition">

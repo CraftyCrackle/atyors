@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import AuthGuard from '../../components/AuthGuard';
 import BottomNav from '../../components/BottomNav';
 import { api } from '../../services/api';
+import PhotoViewer from '../../components/PhotoViewer';
 
 const STEPS = ['service', 'address', 'details', 'confirm'];
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -330,8 +331,8 @@ export default function BookPage() {
                       </div>
                       {(addr.barrelPhotoUrl || addr.photos?.length > 0) && (
                         <div className="mt-2 flex gap-1.5 overflow-x-auto">
-                          {addr.barrelPhotoUrl && <img src={addr.barrelPhotoUrl} alt="Barrel" className="h-16 w-20 shrink-0 rounded-lg object-cover" />}
-                          {addr.photos?.map((url, i) => <img key={i} src={url} alt={`Photo ${i + 1}`} className="h-16 w-20 shrink-0 rounded-lg object-cover" />)}
+                          {addr.barrelPhotoUrl && <PhotoViewer src={addr.barrelPhotoUrl} alt="Barrel" className="h-16 w-20 shrink-0 rounded-lg object-cover" />}
+                          {addr.photos?.map((url, i) => <PhotoViewer key={i} src={url} alt={`Photo ${i + 1}`} className="h-16 w-20 shrink-0 rounded-lg object-cover" />)}
                         </div>
                       )}
                     </button>
@@ -415,8 +416,8 @@ export default function BookPage() {
                   <div className="mt-2 grid grid-cols-3 gap-2">
                     {curbItemPreviews.map((url, i) => (
                       <div key={i} className="relative">
-                        <img src={url} alt={`Item ${i + 1}`} className="h-24 w-full rounded-lg object-cover" />
-                        <button type="button" onClick={() => removeCurbItemPhoto(i)} className="absolute top-1 right-1 rounded-full bg-black/50 p-1 text-white">
+                        <PhotoViewer src={url} alt={`Item ${i + 1}`} className="h-24 w-full rounded-lg object-cover" />
+                        <button type="button" onClick={(e) => { e.stopPropagation(); removeCurbItemPhoto(i); }} className="absolute top-1 right-1 z-10 rounded-full bg-black/50 p-1 text-white">
                           <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                         </button>
                       </div>
@@ -496,8 +497,8 @@ export default function BookPage() {
                   </div>
                   {(selectedAddr.barrelPhotoUrl || selectedAddr.photos?.length > 0) && (
                     <div className="mt-2 flex gap-1.5 overflow-x-auto">
-                      {selectedAddr.barrelPhotoUrl && <img src={selectedAddr.barrelPhotoUrl} alt="Barrel" className="h-16 w-20 shrink-0 rounded-lg object-cover" />}
-                      {selectedAddr.photos?.map((url, i) => <img key={i} src={url} alt={`Photo ${i + 1}`} className="h-16 w-20 shrink-0 rounded-lg object-cover" />)}
+                      {selectedAddr.barrelPhotoUrl && <PhotoViewer src={selectedAddr.barrelPhotoUrl} alt="Barrel" className="h-16 w-20 shrink-0 rounded-lg object-cover" />}
+                      {selectedAddr.photos?.map((url, i) => <PhotoViewer key={i} src={url} alt={`Photo ${i + 1}`} className="h-16 w-20 shrink-0 rounded-lg object-cover" />)}
                     </div>
                   )}
                   {(selectedAddr.barrelPlacementInstructions || selectedAddr.barrelReturnInstructions || selectedAddr.barrelLocation) && (
@@ -716,7 +717,7 @@ export default function BookPage() {
                     <p className="text-xs text-gray-400 mb-1">Item photos ({curbItemPreviews.length})</p>
                     <div className="grid grid-cols-3 gap-2">
                       {curbItemPreviews.map((url, i) => (
-                        <img key={i} src={url} alt={`Item ${i + 1}`} className="h-20 w-full rounded-lg object-cover" />
+                        <PhotoViewer key={i} src={url} alt={`Item ${i + 1}`} className="h-20 w-full rounded-lg object-cover" />
                       ))}
                     </div>
                   </div>
@@ -841,10 +842,10 @@ export default function BookPage() {
                     <p className="text-xs text-gray-400 mb-1">Photos (visible to servicer)</p>
                     <div className="grid grid-cols-3 gap-2">
                       {selectedAddr.barrelPhotoUrl && (
-                        <img src={selectedAddr.barrelPhotoUrl} alt="Barrel" className="h-20 w-full rounded-lg object-cover" />
+                        <PhotoViewer src={selectedAddr.barrelPhotoUrl} alt="Barrel" className="h-20 w-full rounded-lg object-cover" />
                       )}
                       {selectedAddr.photos?.map((url, i) => (
-                        <img key={i} src={url} alt={`Photo ${i + 1}`} className="h-20 w-full rounded-lg object-cover" />
+                        <PhotoViewer key={i} src={url} alt={`Photo ${i + 1}`} className="h-20 w-full rounded-lg object-cover" />
                       ))}
                     </div>
                   </div>
@@ -1229,8 +1230,8 @@ function AddAddressForm({ onAdded }) {
           <div className="mt-2 grid grid-cols-3 gap-2">
             {photoPreviews.map((url, i) => (
               <div key={i} className="relative">
-                <img src={url} alt={`Photo ${i + 1}`} className="h-24 w-full rounded-lg object-cover" />
-                <button type="button" onClick={() => removePhoto(i)} className="absolute top-1 right-1 rounded-full bg-black/50 p-1 text-white">
+                <PhotoViewer src={url} alt={`Photo ${i + 1}`} className="h-24 w-full rounded-lg object-cover" />
+                <button type="button" onClick={(e) => { e.stopPropagation(); removePhoto(i); }} className="absolute top-1 right-1 z-10 rounded-full bg-black/50 p-1 text-white">
                   <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>

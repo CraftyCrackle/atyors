@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAuthStore } from '../../../stores/authStore';
 import { api } from '../../../services/api';
 import ReviewModal from '../../../components/ReviewModal';
+import PhotoViewer from '../../../components/PhotoViewer';
 
 const STATUS_COLORS = {
   pending: 'bg-yellow-100 text-yellow-800',
@@ -60,7 +61,7 @@ function JobCard({ booking, onRate, alreadyRated }) {
           )}
           {addr.barrelPhotoUrl && (
             <div className="mt-2">
-              <img src={addr.barrelPhotoUrl} alt="Barrel location" className="h-24 w-full rounded-lg object-cover" />
+              <PhotoViewer src={addr.barrelPhotoUrl} alt="Barrel location" className="h-24 w-full rounded-lg object-cover" />
             </div>
           )}
         </div>

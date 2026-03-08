@@ -9,6 +9,7 @@ import ReviewModal from '../../../components/ReviewModal';
 import { useNotifications } from '../../../components/NotificationProvider';
 import { useInstall } from '../../../components/InstallContext';
 import Logo from '../../../components/Logo';
+import PhotoViewer from '../../../components/PhotoViewer';
 
 const STATUS_COLORS = {
   pending: 'bg-yellow-100 text-yellow-800',
@@ -97,8 +98,8 @@ function JobCard({ booking, onAccept, accepting, onRate, alreadyRated }) {
           )}
           {(addr.barrelPhotoUrl || addr.photos?.length > 0) && (
             <div className="mt-2 flex gap-1.5 overflow-x-auto">
-              {addr.barrelPhotoUrl && <img src={addr.barrelPhotoUrl} alt="Barrel" className="h-20 w-24 shrink-0 rounded-lg object-cover" />}
-              {addr.photos?.map((url, i) => <img key={i} src={url} alt={`Photo ${i + 1}`} className="h-20 w-24 shrink-0 rounded-lg object-cover" />)}
+              {addr.barrelPhotoUrl && <PhotoViewer src={addr.barrelPhotoUrl} alt="Barrel" className="h-20 w-24 shrink-0 rounded-lg object-cover" />}
+              {addr.photos?.map((url, i) => <PhotoViewer key={i} src={url} alt={`Photo ${i + 1}`} className="h-20 w-24 shrink-0 rounded-lg object-cover" />)}
             </div>
           )}
           {svc?.slug === 'curb-items' && (
@@ -107,7 +108,7 @@ function JobCard({ booking, onAccept, accepting, onRate, alreadyRated }) {
               {booking.curbItemNotes && <p className="mt-1 text-xs text-gray-400 italic">"{booking.curbItemNotes}"</p>}
               {booking.curbItemPhotos?.length > 0 && (
                 <div className="mt-1.5 flex gap-1.5 overflow-x-auto">
-                  {booking.curbItemPhotos.map((url, i) => <img key={i} src={url} alt={`Item ${i + 1}`} className="h-20 w-24 shrink-0 rounded-lg object-cover" />)}
+                  {booking.curbItemPhotos.map((url, i) => <PhotoViewer key={i} src={url} alt={`Item ${i + 1}`} className="h-20 w-24 shrink-0 rounded-lg object-cover" />)}
                 </div>
               )}
             </div>

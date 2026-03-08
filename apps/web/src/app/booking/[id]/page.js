@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import AuthGuard from '../../../components/AuthGuard';
 import ReviewModal from '../../../components/ReviewModal';
 import { api } from '../../../services/api';
+import PhotoViewer from '../../../components/PhotoViewer';
 
 const STATUS_LABELS = {
   pending: 'Pending',
@@ -179,7 +180,7 @@ export default function BookingSummaryPage() {
           {booking.completionPhotoUrl && (
             <div className="rounded-xl border border-gray-200 bg-white p-4">
               <h3 className="text-xs font-medium uppercase text-gray-500">Completion Photo</h3>
-              <img src={booking.completionPhotoUrl} alt="Job completed" className="mt-2 w-full rounded-xl object-cover max-h-72" />
+              <PhotoViewer src={booking.completionPhotoUrl} alt="Job completed" className="mt-2 w-full rounded-xl object-cover max-h-72" />
             </div>
           )}
 
