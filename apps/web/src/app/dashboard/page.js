@@ -538,7 +538,7 @@ export default function DashboardPage() {
             <div className="py-12 text-center">
               <p className="text-sm text-gray-400">{tab === 'upcoming' ? 'No upcoming services' : 'No active services'}</p>
               {tab === 'upcoming' && (
-                <Link href="/book" className="mt-2 inline-block text-sm font-medium text-brand-600">Book your first service</Link>
+                <Link href="/book" className="mt-2 inline-block text-sm font-medium text-brand-600">Book a service</Link>
               )}
             </div>
           ) : (
