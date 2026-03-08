@@ -152,7 +152,33 @@ async function generateUpcomingBookings(subscription, weeksAhead = 4) {
   return bookings;
 }
 
-async function cancel(subscriptionId, userId, { cancelAtPeriodEnd = true } = {}) {
+async function toggleAutoRenew(subscriptionId, userId, autoRenew) {
+  const sub = await Subscription.findOne({ _id: subscriptionId, userId });
+  if (!sub) {
+    const err = new Error('Subscription not found');
+    err.status = 404;
+    throw err;
+  }
+  if (sub.status === 'cancelled') {
+    const err = new Error('Cannot modify a cancelled subscription');
+    err.status = 400;
+    err.code = 'SUBSCRIPTION_CANCELLED';
+    throw err;
+  }
+
+  sub.cancelAtPeriodEnd = !autoRenew;
+  await sub.save();
+
+  if (!config.stripe.skip && sub.stripeSubscriptionId) {
+    await stripeService.updateSubscription(sub.stripeSubscriptionId, {
+      cancel_at_period_end: !autoRenew,
+    });
+  }
+
+  return sub;
+}
+
+async function cancel(subscriptionId, userId) {
   const sub = await Subscription.findOne({ _id: subscriptionId, userId });
   if (!sub) {
     const err = new Error('Subscription not found');
@@ -160,18 +186,21 @@ async function cancel(subscriptionId, userId, { cancelAtPeriodEnd = true } = {})
     throw err;
   }
 
-  if (cancelAtPeriodEnd) {
-    sub.cancelAtPeriodEnd = true;
-    await sub.save();
-  } else {
-    sub.status = 'cancelled';
-    sub.cancelledAt = new Date();
-    await sub.save();
-    await Booking.updateMany(
-      { subscriptionId: sub._id, status: { $in: ['pending', 'active'] }, scheduledDate: { $gte: new Date() } },
-      { status: 'cancelled', cancelledAt: new Date() }
-    );
+  sub.status = 'cancelled';
+  sub.cancelledAt = new Date();
+  await sub.save();
+
+  if (!config.stripe.skip && sub.stripeSubscriptionId) {
+    try { await stripeService.cancelSubscription(sub.stripeSubscriptionId); } catch (e) {
+      console.error('Stripe subscription cancel failed:', e.message);
+    }
   }
+
+  await Booking.updateMany(
+    { subscriptionId: sub._id, status: { $in: ['pending', 'active'] }, scheduledDate: { $gte: new Date() } },
+    { status: 'cancelled', cancelledAt: new Date() },
+  );
+
   return sub;
 }
 
@@ -179,4 +208,4 @@ async function getByUser(userId) {
   return Subscription.find({ userId }).populate('addressId serviceTypeId').sort({ createdAt: -1 });
 }
 
-module.exports = { create, cancel, getByUser, generateUpcomingBookings };
+module.exports = { create, cancel, toggleAutoRenew, getByUser, generateUpcomingBookings };

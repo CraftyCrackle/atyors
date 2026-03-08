@@ -143,6 +143,8 @@ export default function ProfilePage() {
           </div>
 
 
+          {isCustomer && <SubscriptionSection />}
+
           {isCustomer && <PaymentMethodsSection />}
 
           {isCustomer && <InvoiceSection />}
@@ -408,6 +410,197 @@ function AddressCard({ address, dark, onUpdated, onDelete }) {
         <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-400">
           {address.barrelPlacementInstructions && <span>Curb: {address.barrelPlacementInstructions}</span>}
           {address.barrelReturnInstructions && <span>Return: {address.barrelReturnInstructions}</span>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+function SubscriptionSection() {
+  const [subs, setSubs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [toggling, setToggling] = useState(null);
+  const [cancelling, setCancelling] = useState(null);
+  const [confirmCancel, setConfirmCancel] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await api.get('/subscriptions');
+        setSubs(res.data.subscriptions || []);
+      } catch {}
+      setLoading(false);
+    })();
+  }, []);
+
+  async function handleToggleAutoRenew(sub) {
+    const newValue = !!sub.cancelAtPeriodEnd;
+    setToggling(sub._id);
+    try {
+      const res = await api.patch(`/subscriptions/${sub._id}/auto-renew`, { autoRenew: newValue });
+      setSubs((prev) => prev.map((s) => s._id === sub._id ? { ...s, cancelAtPeriodEnd: !newValue } : s));
+    } catch (err) { alert(err.message || 'Failed to update auto-renewal'); }
+    setToggling(null);
+  }
+
+  async function handleCancel(id) {
+    setCancelling(id);
+    try {
+      await api.post(`/subscriptions/${id}/cancel`);
+      setSubs((prev) => prev.map((s) => s._id === id ? { ...s, status: 'cancelled', cancelledAt: new Date().toISOString() } : s));
+    } catch (err) { alert(err.message || 'Failed to cancel subscription'); }
+    setCancelling(null);
+    setConfirmCancel(null);
+  }
+
+  const active = subs.filter((s) => s.status !== 'cancelled');
+  const cancelled = subs.filter((s) => s.status === 'cancelled');
+
+  return (
+    <div className="mt-4 rounded-xl bg-white p-4 shadow-sm">
+      <div className="flex items-center justify-between">
+        <h2 className="font-semibold">My Subscriptions</h2>
+        {active.length > 0 && (
+          <span className="rounded-full bg-brand-100 px-2.5 py-0.5 text-[10px] font-semibold text-brand-700">{active.length} active</span>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="mt-4 flex justify-center py-4">
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
+        </div>
+      ) : subs.length === 0 ? (
+        <div className="mt-3 rounded-lg border-2 border-dashed border-gray-200 py-6 text-center">
+          <svg className="mx-auto h-8 w-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182M2.985 19.644l3.181-3.182" />
+          </svg>
+          <p className="mt-2 text-sm text-gray-400">No subscriptions yet</p>
+          <a href="/book" className="mt-3 inline-block rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
+            Subscribe to a Plan
+          </a>
+        </div>
+      ) : (
+        <div className="mt-3 space-y-3">
+          {active.map((sub) => (
+            <SubscriptionCard key={sub._id} sub={sub} toggling={toggling} onToggle={handleToggleAutoRenew}
+              confirmCancel={confirmCancel} setConfirmCancel={setConfirmCancel}
+              cancelling={cancelling} onCancel={handleCancel} />
+          ))}
+          {cancelled.length > 0 && (
+            <div className="pt-2">
+              <p className="mb-2 text-xs font-medium text-gray-400 uppercase">Past</p>
+              {cancelled.map((sub) => (
+                <SubscriptionCard key={sub._id} sub={sub} toggling={toggling} onToggle={handleToggleAutoRenew}
+                  confirmCancel={confirmCancel} setConfirmCancel={setConfirmCancel}
+                  cancelling={cancelling} onCancel={handleCancel} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SubscriptionCard({ sub, toggling, onToggle, confirmCancel, setConfirmCancel, cancelling, onCancel }) {
+  const svc = sub.serviceTypeId;
+  const addr = sub.addressId;
+  const isCancelled = sub.status === 'cancelled';
+  const isPastDue = sub.status === 'past_due';
+  const autoRenewOn = !sub.cancelAtPeriodEnd && !isCancelled;
+  const periodEnd = sub.currentPeriodEnd ? new Date(sub.currentPeriodEnd) : null;
+
+  const statusColor = isCancelled
+    ? 'bg-gray-100 text-gray-500'
+    : isPastDue
+      ? 'bg-red-100 text-red-700'
+      : autoRenewOn
+        ? 'bg-green-100 text-green-700'
+        : 'bg-amber-100 text-amber-700';
+  const statusLabel = isCancelled
+    ? 'Cancelled'
+    : isPastDue
+      ? 'Past Due'
+      : autoRenewOn
+        ? 'Active'
+        : 'Ending Soon';
+
+  return (
+    <div className={`rounded-xl border p-4 transition ${isCancelled ? 'border-gray-200 bg-gray-50 opacity-60' : 'border-gray-200 bg-white'}`}>
+      <div className="flex items-start justify-between">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <p className="font-semibold text-gray-900">{svc?.name || 'Monthly Plan'}</p>
+            <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusColor}`}>{statusLabel}</span>
+          </div>
+          {addr && <p className="mt-0.5 text-xs text-gray-500">{addr.street}, {addr.city}</p>}
+        </div>
+        <p className="text-lg font-bold text-brand-600 shrink-0">${sub.monthlyPrice?.toFixed(2)}<span className="text-xs font-normal text-gray-400">/mo</span></p>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+        <span className="inline-flex items-center gap-1">
+          <svg className="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+          </svg>
+          Every {DAY_NAMES[sub.dayOfWeek]}
+        </span>
+        {sub.barrelCount > 0 && <span>{sub.barrelCount} barrel{sub.barrelCount > 1 ? 's' : ''}</span>}
+        {sub.putOutTime && <span>Out: {sub.putOutTime}</span>}
+        {sub.bringInTime && <span>In: {sub.bringInTime}</span>}
+      </div>
+
+      {periodEnd && !isCancelled && (
+        <p className="mt-2 text-xs text-gray-400">
+          {autoRenewOn ? 'Renews' : 'Ends'}{' '}
+          {periodEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+        </p>
+      )}
+      {isCancelled && sub.cancelledAt && (
+        <p className="mt-2 text-xs text-gray-400">
+          Cancelled {new Date(sub.cancelledAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+        </p>
+      )}
+
+      {!isCancelled && (
+        <div className="mt-4 space-y-3">
+          <div className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2.5">
+            <div>
+              <p className="text-sm font-medium text-gray-700">Auto-renewal</p>
+              <p className="text-[11px] text-gray-400">{autoRenewOn ? 'Plan renews automatically each month' : 'Plan will end after current period'}</p>
+            </div>
+            <button
+              onClick={() => onToggle(sub)}
+              disabled={toggling === sub._id}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-50 ${autoRenewOn ? 'bg-brand-600' : 'bg-gray-300'}`}
+            >
+              <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${autoRenewOn ? 'translate-x-5' : 'translate-x-0'}`} />
+            </button>
+          </div>
+
+          {confirmCancel === sub._id ? (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 space-y-2">
+              <p className="text-sm font-medium text-red-700">Cancel this subscription?</p>
+              <p className="text-xs text-red-600/70">All future scheduled services will be removed. This cannot be undone.</p>
+              <div className="flex gap-2">
+                <button onClick={() => setConfirmCancel(null)}
+                  className="flex-1 rounded-lg border border-gray-300 py-2 text-xs font-medium text-gray-600 hover:bg-gray-100">
+                  Keep Plan
+                </button>
+                <button onClick={() => onCancel(sub._id)} disabled={cancelling === sub._id}
+                  className="flex-1 rounded-lg bg-red-600 py-2 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50">
+                  {cancelling === sub._id ? 'Cancelling...' : 'Yes, Cancel'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => setConfirmCancel(sub._id)}
+              className="w-full rounded-lg border border-gray-200 py-2 text-xs font-medium text-red-500 hover:bg-red-50 transition">
+              Cancel Subscription
+            </button>
+          )}
         </div>
       )}
     </div>

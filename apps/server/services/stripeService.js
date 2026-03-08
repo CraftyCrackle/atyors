@@ -219,6 +219,16 @@ async function refundPaymentIntent(paymentIntentId, { deductAmountDollars = 0 } 
   }
 }
 
+async function updateSubscription(stripeSubscriptionId, params) {
+  const stripe = getStripe();
+  return stripe.subscriptions.update(stripeSubscriptionId, params);
+}
+
+async function cancelSubscription(stripeSubscriptionId) {
+  const stripe = getStripe();
+  return stripe.subscriptions.cancel(stripeSubscriptionId);
+}
+
 module.exports = {
   ensureCustomer,
   createSetupIntent,
@@ -228,6 +238,8 @@ module.exports = {
   createPaymentIntent,
   getOrCreatePrice,
   createStripeSubscription,
+  updateSubscription,
+  cancelSubscription,
   refundPaymentIntent,
   hasDefaultPaymentMethod,
   chargeOffSession,

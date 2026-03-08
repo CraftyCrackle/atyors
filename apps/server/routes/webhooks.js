@@ -66,6 +66,7 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
         sub.status = event.data.object.status === 'active' ? 'active' : 'past_due';
         sub.currentPeriodStart = new Date(event.data.object.current_period_start * 1000);
         sub.currentPeriodEnd = new Date(event.data.object.current_period_end * 1000);
+        sub.cancelAtPeriodEnd = !!event.data.object.cancel_at_period_end;
         await sub.save();
       }
       break;
