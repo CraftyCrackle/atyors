@@ -72,8 +72,8 @@ describe('Auth Security', () => {
         email: 'new@test.com', phone: '555', password: 'ValidPass1', firstName: 'A', lastName: 'B',
       });
 
-      expect(result.user).toBeDefined();
-      expect(result.accessToken).toBeDefined();
+      expect(result.pendingVerification).toBe(true);
+      expect(result.userId).toBeDefined();
     });
   });
 
@@ -102,7 +102,7 @@ describe('Auth Security', () => {
         .rejects.toThrow('Account locked');
     });
 
-    test('unlocks account after lockout expires', async () => {
+    test('unlocks account after lockout expires (unverified)', async () => {
       const hash = await bcrypt.hash('Correct1', 12);
       const user = makeMockUser({
         failedLoginAttempts: 5,
@@ -113,7 +113,7 @@ describe('Auth Security', () => {
 
       const result = await login({ email: 'test@example.com', password: 'Correct1' });
 
-      expect(result.user).toBeDefined();
+      expect(result.pendingVerification).toBe(true);
       expect(user.failedLoginAttempts).toBe(0);
       expect(user.lockUntil).toBeUndefined();
     });
