@@ -384,4 +384,75 @@ async function chargeBookingOnCompletion(bookingId) {
   }
 }
 
-module.exports = { create, listByUser, getById, updateStatus, cancel, reschedule, chargeBookingOnCompletion };
+function parseTimeWindowEnd(timeStr, scheduledDate, isBringIn) {
+  const base = new Date(scheduledDate);
+  if (isBringIn) base.setDate(base.getDate() + 1);
+
+  const hourMap = {
+    '4–9 PM': 21,
+    '5–7 AM': 7,
+    '12–4 PM': 16,
+    '5–7 PM': 19,
+    '7–9 PM': 21,
+    '9–11 PM': 23,
+  };
+
+  if (timeStr) {
+    for (const [key, hour] of Object.entries(hourMap)) {
+      if (timeStr.includes(key)) {
+        base.setHours(hour, 0, 0, 0);
+        return base;
+      }
+    }
+  }
+
+  base.setHours(23, 59, 0, 0);
+  return base;
+}
+
+async function expireOverdueBookings(io) {
+  const notificationService = require('./notificationService');
+  const now = new Date();
+
+  const candidates = await Booking.find({
+    status: { $in: ['pending', 'active'] },
+    scheduledDate: { $lte: now },
+  }).populate('serviceTypeId');
+
+  let expired = 0;
+  for (const booking of candidates) {
+    const slug = booking.serviceTypeId?.slug || '';
+    const isBringIn = slug === 'bring-in';
+    const timeStr = isBringIn ? booking.bringInTime : booking.putOutTime;
+    const expiryTime = parseTimeWindowEnd(timeStr, booking.scheduledDate, isBringIn);
+
+    if (now <= expiryTime) continue;
+
+    booking.status = 'expired';
+    booking.statusHistory.push({ status: 'expired', changedAt: now });
+    await booking.save();
+    expired++;
+
+    const svcName = booking.serviceTypeId?.name || 'Service';
+    const dateLabel = new Date(booking.scheduledDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+    notificationService.create({
+      userId: booking.userId,
+      type: 'booking:expired',
+      title: 'Request could not be completed',
+      body: `Your ${svcName} request for ${dateLabel} could not be completed. You have not been charged.`,
+      bookingId: booking._id,
+    }).catch(() => {});
+
+    if (io) {
+      io.of('/notifications').to(`user:${booking.userId}`).emit('booking:expired', {
+        bookingId: booking._id.toString(),
+        message: `Your ${svcName} request for ${dateLabel} could not be completed.`,
+      });
+    }
+  }
+
+  if (expired > 0) console.log(`[Expiry] Expired ${expired} overdue booking(s)`);
+}
+
+module.exports = { create, listByUser, getById, updateStatus, cancel, reschedule, chargeBookingOnCompletion, expireOverdueBookings };

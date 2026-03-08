@@ -47,6 +47,7 @@ const STATUS_COLORS = {
   'in-progress': 'bg-orange-100 text-orange-800',
   completed: 'bg-green-100 text-green-800',
   cancelled: 'bg-gray-100 text-gray-500',
+  expired: 'bg-orange-100 text-orange-700',
 };
 
 const ACTIVE_STATUSES = ['active', 'en-route', 'arrived'];
@@ -59,6 +60,7 @@ const STATUS_LABELS = {
   completed: 'Completed',
   pending: 'Pending',
   cancelled: 'Cancelled',
+  expired: 'Expired',
 };
 
 const STATUS_ICONS = {
@@ -412,7 +414,7 @@ export default function DashboardPage() {
   const active = bookings.filter((b) => ACTIVE_STATUSES.includes(b.status)).sort(byLastModified);
   const liveBookings = active.filter((b) => ['en-route', 'arrived'].includes(b.status));
   const past = bookings
-    .filter((b) => ['completed', 'cancelled', 'no-show'].includes(b.status))
+    .filter((b) => ['completed', 'cancelled', 'no-show', 'expired'].includes(b.status))
     .sort((a, b) => new Date(b.completedAt || b.updatedAt) - new Date(a.completedAt || a.updatedAt));
 
   const pastServiceTypeGroups = (() => {

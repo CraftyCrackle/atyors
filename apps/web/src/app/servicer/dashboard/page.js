@@ -17,6 +17,7 @@ const STATUS_COLORS = {
   arrived: 'bg-indigo-100 text-indigo-800',
   'in-progress': 'bg-orange-100 text-orange-800',
   completed: 'bg-green-100 text-green-800',
+  expired: 'bg-orange-100 text-orange-700',
 };
 
 function canAcceptToday(booking) {

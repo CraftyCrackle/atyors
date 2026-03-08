@@ -189,9 +189,9 @@ function WebLanding() {
               <p className="text-xl font-bold text-brand-600">$1.50<span className="text-sm font-normal text-gray-400">/barrel</span></p>
             </div>
 
-            <div className="flex items-center justify-between rounded-xl bg-white px-5 py-4 border-2 border-brand-400">
+            <div className="flex items-center justify-between rounded-xl bg-white px-5 py-4 border border-gray-200">
               <div>
-                <p className="font-semibold text-gray-900">Both (out &amp; back)</p>
+                <p className="font-semibold text-gray-900">Both (out &amp; back) <span className="text-xs font-medium text-brand-600">Most popular</span></p>
                 <p className="text-sm text-gray-500">The whole thing, start to finish</p>
               </div>
               <p className="text-xl font-bold text-brand-600">$3.00<span className="text-sm font-normal text-gray-400">/barrel</span></p>

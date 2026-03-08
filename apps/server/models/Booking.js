@@ -1,13 +1,14 @@
 const mongoose = require('mongoose');
 
 const STATUS_FLOW = {
-  pending: ['active', 'cancelled'],
-  active: ['en-route', 'cancelled'],
+  pending: ['active', 'cancelled', 'expired'],
+  active: ['en-route', 'cancelled', 'expired'],
   'en-route': ['arrived', 'cancelled'],
   arrived: ['completed', 'no-show'],
   completed: [],
   cancelled: [],
   'no-show': [],
+  expired: [],
 };
 
 const bookingSchema = new mongoose.Schema({

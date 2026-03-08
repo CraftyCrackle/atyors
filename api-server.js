@@ -143,6 +143,7 @@ async function start() {
     server.listen(PORT, '0.0.0.0', () => {
       console.log(`atyors API running on port ${PORT} [${process.env.NODE_ENV}]`);
       startSubscriptionScheduler();
+      startExpiryScheduler(io);
     });
   } catch (err) {
     console.error('Startup failed:', err);
@@ -172,6 +173,23 @@ function startSubscriptionScheduler() {
   refreshSubscriptionBookings();
   setInterval(refreshSubscriptionBookings, SIX_HOURS);
   console.log('[Scheduler] Subscription booking forecaster running (every 6h)');
+}
+
+function startExpiryScheduler(io) {
+  const FIFTEEN_MINUTES = 15 * 60 * 1000;
+  const { expireOverdueBookings } = require('./apps/server/services/bookingService');
+
+  async function runExpiry() {
+    try {
+      await expireOverdueBookings(io);
+    } catch (err) {
+      console.error('[Expiry] Scheduler failed:', err.message);
+    }
+  }
+
+  runExpiry();
+  setInterval(runExpiry, FIFTEEN_MINUTES);
+  console.log('[Scheduler] Booking expiry checker running (every 15m)');
 }
 
 start();
