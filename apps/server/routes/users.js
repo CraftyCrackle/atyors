@@ -26,6 +26,7 @@ const upload = multer({
 
 router.get('/me', authenticate, userController.getProfile);
 router.patch('/me', authenticate, userController.updateProfile);
+router.patch('/me/password', authenticate, userController.changePassword);
 router.post('/me/photo', authenticate, upload.single('photo'), validateUpload, userController.uploadPhoto);
 
 router.delete('/me', authenticate, async (req, res, next) => {

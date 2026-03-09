@@ -130,6 +130,8 @@ export default function ProfilePage() {
             )}
           </div>
 
+          <ChangePasswordSection dark={dark} cardCls={cardCls} />
+
           <div className={`mt-4 ${cardCls}`}>
             <div className="flex items-center justify-between">
               <h2 className={`font-semibold ${dark ? 'text-white' : ''}`}>Addresses</h2>
@@ -180,6 +182,64 @@ export default function ProfilePage() {
         {isCustomer && <BottomNav />}
       </div>
     </AuthGuard>
+  );
+}
+
+function ChangePasswordSection({ dark, cardCls }) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+
+  const baseCls = dark
+    ? 'w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white placeholder-gray-400 focus:border-brand-500 focus:outline-none'
+    : 'w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none';
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError('');
+    if (form.newPassword.length < 8) { setError('New password must be at least 8 characters'); return; }
+    if (form.newPassword !== form.confirmPassword) { setError('Passwords do not match'); return; }
+    setSaving(true);
+    try {
+      await api.patch('/users/me/password', { currentPassword: form.currentPassword, newPassword: form.newPassword });
+      setSuccess(true);
+      setForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setTimeout(() => { setSuccess(false); setOpen(false); }, 2000);
+    } catch (err) {
+      setError(err.response?.data?.error?.message || 'Failed to change password');
+    } finally { setSaving(false); }
+  }
+
+  return (
+    <div className={`mt-4 ${cardCls}`}>
+      <div className="flex items-center justify-between">
+        <h2 className={`font-semibold ${dark ? 'text-white' : ''}`}>Password</h2>
+        <button onClick={() => { setOpen(!open); setError(''); setSuccess(false); }} className="text-sm font-medium text-brand-600">
+          {open ? 'Cancel' : 'Change'}
+        </button>
+      </div>
+      {!open && (
+        <p className={`mt-1 text-sm ${dark ? 'text-gray-400' : 'text-gray-500'}`}>••••••••</p>
+      )}
+      {open && (
+        <form onSubmit={handleSubmit} className="mt-3 space-y-3">
+          <input type="password" placeholder="Current password" value={form.currentPassword}
+            onChange={(e) => setForm({ ...form, currentPassword: e.target.value })} className={baseCls} required autoComplete="current-password" />
+          <input type="password" placeholder="New password (min 8 chars)" value={form.newPassword}
+            onChange={(e) => setForm({ ...form, newPassword: e.target.value })} className={baseCls} required minLength={8} autoComplete="new-password" />
+          <input type="password" placeholder="Confirm new password" value={form.confirmPassword}
+            onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} className={baseCls} required autoComplete="new-password" />
+          {error && <p className="text-xs text-red-500">{error}</p>}
+          {success && <p className="text-xs text-green-600">Password updated!</p>}
+          <button type="submit" disabled={saving}
+            className="w-full rounded-lg bg-brand-600 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50">
+            {saving ? 'Updating...' : 'Update Password'}
+          </button>
+        </form>
+      )}
+    </div>
   );
 }
 
