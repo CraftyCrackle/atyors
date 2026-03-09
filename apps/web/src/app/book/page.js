@@ -43,16 +43,21 @@ export default function BookPage() {
   useEffect(() => {
     async function load() {
       try {
-        const [svcRes, addrRes, priceRes, methodsRes] = await Promise.all([
+        const [svcRes, addrRes, priceRes, methodsRes, subsRes] = await Promise.all([
           api.get('/services/types/trash-recycling'),
           api.get('/addresses'),
           api.get('/services/pricing'),
           api.get('/payments/methods').catch(() => ({ data: { methods: [] } })),
+          api.get('/subscriptions').catch(() => ({ data: { subscriptions: [] } })),
         ]);
         setServices(svcRes.data.types);
         setAddresses(addrRes.data.addresses);
         setPricing(priceRes.data);
         setHasCard((methodsRes.data.methods || []).length > 0);
+        const activeSubs = (subsRes.data.subscriptions || []).filter((s) => s.status !== 'cancelled');
+        if (activeSubs.length > 0) {
+          setSelected((prev) => ({ ...prev, bookingType: 'subscription' }));
+        }
       } catch { }
       setLoading(false);
     }
@@ -676,6 +681,12 @@ export default function BookPage() {
                 </div>
               )}
 
+              {selected.bookingType === 'subscription' && selected.date && (
+                <div className="mt-5">
+                  <ScheduledServicesPreview startDate={selected.date} />
+                </div>
+              )}
+
               <button onClick={next} disabled={!selected.trashDay}
                 className="mt-6 w-full rounded-xl bg-brand-600 py-3.5 font-semibold text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700 active:scale-[0.98] disabled:opacity-40">
                 Continue
@@ -776,22 +787,7 @@ export default function BookPage() {
                     </p>
                   </div>
                   {selected.date && (
-                    <div className="rounded-xl border border-gray-200 bg-white p-3">
-                      <p className="text-xs font-semibold text-gray-500 uppercase">Scheduled Services</p>
-                      <div className="mt-2 space-y-1.5">
-                        {[0, 1, 2, 3].map((i) => {
-                          const d = new Date(selected.date + 'T12:00:00');
-                          d.setDate(d.getDate() + i * 7);
-                          return (
-                            <div key={i} className="flex items-center gap-2 text-sm">
-                              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-100 text-[10px] font-bold text-brand-600">{i + 1}</div>
-                              <span className="text-gray-700">{d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</span>
-                              {i === 0 && <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[10px] font-semibold text-brand-600">Starts</span>}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
+                    <ScheduledServicesPreview startDate={selected.date} />
                   )}
                 </div>
               ) : isBoth() ? (
@@ -1109,6 +1105,28 @@ function CascadingDatePicker({ trashDay: initialTrashDay, selectedDate, onChange
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+function ScheduledServicesPreview({ startDate }) {
+  if (!startDate) return null;
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white p-3">
+      <p className="text-xs font-semibold text-gray-500 uppercase">Scheduled Services</p>
+      <div className="mt-2 space-y-1.5">
+        {[0, 1, 2, 3].map((i) => {
+          const d = new Date(startDate + 'T12:00:00');
+          d.setDate(d.getDate() + i * 7);
+          return (
+            <div key={i} className="flex items-center gap-2 text-sm">
+              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-100 text-[10px] font-bold text-brand-600">{i + 1}</div>
+              <span className="text-gray-700">{d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</span>
+              {i === 0 && <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[10px] font-semibold text-brand-600">Starts</span>}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
