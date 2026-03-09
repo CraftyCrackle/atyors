@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState, useMemo, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import AuthGuard from '../../components/AuthGuard';
 import BottomNav from '../../components/BottomNav';
 import { api } from '../../services/api';
@@ -13,7 +13,16 @@ const PUT_OUT_OPTIONS = ['4–9 PM (Evening)', '5–7 AM (Early Morning)'];
 const BRING_IN_OPTIONS = ['12–4 PM (Afternoon)', '4–9 PM (Evening)'];
 
 export default function BookPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" /></div>}>
+      <BookContent />
+    </Suspense>
+  );
+}
+
+function BookContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState(0);
   const [services, setServices] = useState([]);
   const [addresses, setAddresses] = useState([]);
@@ -55,7 +64,7 @@ export default function BookPage() {
         setPricing(priceRes.data);
         setHasCard((methodsRes.data.methods || []).length > 0);
         const activeSubs = (subsRes.data.subscriptions || []).filter((s) => s.status !== 'cancelled');
-        if (activeSubs.length > 0) {
+        if (activeSubs.length > 0 || searchParams.get('plan') === 'subscription') {
           setSelected((prev) => ({ ...prev, bookingType: 'subscription' }));
         }
       } catch { }
