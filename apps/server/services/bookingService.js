@@ -269,13 +269,31 @@ async function cancel(bookingId, userId, reason) {
 
   if (pastGrace && !config.stripe.skip) {
     const User = require('../models/User');
+    const notificationService = require('./notificationService');
+    const { sendPaymentSuccessEmail } = require('./paymentEmailService');
     const user = await User.findById(userId);
     if (user) {
       try {
-        await stripeService.chargeOffSession(user, CANCELLATION_FEE, `cancel-${booking._id}`, {
+        const intent = await stripeService.chargeOffSession(user, CANCELLATION_FEE, `cancel-${booking._id}`, {
           description: 'Cancellation fee',
         });
         cancellationFeeCharged = true;
+        notificationService.create({
+          userId: booking.userId,
+          type: 'booking:payment',
+          title: 'Cancellation fee charged',
+          body: `A $${CANCELLATION_FEE.toFixed(2)} cancellation fee has been charged for your cancelled service.`,
+          bookingId: booking._id,
+        }).catch(() => {});
+
+        const charges = intent.charges?.data || (intent.latest_charge ? [intent.latest_charge] : []);
+        const cardDetails = charges[0]?.payment_method_details?.card || {};
+        sendPaymentSuccessEmail(user, {
+          amount: CANCELLATION_FEE,
+          description: 'Cancellation fee',
+          cardBrand: cardDetails.brand || 'card',
+          cardLast4: cardDetails.last4 || '••••',
+        });
       } catch (err) {
         console.error(`[Cancel] Failed to charge cancellation fee for booking ${booking._id}:`, err.message);
       }
@@ -347,6 +365,15 @@ async function chargeBookingOnCompletion(bookingId) {
   if (config.stripe.skip) {
     booking.paymentStatus = 'paid';
     await booking.save();
+    const notifSvc = require('./notificationService');
+    const svc = await ServiceType.findById(booking.serviceTypeId);
+    notifSvc.create({
+      userId: booking.userId,
+      type: 'booking:payment',
+      title: 'Payment confirmed',
+      body: `$${booking.amount.toFixed(2)} charged for ${svc?.name || 'Service'}. Thank you!`,
+      bookingId: booking._id,
+    }).catch(() => {});
     return;
   }
 
@@ -364,6 +391,9 @@ async function chargeBookingOnCompletion(bookingId) {
     : `${booking.barrelCount || 1} barrel${(booking.barrelCount || 1) > 1 ? 's' : ''}`;
   const desc = `${svcName}${city ? ` — ${city}` : ''}${dateStr ? ` (${dateStr})` : ''} — ${countLabel}`;
 
+  const notificationService = require('./notificationService');
+  const { sendPaymentSuccessEmail, sendPaymentFailedEmail } = require('./paymentEmailService');
+
   try {
     const intent = await stripeService.chargeOffSession(user, booking.amount, booking._id.toString(), { description: desc });
     booking.stripePaymentIntentId = intent.id;
@@ -378,10 +408,37 @@ async function chargeBookingOnCompletion(bookingId) {
         await linked.save();
       }
     }
+
+    notificationService.create({
+      userId: booking.userId,
+      type: 'booking:payment',
+      title: 'Payment confirmed',
+      body: `$${booking.amount.toFixed(2)} charged for ${desc}. Thank you!`,
+      bookingId: booking._id,
+    }).catch(() => {});
+
+    const charges = intent.charges?.data || (intent.latest_charge ? [intent.latest_charge] : []);
+    const cardDetails = charges[0]?.payment_method_details?.card || {};
+    sendPaymentSuccessEmail(user, {
+      amount: booking.amount,
+      description: desc,
+      cardBrand: cardDetails.brand || 'card',
+      cardLast4: cardDetails.last4 || '••••',
+    });
   } catch (err) {
     console.error(`[Stripe] Off-session charge failed for booking ${bookingId}:`, err.message);
     booking.paymentStatus = 'charge_failed';
     await booking.save();
+
+    notificationService.create({
+      userId: booking.userId,
+      type: 'booking:payment',
+      title: 'Payment issue',
+      body: `We couldn't process payment for your ${svcName} service. Please update your card in your Profile.`,
+      bookingId: booking._id,
+    }).catch(() => {});
+
+    sendPaymentFailedEmail(user, { description: desc });
   }
 }
 
