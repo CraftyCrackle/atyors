@@ -246,10 +246,10 @@ function ChangePasswordSection({ dark, cardCls }) {
 }
 
 function TrashDayReminderSection({ dark, cardCls, user, updateUser }) {
-  const reminder = user?.trashDayReminder || { enabled: false, timing: 'evening-before' };
+  const reminder = user?.trashDayReminder || { enabled: false, time: '18:00' };
   const [saving, setSaving] = useState(false);
 
-  async function toggle(field, value) {
+  async function update(field, value) {
     setSaving(true);
     try {
       const updated = { ...reminder, [field]: value };
@@ -259,11 +259,16 @@ function TrashDayReminderSection({ dark, cardCls, user, updateUser }) {
     setSaving(false);
   }
 
-  const timingOptions = [
-    { value: 'evening-before', label: 'Evening before', desc: 'Get a reminder the night before trash day' },
-    { value: 'morning-of', label: 'Morning of', desc: 'Get a reminder the morning of trash day' },
-    { value: 'both', label: 'Both', desc: 'Get reminded the night before and the morning of' },
-  ];
+  function formatTime(t) {
+    const [h, m] = (t || '18:00').split(':').map(Number);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+  }
+
+  const timeVal = reminder.time || '18:00';
+  const hour = parseInt(timeVal.split(':')[0], 10);
+  const isEvening = hour >= 12;
 
   return (
     <div className={`mt-4 ${cardCls}`}>
@@ -276,7 +281,7 @@ function TrashDayReminderSection({ dark, cardCls, user, updateUser }) {
         </div>
         <button
           disabled={saving}
-          onClick={() => toggle('enabled', !reminder.enabled)}
+          onClick={() => update('enabled', !reminder.enabled)}
           className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${reminder.enabled ? 'bg-brand-600' : dark ? 'bg-gray-600' : 'bg-gray-200'}`}
         >
           <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform ${reminder.enabled ? 'translate-x-5' : 'translate-x-0'}`} />
@@ -284,22 +289,30 @@ function TrashDayReminderSection({ dark, cardCls, user, updateUser }) {
       </div>
       {reminder.enabled && (
         <div className="mt-3 space-y-2">
-          <p className={`text-xs font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>When should we remind you?</p>
-          {timingOptions.map((opt) => (
-            <button
-              key={opt.value}
+          <label className={`text-xs font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>
+            What time should we remind you?
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="time"
+              value={timeVal}
               disabled={saving}
-              onClick={() => toggle('timing', opt.value)}
-              className={`w-full rounded-lg border-2 px-3 py-2.5 text-left transition ${
-                reminder.timing === opt.value
-                  ? 'border-brand-600 bg-brand-50 text-brand-700'
-                  : dark ? 'border-gray-600 text-gray-300 hover:border-gray-500' : 'border-gray-100 text-gray-600 hover:border-gray-200'
+              onChange={(e) => update('time', e.target.value)}
+              className={`flex-1 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition focus:border-brand-600 focus:outline-none ${
+                dark ? 'border-gray-600 bg-gray-700 text-white' : 'border-gray-200 bg-white text-gray-900'
               }`}
-            >
-              <p className="text-sm font-medium">{opt.label}</p>
-              <p className={`text-xs ${reminder.timing === opt.value ? 'text-brand-500' : dark ? 'text-gray-500' : 'text-gray-400'}`}>{opt.desc}</p>
-            </button>
-          ))}
+            />
+            <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
+              isEvening ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700'
+            }`}>
+              {isEvening ? 'Night before' : 'Morning of'}
+            </span>
+          </div>
+          <p className={`text-xs ${dark ? 'text-gray-500' : 'text-gray-400'}`}>
+            {isEvening
+              ? `You'll get a reminder at ${formatTime(timeVal)} the night before your trash day`
+              : `You'll get a reminder at ${formatTime(timeVal)} the morning of your trash day`}
+          </p>
         </div>
       )}
     </div>
