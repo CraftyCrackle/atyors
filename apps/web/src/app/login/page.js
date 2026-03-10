@@ -38,10 +38,10 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen-safe flex-col items-center justify-center bg-white px-6 pt-safe pb-safe">
+    <main className="flex min-h-[100dvh] flex-col items-center justify-center overflow-y-auto bg-white px-6 pt-safe pb-safe">
       <div className="w-full max-w-sm">
         <Link href="/" className="mb-8 inline-block">
-          <Logo size="sm" variant="full" />
+          <Logo size="lg" variant="full" />
         </Link>
 
         <h1 className="text-2xl font-bold">Welcome Back</h1>
