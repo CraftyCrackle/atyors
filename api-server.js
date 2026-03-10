@@ -144,6 +144,7 @@ async function start() {
       console.log(`atyors API running on port ${PORT} [${process.env.NODE_ENV}]`);
       startSubscriptionScheduler();
       startExpiryScheduler(io);
+      startReminderScheduler();
     });
   } catch (err) {
     console.error('Startup failed:', err);
@@ -190,6 +191,23 @@ function startExpiryScheduler(io) {
   runExpiry();
   setInterval(runExpiry, FIFTEEN_MINUTES);
   console.log('[Scheduler] Booking expiry checker running (every 15m)');
+}
+
+function startReminderScheduler() {
+  const THIRTY_MINUTES = 30 * 60 * 1000;
+  const { sendTrashDayReminders } = require('./apps/server/services/reminderService');
+
+  async function runReminders() {
+    try {
+      await sendTrashDayReminders();
+    } catch (err) {
+      console.error('[Reminder] Scheduler failed:', err.message);
+    }
+  }
+
+  runReminders();
+  setInterval(runReminders, THIRTY_MINUTES);
+  console.log('[Scheduler] Trash day reminder checker running (every 30m)');
 }
 
 start();

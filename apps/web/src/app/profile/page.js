@@ -132,6 +132,8 @@ export default function ProfilePage() {
 
           <ChangePasswordSection dark={dark} cardCls={cardCls} />
 
+          <TrashDayReminderSection dark={dark} cardCls={cardCls} user={user} updateUser={updateUser} />
+
           <div className={`mt-4 ${cardCls}`}>
             <div className="flex items-center justify-between">
               <h2 className={`font-semibold ${dark ? 'text-white' : ''}`}>Addresses</h2>
@@ -238,6 +240,67 @@ function ChangePasswordSection({ dark, cardCls }) {
             {saving ? 'Updating...' : 'Update Password'}
           </button>
         </form>
+      )}
+    </div>
+  );
+}
+
+function TrashDayReminderSection({ dark, cardCls, user, updateUser }) {
+  const reminder = user?.trashDayReminder || { enabled: false, timing: 'evening-before' };
+  const [saving, setSaving] = useState(false);
+
+  async function toggle(field, value) {
+    setSaving(true);
+    try {
+      const updated = { ...reminder, [field]: value };
+      const res = await api.patch('/users/me', { trashDayReminder: updated });
+      updateUser(res.data.user);
+    } catch (err) { alert(err.message || 'Failed to update'); }
+    setSaving(false);
+  }
+
+  const timingOptions = [
+    { value: 'evening-before', label: 'Evening before', desc: 'Get a reminder the night before trash day' },
+    { value: 'morning-of', label: 'Morning of', desc: 'Get a reminder the morning of trash day' },
+    { value: 'both', label: 'Both', desc: 'Get reminded the night before and the morning of' },
+  ];
+
+  return (
+    <div className={`mt-4 ${cardCls}`}>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className={`font-semibold ${dark ? 'text-white' : ''}`}>Trash Day Reminders</h2>
+          <p className={`mt-0.5 text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>
+            Never forget to put your barrels out
+          </p>
+        </div>
+        <button
+          disabled={saving}
+          onClick={() => toggle('enabled', !reminder.enabled)}
+          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${reminder.enabled ? 'bg-brand-600' : dark ? 'bg-gray-600' : 'bg-gray-200'}`}
+        >
+          <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform ${reminder.enabled ? 'translate-x-5' : 'translate-x-0'}`} />
+        </button>
+      </div>
+      {reminder.enabled && (
+        <div className="mt-3 space-y-2">
+          <p className={`text-xs font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>When should we remind you?</p>
+          {timingOptions.map((opt) => (
+            <button
+              key={opt.value}
+              disabled={saving}
+              onClick={() => toggle('timing', opt.value)}
+              className={`w-full rounded-lg border-2 px-3 py-2.5 text-left transition ${
+                reminder.timing === opt.value
+                  ? 'border-brand-600 bg-brand-50 text-brand-700'
+                  : dark ? 'border-gray-600 text-gray-300 hover:border-gray-500' : 'border-gray-100 text-gray-600 hover:border-gray-200'
+              }`}
+            >
+              <p className="text-sm font-medium">{opt.label}</p>
+              <p className={`text-xs ${reminder.timing === opt.value ? 'text-brand-500' : dark ? 'text-gray-500' : 'text-gray-400'}`}>{opt.desc}</p>
+            </button>
+          ))}
+        </div>
       )}
     </div>
   );

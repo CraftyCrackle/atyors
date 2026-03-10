@@ -18,6 +18,10 @@ const userSchema = new mongoose.Schema({
     reminders: { type: Boolean, default: true },
     statusUpdates: { type: Boolean, default: true },
   },
+  trashDayReminder: {
+    enabled: { type: Boolean, default: false },
+    timing: { type: String, enum: ['evening-before', 'morning-of', 'both'], default: 'evening-before' },
+  },
   profilePhotoUrl: { type: String, trim: true },
   averageRating: { type: Number, default: 0 },
   totalReviews: { type: Number, default: 0 },
