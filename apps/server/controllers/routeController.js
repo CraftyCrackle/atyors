@@ -1,13 +1,24 @@
 const routeService = require('../services/routeService');
 const notificationService = require('../services/notificationService');
 
+async function optimizePreview(req, res, next) {
+  try {
+    const { bookingIds } = req.body;
+    if (!bookingIds?.length) {
+      return res.status(400).json({ success: false, error: { code: 'MISSING_FIELDS', message: 'bookingIds is required' } });
+    }
+    const stops = await routeService.optimizePreview(req.user._id, bookingIds);
+    res.json({ success: true, data: { stops } });
+  } catch (err) { next(err); }
+}
+
 async function createRoute(req, res, next) {
   try {
-    const { date, bookingIds } = req.body;
+    const { date, bookingIds, optimize } = req.body;
     if (!date || !bookingIds?.length) {
       return res.status(400).json({ success: false, error: { code: 'MISSING_FIELDS', message: 'date and bookingIds are required' } });
     }
-    const route = await routeService.createRoute(req.user._id, date, bookingIds);
+    const route = await routeService.createRoute(req.user._id, date, bookingIds, { optimize: !!optimize });
     res.status(201).json({ success: true, data: { route } });
   } catch (err) { next(err); }
 }
@@ -123,4 +134,4 @@ async function skipStop(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { createRoute, getActiveRoute, getPlannedRoute, startRoute, completeStop, markArrived, skipStop };
+module.exports = { optimizePreview, createRoute, getActiveRoute, getPlannedRoute, startRoute, completeStop, markArrived, skipStop };

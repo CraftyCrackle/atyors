@@ -1,10 +1,19 @@
 const Address = require('../models/Address');
 const ServiceZone = require('../models/ServiceZone');
 const User = require('../models/User');
+const geocodeService = require('./geocodeService');
 
 async function create(userId, data) {
+  let lat = data.lat;
+  let lng = data.lng;
+
+  if (!lat || !lng || (lat === 42.3601 && lng === -71.0589)) {
+    const geo = await geocodeService.geocode(data.street, data.city, data.state, data.zip);
+    if (geo) { lat = geo.lat; lng = geo.lng; }
+  }
+
   const zone = await ServiceZone.findOne({
-    polygon: { $geoIntersects: { $geometry: { type: 'Point', coordinates: [data.lng, data.lat] } } },
+    polygon: { $geoIntersects: { $geometry: { type: 'Point', coordinates: [lng, lat] } } },
     isActive: true,
   });
 
@@ -16,7 +25,7 @@ async function create(userId, data) {
     state: data.state,
     zip: data.zip,
     formatted: data.formatted,
-    location: { type: 'Point', coordinates: [data.lng, data.lat] },
+    location: { type: 'Point', coordinates: [lng, lat] },
     barrelCount: data.barrelCount || 1,
     barrelLocation: data.barrelLocation,
     barrelPhotoUrl: data.barrelPhotoUrl,

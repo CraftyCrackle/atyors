@@ -36,6 +36,7 @@ router.patch('/jobs/:id/deny', servicerController.denyJob);
 router.get('/earnings', servicerController.getEarnings);
 router.post('/location', servicerController.updateLocation);
 
+router.post('/routes/optimize-preview', routeController.optimizePreview);
 router.post('/routes', routeController.createRoute);
 router.get('/routes/active', routeController.getActiveRoute);
 router.get('/routes/planned', routeController.getPlannedRoute);

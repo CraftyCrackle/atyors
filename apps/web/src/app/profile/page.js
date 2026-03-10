@@ -608,8 +608,6 @@ function AddAddressForm({ dark, onAdded, onCancel }) {
       const res = await api.post('/addresses', {
         ...form,
         barrelCount: parseInt(form.barrelCount) || 1,
-        lat: 42.3601,
-        lng: -71.0589,
         formatted: `${form.street}, ${form.city}, ${form.state} ${form.zip}`,
       });
       let addr = res.data.address;

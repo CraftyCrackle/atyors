@@ -1,13 +1,36 @@
 const Route = require('../models/Route');
 const Booking = require('../models/Booking');
 const { chargeBookingOnCompletion } = require('./bookingService');
+const { optimizeStops } = require('./routeOptimizer');
 
 const DEEP_POPULATE = {
   path: 'stops.bookingId',
   populate: [{ path: 'addressId' }, { path: 'serviceTypeId' }, { path: 'userId' }],
 };
 
-async function createRoute(servicerId, date, bookingIds) {
+async function optimizePreview(servicerId, bookingIds) {
+  const bookings = await Booking.find({
+    _id: { $in: bookingIds },
+    assignedTo: servicerId,
+    status: 'active',
+  }).populate('addressId serviceTypeId userId');
+
+  if (bookings.length === 0) return [];
+
+  const sorted = optimizeStops(bookings);
+  return sorted.map((b) => ({
+    bookingId: b._id,
+    address: b.addressId,
+    serviceType: b.serviceTypeId,
+    customer: b.userId ? { firstName: b.userId.firstName, lastName: b.userId.lastName } : null,
+    barrelCount: b.barrelCount,
+    coords: b.addressId?.location?.coordinates
+      ? { lat: b.addressId.location.coordinates[1], lng: b.addressId.location.coordinates[0] }
+      : null,
+  }));
+}
+
+async function createRoute(servicerId, date, bookingIds, { optimize = false } = {}) {
   const routeDate = new Date(date);
   routeDate.setHours(0, 0, 0, 0);
 
@@ -23,11 +46,11 @@ async function createRoute(servicerId, date, bookingIds) {
     throw err;
   }
 
-  const bookings = await Booking.find({
+  let bookings = await Booking.find({
     _id: { $in: bookingIds },
     assignedTo: servicerId,
     status: 'active',
-  });
+  }).populate('addressId');
 
   if (bookings.length !== bookingIds.length) {
     const err = new Error('Some bookings are invalid, not assigned to you, or not in active status');
@@ -36,7 +59,12 @@ async function createRoute(servicerId, date, bookingIds) {
     throw err;
   }
 
-  const stops = bookingIds.map((id, i) => ({
+  if (optimize) {
+    bookings = optimizeStops(bookings);
+  }
+
+  const orderedIds = bookings.map((b) => b._id);
+  const stops = orderedIds.map((id, i) => ({
     bookingId: id,
     order: i,
     status: 'pending',
@@ -50,7 +78,7 @@ async function createRoute(servicerId, date, bookingIds) {
   });
 
   await Promise.all(
-    bookingIds.map((id, i) =>
+    orderedIds.map((id, i) =>
       Booking.findByIdAndUpdate(id, { routeId: route._id, routeOrder: i })
     )
   );
@@ -305,6 +333,7 @@ async function updateLocation(routeId, lat, lng) {
 
 module.exports = {
   createRoute,
+  optimizePreview,
   startRoute,
   completeCurrentStop,
   markStopArrived,
