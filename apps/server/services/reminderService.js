@@ -1,11 +1,22 @@
 const User = require('../models/User');
 const Address = require('../models/Address');
-const pushService = require('./pushService');
+const notificationService = require('./notificationService');
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+const ET_OFFSET_EST = -5;
+const ET_OFFSET_EDT = -4;
+
 function getEasternNow() {
-  return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const now = new Date();
+  const jan = new Date(now.getFullYear(), 0, 1);
+  const jul = new Date(now.getFullYear(), 6, 1);
+  const stdOffset = Math.max(jan.getTimezoneOffset(), jul.getTimezoneOffset());
+  const isDST = now.getTimezoneOffset() < stdOffset;
+
+  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+  const etOffset = isDST ? ET_OFFSET_EDT : ET_OFFSET_EST;
+  return new Date(utcMs + etOffset * 3600000);
 }
 
 function getEasternDay(offset = 0) {
@@ -22,12 +33,15 @@ function minutesSinceMidnight(timeStr) {
 async function sendTrashDayReminders() {
   const now = getEasternNow();
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
   const users = await User.find({
     role: 'customer',
     isActive: true,
     'trashDayReminder.enabled': true,
   }).select('_id firstName trashDayReminder addresses').lean();
+
+  console.log(`[Reminder] Check at ${timeStr} ET — ${users.length} user(s) with reminders enabled`);
 
   if (users.length === 0) return 0;
 
@@ -37,7 +51,12 @@ async function sendTrashDayReminders() {
     return diff >= 0 && diff < 30;
   });
 
-  if (dueUsers.length === 0) return 0;
+  if (dueUsers.length === 0) {
+    console.log('[Reminder] No users due for reminders in this window');
+    return 0;
+  }
+
+  console.log(`[Reminder] ${dueUsers.length} user(s) due for reminders`);
 
   const userIds = dueUsers.map((u) => u._id);
 
@@ -68,13 +87,19 @@ async function sendTrashDayReminders() {
   for (const user of dueUsers) {
     const uid = user._id.toString();
     const days = userTrashDays[uid];
-    if (!days) continue;
+    if (!days) {
+      console.log(`[Reminder] User ${uid} (${user.firstName}) — no matching trash day address`);
+      continue;
+    }
 
     const userTime = minutesSinceMidnight(user.trashDayReminder.time || '18:00');
     const isEvening = userTime >= 720;
     const targetDay = isEvening ? tomorrowDay : todayDay;
 
-    if (!days.has(targetDay)) continue;
+    if (!days.has(targetDay)) {
+      console.log(`[Reminder] User ${uid} (${user.firstName}) — trash day doesn't match ${targetDay}`);
+      continue;
+    }
 
     const title = isEvening ? '🗑️ Trash day tomorrow!' : '🗑️ Trash day today!';
     const body = isEvening
@@ -82,18 +107,20 @@ async function sendTrashDayReminders() {
       : `Good morning ${user.firstName}! Today is ${targetDay} — time to get those barrels to the curb!`;
 
     try {
-      await pushService.sendToUser(user._id, {
+      await notificationService.create({
+        userId: user._id,
+        type: 'trash:reminder',
         title,
         body,
-        data: { type: 'trash:reminder', url: '/dashboard' },
       });
       sent++;
+      console.log(`[Reminder] Sent to ${user.firstName} (${uid}) for ${targetDay}`);
     } catch (err) {
-      console.error(`[Reminder] Failed to send to user ${user._id}:`, err.message);
+      console.error(`[Reminder] Failed to send to user ${uid}:`, err.message);
     }
   }
 
-  if (sent > 0) console.log(`[Reminder] Sent ${sent} trash day reminder(s)`);
+  console.log(`[Reminder] Done — sent ${sent} reminder(s)`);
   return sent;
 }
 
