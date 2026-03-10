@@ -259,16 +259,21 @@ function TrashDayReminderSection({ dark, cardCls, user, updateUser }) {
     setSaving(false);
   }
 
-  function formatTime(t) {
-    const [h, m] = (t || '18:00').split(':').map(Number);
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    const h12 = h % 12 || 12;
-    return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+  const TIME_OPTIONS = [];
+  for (let h = 0; h < 24; h++) {
+    for (const m of [0, 30]) {
+      const val = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const h12 = h % 12 || 12;
+      const label = `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+      TIME_OPTIONS.push({ value: val, label });
+    }
   }
 
   const timeVal = reminder.time || '18:00';
   const hour = parseInt(timeVal.split(':')[0], 10);
   const isEvening = hour >= 12;
+  const displayTime = TIME_OPTIONS.find((o) => o.value === timeVal)?.label || timeVal;
 
   return (
     <div className={`mt-4 ${cardCls}`}>
@@ -293,15 +298,18 @@ function TrashDayReminderSection({ dark, cardCls, user, updateUser }) {
             What time should we remind you?
           </label>
           <div className="flex items-center gap-3">
-            <input
-              type="time"
+            <select
               value={timeVal}
               disabled={saving}
               onChange={(e) => update('time', e.target.value)}
               className={`flex-1 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition focus:border-brand-600 focus:outline-none ${
                 dark ? 'border-gray-600 bg-gray-700 text-white' : 'border-gray-200 bg-white text-gray-900'
               }`}
-            />
+            >
+              {TIME_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
             <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
               isEvening ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700'
             }`}>
@@ -310,8 +318,8 @@ function TrashDayReminderSection({ dark, cardCls, user, updateUser }) {
           </div>
           <p className={`text-xs ${dark ? 'text-gray-500' : 'text-gray-400'}`}>
             {isEvening
-              ? `You'll get a reminder at ${formatTime(timeVal)} the night before your trash day`
-              : `You'll get a reminder at ${formatTime(timeVal)} the morning of your trash day`}
+              ? `You'll get a reminder at ${displayTime} the night before your trash day`
+              : `You'll get a reminder at ${displayTime} the morning of your trash day`}
           </p>
         </div>
       )}
