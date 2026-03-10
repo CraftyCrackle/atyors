@@ -1,6 +1,7 @@
 jest.mock('../models/Booking');
 jest.mock('../models/User');
 jest.mock('../models/ServiceZone');
+jest.mock('../models/AppSettings');
 jest.mock('../middleware/auth');
 
 const { authenticate, requireRole } = require('../middleware/auth');
@@ -15,6 +16,9 @@ const express = require('express');
 const adminRoutes = require('../routes/admin');
 const User = require('../models/User');
 const Booking = require('../models/Booking');
+const AppSettings = require('../models/AppSettings');
+
+AppSettings.get.mockResolvedValue({ dailyBookingCap: 100 });
 
 const app = express();
 app.use(express.json());
@@ -41,11 +45,12 @@ describe('Admin routes', () => {
   });
 
   describe('GET /admin/reports/summary', () => {
-    test('returns aggregate counts', async () => {
+    test('returns aggregate counts with capacity info', async () => {
       Booking.countDocuments
         .mockResolvedValueOnce(42)
         .mockResolvedValueOnce(5)
-        .mockResolvedValueOnce(30);
+        .mockResolvedValueOnce(30)
+        .mockResolvedValueOnce(7);
       User.countDocuments.mockResolvedValue(10);
 
       const res = await request(app).get('/admin/reports/summary');
@@ -56,6 +61,8 @@ describe('Admin routes', () => {
         activeBookings: 5,
         completedBookings: 30,
         totalCustomers: 10,
+        dailyBookingCap: 100,
+        todayBooked: 7,
       });
     });
   });

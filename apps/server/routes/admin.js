@@ -3,6 +3,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const Booking = require('../models/Booking');
 const User = require('../models/User');
 const ServiceZone = require('../models/ServiceZone');
+const AppSettings = require('../models/AppSettings');
 const userService = require('../services/userService');
 
 router.use(authenticate, requireRole('admin', 'superadmin'));
@@ -159,13 +160,46 @@ router.get('/servicers', async (req, res, next) => {
 
 router.get('/reports/summary', async (req, res, next) => {
   try {
-    const [totalBookings, activeBookings, completedBookings, totalCustomers] = await Promise.all([
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayEnd = new Date(todayStart);
+    todayEnd.setDate(todayEnd.getDate() + 1);
+
+    const [totalBookings, activeBookings, completedBookings, totalCustomers, settings, todayBooked] = await Promise.all([
       Booking.countDocuments(),
       Booking.countDocuments({ status: { $in: ['pending', 'active', 'en-route', 'arrived', 'in-progress'] } }),
       Booking.countDocuments({ status: 'completed' }),
       User.countDocuments({ role: 'customer' }),
+      AppSettings.get(),
+      Booking.countDocuments({
+        scheduledDate: { $gte: todayStart, $lt: todayEnd },
+        status: { $in: ['pending', 'active', 'en-route', 'arrived', 'completed'] },
+      }),
     ]);
-    res.json({ success: true, data: { totalBookings, activeBookings, completedBookings, totalCustomers } });
+    res.json({ success: true, data: { totalBookings, activeBookings, completedBookings, totalCustomers, dailyBookingCap: settings.dailyBookingCap, todayBooked } });
+  } catch (err) { next(err); }
+});
+
+router.get('/settings', async (req, res, next) => {
+  try {
+    const settings = await AppSettings.get();
+    res.json({ success: true, data: { settings } });
+  } catch (err) { next(err); }
+});
+
+router.patch('/settings', async (req, res, next) => {
+  try {
+    const { dailyBookingCap } = req.body;
+    const updates = {};
+    if (dailyBookingCap !== undefined) {
+      const cap = parseInt(dailyBookingCap);
+      if (isNaN(cap) || cap < 1) {
+        return res.status(400).json({ success: false, error: { code: 'INVALID_VALUE', message: 'dailyBookingCap must be a positive number' } });
+      }
+      updates.dailyBookingCap = cap;
+    }
+    const settings = await AppSettings.set(updates);
+    res.json({ success: true, data: { settings } });
   } catch (err) { next(err); }
 });
 

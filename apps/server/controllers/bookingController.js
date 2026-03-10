@@ -142,4 +142,15 @@ async function uploadCurbItemPhotos(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { create, confirmPayment, list, getById, cancel, reschedule, getQueuePosition, uploadCurbItemPhotos };
+async function checkCapacity(req, res, next) {
+  try {
+    const { date } = req.query;
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_DATE', message: 'date query param required (YYYY-MM-DD)' } });
+    }
+    const data = await bookingService.getCapacity(date);
+    res.json({ success: true, data });
+  } catch (err) { next(err); }
+}
+
+module.exports = { create, confirmPayment, list, getById, cancel, reschedule, getQueuePosition, uploadCurbItemPhotos, checkCapacity };

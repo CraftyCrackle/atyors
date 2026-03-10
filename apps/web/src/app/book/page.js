@@ -48,6 +48,7 @@ function BookContent() {
   });
   const [curbItemPhotos, setCurbItemPhotos] = useState([]);
   const [curbItemPreviews, setCurbItemPreviews] = useState([]);
+  const [dateFullyBooked, setDateFullyBooked] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -74,11 +75,15 @@ function BookContent() {
   }, []);
 
   useEffect(() => {
-    if (!selected.date) return;
+    if (!selected.date) { setDateFullyBooked(false); return; }
     const updates = {};
     if (selected.putOutTime && isTimeWindowPast(selected.putOutTime, false)) updates.putOutTime = '';
     if (selected.bringInTime && isTimeWindowPast(selected.bringInTime, true)) updates.bringInTime = '';
     if (Object.keys(updates).length) setSelected((prev) => ({ ...prev, ...updates }));
+    setDateFullyBooked(false);
+    api.get(`/bookings/capacity?date=${selected.date}`)
+      .then((res) => { if (!res.data.available) setDateFullyBooked(true); })
+      .catch(() => {});
   }, [selected.date]);
 
   function next() { setStep((s) => Math.min(s + 1, STEPS.length - 1)); }
@@ -371,7 +376,14 @@ function BookContent() {
                 />
               )}
 
-              {selected.addressId && selected.date && (
+              {selected.addressId && selected.date && dateFullyBooked && (
+                <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+                  <p className="text-sm font-semibold text-red-700">This date is fully booked.</p>
+                  <p className="mt-0.5 text-xs text-red-500">Please pick another day to continue.</p>
+                </div>
+              )}
+
+              {selected.addressId && selected.date && !dateFullyBooked && (
                 <button onClick={next}
                   className="mt-6 w-full rounded-xl bg-brand-600 py-3.5 font-semibold text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700 active:scale-[0.98]">
                   Continue
@@ -647,48 +659,62 @@ function BookContent() {
               </div>
 
               {/* Put out / Bring in times */}
-              {needsPutOut() && (
-                <div className="mt-5">
-                  <label className="text-sm font-medium text-gray-700">When should barrels be placed on the curb?</label>
-                  <div className="mt-2 grid grid-cols-2 gap-2">
-                    {PUT_OUT_OPTIONS.map((opt) => {
-                      const past = isTimeWindowPast(opt, false);
-                      return (
-                        <button key={opt} disabled={past} onClick={() => !past && setSelected({ ...selected, putOutTime: opt })}
-                          className={`rounded-lg border-2 px-3 py-2.5 text-sm transition ${past ? 'border-gray-100 text-gray-300 line-through cursor-not-allowed' : selected.putOutTime === opt ? 'border-brand-600 bg-brand-50 text-brand-700 font-medium' : 'border-gray-100 text-gray-500'}`}>
-                          {opt}
-                        </button>
-                      );
-                    })}
+              {needsPutOut() && (() => {
+                const allPast = PUT_OUT_OPTIONS.every((o) => isTimeWindowPast(o, false));
+                return (
+                  <div className="mt-5">
+                    <label className="text-sm font-medium text-gray-700">When should barrels be placed on the curb?</label>
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      {PUT_OUT_OPTIONS.map((opt) => {
+                        const past = isTimeWindowPast(opt, false);
+                        return (
+                          <button key={opt} disabled={past} onClick={() => !past && setSelected({ ...selected, putOutTime: opt })}
+                            className={`rounded-lg border-2 px-3 py-2.5 text-sm transition ${past ? 'border-gray-100 text-gray-300 line-through cursor-not-allowed' : selected.putOutTime === opt ? 'border-brand-600 bg-brand-50 text-brand-700 font-medium' : 'border-gray-100 text-gray-500'}`}>
+                            {opt}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {allPast && <p className="mt-2 text-xs text-red-500">All time windows for this date have passed. Please pick a later date.</p>}
+                    {!allPast && PUT_OUT_OPTIONS.some((o) => isTimeWindowPast(o, false)) && (
+                      <p className="mt-2 text-xs text-gray-400">Greyed out times have already passed for today.</p>
+                    )}
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
-              {needsBringIn() && (
-                <div className="mt-5">
-                  <label className="text-sm font-medium text-gray-700">When should barrels be brought back in?</label>
-                  {selected.date && (
-                    <p className="mt-1 text-sm font-semibold text-brand-700">
-                      Next Day [{(() => {
-                        const d = new Date(selected.date + 'T12:00:00');
-                        d.setDate(d.getDate() + 1);
-                        return d.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-                      })()}]
-                    </p>
-                  )}
-                  <div className="mt-2 grid grid-cols-2 gap-2">
-                    {BRING_IN_OPTIONS.map((opt) => {
-                      const past = isTimeWindowPast(opt, true);
-                      return (
-                        <button key={opt} disabled={past} onClick={() => !past && setSelected({ ...selected, bringInTime: opt })}
-                          className={`rounded-lg border-2 px-3 py-2.5 text-sm transition ${past ? 'border-gray-100 text-gray-300 line-through cursor-not-allowed' : selected.bringInTime === opt ? 'border-brand-600 bg-brand-50 text-brand-700 font-medium' : 'border-gray-100 text-gray-500'}`}>
-                          {opt}
-                        </button>
-                      );
-                    })}
+              {needsBringIn() && (() => {
+                const allPast = BRING_IN_OPTIONS.every((o) => isTimeWindowPast(o, true));
+                return (
+                  <div className="mt-5">
+                    <label className="text-sm font-medium text-gray-700">When should barrels be brought back in?</label>
+                    {selected.date && (
+                      <p className="mt-1 text-sm font-semibold text-brand-700">
+                        Next Day [{(() => {
+                          const d = new Date(selected.date + 'T12:00:00');
+                          d.setDate(d.getDate() + 1);
+                          return d.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+                        })()}]
+                      </p>
+                    )}
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      {BRING_IN_OPTIONS.map((opt) => {
+                        const past = isTimeWindowPast(opt, true);
+                        return (
+                          <button key={opt} disabled={past} onClick={() => !past && setSelected({ ...selected, bringInTime: opt })}
+                            className={`rounded-lg border-2 px-3 py-2.5 text-sm transition ${past ? 'border-gray-100 text-gray-300 line-through cursor-not-allowed' : selected.bringInTime === opt ? 'border-brand-600 bg-brand-50 text-brand-700 font-medium' : 'border-gray-100 text-gray-500'}`}>
+                            {opt}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {allPast && <p className="mt-2 text-xs text-red-500">All time windows for this date have passed. Please pick a later date.</p>}
+                    {!allPast && BRING_IN_OPTIONS.some((o) => isTimeWindowPast(o, true)) && (
+                      <p className="mt-2 text-xs text-gray-400">Greyed out times have already passed.</p>
+                    )}
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {selected.bookingType === 'subscription' && selected.date && (
                 <div className="mt-5">

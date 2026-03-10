@@ -1,11 +1,10 @@
 const Booking = require('../models/Booking');
 const Address = require('../models/Address');
 const ServiceType = require('../models/ServiceType');
+const AppSettings = require('../models/AppSettings');
 const { calculateOneTimePrice, calculateCurbItemPrice } = require('./pricingService');
 const stripeService = require('./stripeService');
 const config = require('../config');
-
-const DAILY_BOOKING_CAP = 400;
 const MAX_BARRELS = 50;
 const GRACE_PERIOD_MS = 2 * 60 * 1000;
 const CANCELLATION_FEE = 1.00;
@@ -68,13 +67,14 @@ async function create(userId, data) {
       throw err;
     }
 
+    const settings = await AppSettings.get();
     const dayStart = new Date(scheduledDate);
     dayStart.setHours(0, 0, 0, 0);
     const dayEnd = new Date(dayStart);
     dayEnd.setDate(dayEnd.getDate() + 1);
     const dayFilter = { scheduledDate: { $gte: dayStart, $lt: dayEnd }, status: { $in: ['pending', 'active', 'en-route', 'arrived', 'completed'] } };
     const dailyCount = await Booking.countDocuments(dayFilter);
-    if (dailyCount >= DAILY_BOOKING_CAP) {
+    if (dailyCount >= settings.dailyBookingCap) {
       const err = new Error('This date is fully booked. Please select another day.');
       err.status = 400;
       err.code = 'DAY_FULL';
@@ -103,6 +103,7 @@ async function create(userId, data) {
   const clientAmount = isSubscription ? 0 : perBarrelAmount;
   const paymentStatus = isSubscription ? 'paid' : 'pending_payment';
 
+  const settings = await AppSettings.get();
   const dayStart = new Date(scheduledDate);
   dayStart.setHours(0, 0, 0, 0);
   const dayEnd = new Date(dayStart);
@@ -110,7 +111,7 @@ async function create(userId, data) {
   const dayFilter = { scheduledDate: { $gte: dayStart, $lt: dayEnd }, status: { $in: ['pending', 'active', 'en-route', 'arrived', 'completed'] } };
 
   const dailyCount = await Booking.countDocuments(dayFilter);
-  if (dailyCount >= DAILY_BOOKING_CAP) {
+  if (dailyCount >= settings.dailyBookingCap) {
     const err = new Error('This date is fully booked. Please select another day.');
     err.status = 400;
     err.code = 'DAY_FULL';
@@ -455,4 +456,17 @@ async function expireOverdueBookings(io) {
   if (expired > 0) console.log(`[Expiry] Expired ${expired} overdue booking(s)`);
 }
 
-module.exports = { create, listByUser, getById, updateStatus, cancel, reschedule, chargeBookingOnCompletion, expireOverdueBookings };
+async function getCapacity(dateStr) {
+  const settings = await AppSettings.get();
+  const cap = settings.dailyBookingCap;
+  const dayStart = new Date(dateStr + 'T00:00:00');
+  const dayEnd = new Date(dayStart);
+  dayEnd.setDate(dayEnd.getDate() + 1);
+  const booked = await Booking.countDocuments({
+    scheduledDate: { $gte: dayStart, $lt: dayEnd },
+    status: { $in: ['pending', 'active', 'en-route', 'arrived', 'completed'] },
+  });
+  return { date: dateStr, booked, cap, available: booked < cap };
+}
+
+module.exports = { create, listByUser, getById, updateStatus, cancel, reschedule, chargeBookingOnCompletion, expireOverdueBookings, getCapacity };

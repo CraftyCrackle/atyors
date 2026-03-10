@@ -46,6 +46,9 @@ export default function AdminDashboardPage() {
   const [stats, setStats] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [capInput, setCapInput] = useState('');
+  const [capSaving, setCapSaving] = useState(false);
+  const [capMsg, setCapMsg] = useState('');
 
   async function load() {
     try {
@@ -55,6 +58,7 @@ export default function AdminDashboardPage() {
       ]);
       setStats(summaryRes.data);
       setBookings(bookingsRes.data.bookings || []);
+      if (!capInput) setCapInput(String(summaryRes.data.dailyBookingCap || 100));
     } catch { }
     setLoading(false);
   }
@@ -64,6 +68,20 @@ export default function AdminDashboardPage() {
     const interval = setInterval(load, 15000);
     return () => clearInterval(interval);
   }, []);
+
+  async function saveCap() {
+    const val = parseInt(capInput);
+    if (isNaN(val) || val < 1) { setCapMsg('Must be at least 1'); return; }
+    setCapSaving(true);
+    setCapMsg('');
+    try {
+      await api.patch('/admin/settings', { dailyBookingCap: val });
+      setCapMsg('Saved');
+      load();
+    } catch { setCapMsg('Failed to save'); }
+    setCapSaving(false);
+    setTimeout(() => setCapMsg(''), 3000);
+  }
 
   return (
     <AdminGuard>
@@ -95,6 +113,9 @@ export default function AdminDashboardPage() {
             <Link href="/admin/customers" className="shrink-0 rounded-lg border border-gray-700 px-3.5 py-2 text-sm font-medium text-gray-300 hover:bg-gray-800">
               Customers
             </Link>
+            <a href="#settings" className="shrink-0 rounded-lg border border-gray-700 px-3.5 py-2 text-sm font-medium text-gray-300 hover:bg-gray-800">
+              Settings
+            </a>
           </div>
 
           {loading ? (
@@ -106,6 +127,47 @@ export default function AdminDashboardPage() {
                 <StatCard label="Active" value={stats?.activeBookings} icon="M13 10V3L4 14h7v7l9-11h-7z" color="bg-yellow-500/20 text-yellow-400" />
                 <StatCard label="Completed" value={stats?.completedBookings} icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" color="bg-green-500/20 text-green-400" />
                 <StatCard label="Customers" value={stats?.totalCustomers} icon="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" color="bg-purple-500/20 text-purple-400" />
+              </div>
+
+              <div id="settings" className="mt-8 rounded-xl border border-gray-700 bg-gray-800 p-4">
+                <h2 className="text-lg font-semibold text-white">Settings</h2>
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-300">Daily booking limit</label>
+                  <p className="mt-0.5 text-xs text-gray-500">Max number of reservations accepted per day</p>
+                  <div className="mt-2 flex items-center gap-3">
+                    <input
+                      type="number"
+                      min="1"
+                      value={capInput}
+                      onChange={(e) => setCapInput(e.target.value)}
+                      className="w-28 rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none"
+                    />
+                    <button onClick={saveCap} disabled={capSaving}
+                      className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50">
+                      {capSaving ? 'Saving...' : 'Save'}
+                    </button>
+                    {capMsg && <span className={`text-xs ${capMsg === 'Saved' ? 'text-green-400' : 'text-red-400'}`}>{capMsg}</span>}
+                  </div>
+                  {stats && (
+                    <div className="mt-3">
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-gray-400">Today:</span>
+                        <span className={`font-semibold ${stats.todayBooked >= stats.dailyBookingCap ? 'text-red-400' : 'text-green-400'}`}>
+                          {stats.todayBooked} / {stats.dailyBookingCap}
+                        </span>
+                        {stats.todayBooked >= stats.dailyBookingCap && (
+                          <span className="rounded-full bg-red-500/20 px-2 py-0.5 text-xs font-medium text-red-400">At capacity</span>
+                        )}
+                      </div>
+                      <div className="mt-1.5 h-2 w-full max-w-xs overflow-hidden rounded-full bg-gray-700">
+                        <div
+                          className={`h-full rounded-full transition-all ${stats.todayBooked >= stats.dailyBookingCap ? 'bg-red-500' : 'bg-brand-500'}`}
+                          style={{ width: `${Math.min(100, (stats.todayBooked / stats.dailyBookingCap) * 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="mt-8">
