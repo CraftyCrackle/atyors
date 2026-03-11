@@ -28,13 +28,10 @@
 	<string>atyors uses the camera to take photos when completing service jobs.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>atyors uses your location to share live tracking with customers while you are on a service route.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>atyors tracks your location in the background so customers can follow your progress while your screen is off.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>atyors may need microphone access for camera features.</string>
 	<key>UIBackgroundModes</key>
 	<array>
-		<string>location</string>
 		<string>remote-notification</string>
 	</array>
 	<key>UILaunchStoryboardName</key>

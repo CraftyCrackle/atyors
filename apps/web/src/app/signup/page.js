@@ -58,7 +58,7 @@ export default function SignupPage() {
             <input type="text" placeholder="Last name" value={form.lastName} onChange={update('lastName')} required className="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
           </div>
           <input type="email" placeholder="Email address" value={form.email} onChange={update('email')} required className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
-          <input type="tel" placeholder="Phone number" value={form.phone} onChange={update('phone')} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
+          <input type="tel" placeholder="Phone number (optional)" value={form.phone} onChange={update('phone')} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
           <input type="password" placeholder="Password" value={form.password} onChange={update('password')} required className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
           <input type="password" placeholder="Confirm password" value={form.confirmPassword} onChange={update('confirmPassword')} required className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
           <label className="flex items-start gap-3 cursor-pointer">
