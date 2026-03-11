@@ -2,6 +2,7 @@ const Route = require('../models/Route');
 const Booking = require('../models/Booking');
 const { chargeBookingOnCompletion } = require('./bookingService');
 const { optimizeStops } = require('./routeOptimizer');
+const { getServiceWindowStart } = require('./servicerService');
 
 const DEEP_POPULATE = {
   path: 'stops.bookingId',
@@ -99,11 +100,21 @@ async function startRoute(routeId, servicerId) {
     throw err;
   }
 
-  const firstBooking = await Booking.findById(route.stops[0].bookingId);
+  const firstBooking = await Booking.findById(route.stops[0].bookingId).populate('serviceTypeId');
   if (!firstBooking || !firstBooking.canTransitionTo('en-route')) {
     const err = new Error(`Cannot start route: first booking cannot transition to en-route`);
     err.status = 400;
     err.code = 'INVALID_TRANSITION';
+    throw err;
+  }
+
+  const windowStart = getServiceWindowStart(firstBooking);
+  if (new Date() < windowStart) {
+    const label = windowStart.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    const err = new Error(`The first job's service window hasn't started yet. You can start the route on ${label}.`);
+    err.status = 400;
+    err.code = 'WINDOW_NOT_STARTED';
+    err.meta = { windowStart: windowStart.toISOString() };
     throw err;
   }
 
@@ -151,16 +162,14 @@ async function completeCurrentStop(routeId, servicerId) {
 
   const nextIdx = idx + 1;
   if (nextIdx < route.stops.length) {
-    const nextBooking = await Booking.findById(route.stops[nextIdx].bookingId);
-    if (nextBooking && nextBooking.canTransitionTo('en-route')) {
-      route.currentStopIndex = nextIdx;
+    const nextBooking = await Booking.findById(route.stops[nextIdx].bookingId).populate('serviceTypeId');
+    const windowReady = !nextBooking || new Date() >= getServiceWindowStart(nextBooking);
+    route.currentStopIndex = nextIdx;
+    if (windowReady && nextBooking && nextBooking.canTransitionTo('en-route')) {
       route.stops[nextIdx].status = 'en-route';
       nextBooking.status = 'en-route';
       nextBooking.statusHistory.push({ status: 'en-route', changedAt: new Date(), changedBy: servicerId });
       await nextBooking.save();
-    } else {
-      route.currentStopIndex = nextIdx;
-      route.stops[nextIdx].status = 'en-route';
     }
   } else {
     route.currentStopIndex = route.stops.length;
@@ -225,12 +234,15 @@ async function skipCurrentStop(routeId, servicerId) {
   const nextIdx = idx + 1;
   if (nextIdx < route.stops.length) {
     route.currentStopIndex = nextIdx;
-    route.stops[nextIdx].status = 'en-route';
-
-    await Booking.findByIdAndUpdate(route.stops[nextIdx].bookingId, {
-      status: 'en-route',
-      $push: { statusHistory: { status: 'en-route', changedAt: new Date(), changedBy: servicerId } },
-    });
+    const nextBooking = await Booking.findById(route.stops[nextIdx].bookingId).populate('serviceTypeId');
+    const windowReady = !nextBooking || new Date() >= getServiceWindowStart(nextBooking);
+    if (windowReady) {
+      route.stops[nextIdx].status = 'en-route';
+      await Booking.findByIdAndUpdate(route.stops[nextIdx].bookingId, {
+        status: 'en-route',
+        $push: { statusHistory: { status: 'en-route', changedAt: new Date(), changedBy: servicerId } },
+      });
+    }
   } else {
     route.currentStopIndex = route.stops.length;
     route.status = 'completed';

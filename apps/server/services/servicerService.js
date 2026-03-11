@@ -38,6 +38,29 @@ async function getMyJobs(servicerId, { status, page = 1, limit = 20, sortBy } = 
   return { bookings, total, page, pages: Math.ceil(total / limit) };
 }
 
+function getServiceWindowStart(booking) {
+  const slug = booking.serviceTypeId?.slug || '';
+  const isBringIn = slug === 'bring-in';
+  const timeStr = isBringIn ? booking.bringInTime : booking.putOutTime;
+
+  const base = new Date(booking.scheduledDate);
+  if (isBringIn) base.setDate(base.getDate() + 1);
+
+  const startHourMap = {
+    '5–7 AM': 5, '4–9 PM': 16, '12–4 PM': 12, '5–7 PM': 17, '7–9 PM': 19, '9–11 PM': 21,
+  };
+
+  let startHour = 0;
+  if (timeStr) {
+    for (const [key, h] of Object.entries(startHourMap)) {
+      if (timeStr.includes(key)) { startHour = h; break; }
+    }
+  }
+
+  base.setHours(startHour, 0, 0, 0);
+  return base;
+}
+
 function getEarliestAcceptDate(booking) {
   const scheduled = new Date(booking.scheduledDate);
   scheduled.setHours(0, 0, 0, 0);
@@ -133,11 +156,17 @@ async function syncRouteStop(booking) {
     const nextIdx = stopIdx + 1;
     if (nextIdx < route.stops.length) {
       route.currentStopIndex = nextIdx;
-      route.stops[nextIdx].status = 'en-route';
-      await Booking.findByIdAndUpdate(route.stops[nextIdx].bookingId, {
-        status: 'en-route',
-        $push: { statusHistory: { status: 'en-route', changedAt: new Date(), changedBy: booking.assignedTo } },
-      });
+      const nextBooking = await Booking.findById(route.stops[nextIdx].bookingId).populate('serviceTypeId');
+      const windowReady = !nextBooking || new Date() >= getServiceWindowStart(nextBooking);
+      if (windowReady) {
+        route.stops[nextIdx].status = 'en-route';
+        if (nextBooking) {
+          await Booking.findByIdAndUpdate(route.stops[nextIdx].bookingId, {
+            status: 'en-route',
+            $push: { statusHistory: { status: 'en-route', changedAt: new Date(), changedBy: booking.assignedTo } },
+          });
+        }
+      }
     } else {
       route.currentStopIndex = route.stops.length;
       route.status = 'completed';
@@ -149,7 +178,7 @@ async function syncRouteStop(booking) {
 }
 
 async function updateJobStatus(bookingId, servicerId, newStatus) {
-  const booking = await Booking.findOne({ _id: bookingId, assignedTo: servicerId });
+  const booking = await Booking.findOne({ _id: bookingId, assignedTo: servicerId }).populate('serviceTypeId');
   if (!booking) {
     const err = new Error('Booking not found or not assigned to you');
     err.status = 404;
@@ -160,6 +189,18 @@ async function updateJobStatus(bookingId, servicerId, newStatus) {
     err.status = 400;
     err.code = 'INVALID_TRANSITION';
     throw err;
+  }
+
+  if (newStatus === 'en-route') {
+    const windowStart = getServiceWindowStart(booking);
+    if (new Date() < windowStart) {
+      const label = windowStart.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+      const err = new Error(`This job's service window hasn't started yet. You can start it on ${label}.`);
+      err.status = 400;
+      err.code = 'WINDOW_NOT_STARTED';
+      err.meta = { windowStart: windowStart.toISOString() };
+      throw err;
+    }
   }
 
   booking.status = newStatus;
@@ -261,4 +302,4 @@ async function denyJob(bookingId, servicerId, reason) {
   return booking;
 }
 
-module.exports = { getAvailableJobs, getMyJobs, acceptJob, updateJobStatus, completeWithPhoto, getJobDetail, denyJob };
+module.exports = { getAvailableJobs, getMyJobs, acceptJob, updateJobStatus, completeWithPhoto, getJobDetail, denyJob, getServiceWindowStart };
