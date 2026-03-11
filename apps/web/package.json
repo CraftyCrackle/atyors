@@ -12,7 +12,6 @@
     "postinstall": "sed -i '' 's/from: \"7.0.0\"/from: \"8.0.0\"/' node_modules/@capacitor-community/background-geolocation/Package.swift 2>/dev/null || true"
   },
   "dependencies": {
-    "@capacitor-community/background-geolocation": "^1.2.26",
     "@capacitor/cli": "^8.1.0",
     "@capacitor/core": "^8.1.0",
     "@capacitor/ios": "^8.1.0",

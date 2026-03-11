@@ -1,16 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { Capacitor, registerPlugin } from '@capacitor/core';
+import { Capacitor } from '@capacitor/core';
 
 const GPS_INTERVAL_MS = 4000;
-
-let BackgroundGeolocation;
-try {
-  BackgroundGeolocation = registerPlugin('BackgroundGeolocation');
-} catch {
-  BackgroundGeolocation = null;
-}
 
 function isNative() {
   try {
@@ -24,21 +17,15 @@ export default function useGpsTracking({ bookingId, routeId, active }) {
   const socketRef = useRef(null);
   const watchIdRef = useRef(null);
   const lastEmitRef = useRef(0);
-  const nativeRef = useRef(false);
   const [status, setStatus] = useState('idle');
 
   const cleanup = useCallback(() => {
     if (watchIdRef.current != null) {
-      if (nativeRef.current && BackgroundGeolocation) {
-        try {
-          BackgroundGeolocation.removeWatcher({ id: watchIdRef.current });
-        } catch {}
-      } else if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      if (typeof navigator !== 'undefined' && navigator.geolocation) {
         navigator.geolocation.clearWatch(watchIdRef.current);
       }
       watchIdRef.current = null;
     }
-    nativeRef.current = false;
     if (socketRef.current) {
       socketRef.current.disconnect();
       socketRef.current = null;
@@ -71,54 +58,7 @@ export default function useGpsTracking({ bookingId, routeId, active }) {
       }
     }
 
-    async function startNativeTracking() {
-      if (!BackgroundGeolocation) {
-        console.warn('[GPS] BackgroundGeolocation plugin not available, falling back to web');
-        return false;
-      }
-
-      try {
-        const watcherId = await BackgroundGeolocation.addWatcher(
-          {
-            backgroundMessage: 'atyors is sharing your location with the customer.',
-            backgroundTitle: 'Live tracking active',
-            requestPermissions: true,
-            stale: false,
-            distanceFilter: 20,
-          },
-          function callback(location, error) {
-            if (disposed) return;
-
-            if (error) {
-              console.error('[GPS] Native error:', error.code, error.message);
-              if (error.code === 'NOT_AUTHORIZED') {
-                setStatus('denied');
-              }
-              return;
-            }
-
-            setStatus('tracking');
-
-            const now = Date.now();
-            if (now - lastEmitRef.current < GPS_INTERVAL_MS) return;
-            lastEmitRef.current = now;
-
-            sendLocationHttp(location.latitude, location.longitude, location.bearing, location.speed);
-          }
-        );
-
-        watchIdRef.current = watcherId;
-        nativeRef.current = true;
-        if (!disposed) setStatus('waiting-gps');
-        console.log('[GPS] Native background tracking started');
-        return true;
-      } catch (err) {
-        console.error('[GPS] Native tracking failed, falling back to web:', err.message || err);
-        return false;
-      }
-    }
-
-    async function startWebTracking() {
+    async function startTracking() {
       if (typeof navigator === 'undefined' || !navigator.geolocation) {
         setStatus('unsupported');
         return;
@@ -195,18 +135,7 @@ export default function useGpsTracking({ bookingId, routeId, active }) {
       );
     }
 
-    async function init() {
-      if (isNative()) {
-        const nativeOk = await startNativeTracking();
-        if (!nativeOk && !disposed) {
-          await startWebTracking();
-        }
-      } else {
-        await startWebTracking();
-      }
-    }
-
-    init();
+    startTracking();
 
     return () => {
       disposed = true;
