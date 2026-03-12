@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const appSettingsSchema = new mongoose.Schema({
   dailyBookingCap: { type: Number, default: 100, min: 1 },
+  servedZipcodes: { type: [String], default: [] },
 }, { timestamps: true });
 
 appSettingsSchema.statics.get = async function () {

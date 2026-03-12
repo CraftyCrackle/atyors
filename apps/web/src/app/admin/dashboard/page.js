@@ -49,16 +49,22 @@ export default function AdminDashboardPage() {
   const [capInput, setCapInput] = useState('');
   const [capSaving, setCapSaving] = useState(false);
   const [capMsg, setCapMsg] = useState('');
+  const [zipcodes, setZipcodes] = useState([]);
+  const [zipInput, setZipInput] = useState('');
+  const [zipSaving, setZipSaving] = useState(false);
+  const [zipMsg, setZipMsg] = useState('');
 
   async function load() {
     try {
-      const [summaryRes, bookingsRes] = await Promise.all([
+      const [summaryRes, bookingsRes, settingsRes] = await Promise.all([
         api.get('/admin/reports/summary'),
         api.get('/admin/bookings?limit=10'),
+        api.get('/admin/settings'),
       ]);
       setStats(summaryRes.data);
       setBookings(bookingsRes.data.bookings || []);
       if (!capInput) setCapInput(String(summaryRes.data.dailyBookingCap || 100));
+      setZipcodes(settingsRes.data.settings?.servedZipcodes || []);
     } catch { }
     setLoading(false);
   }
@@ -168,6 +174,64 @@ export default function AdminDashboardPage() {
                     </div>
                   )}
                 </div>
+              </div>
+
+              <div className="mt-6 rounded-xl border border-gray-700 bg-gray-800 p-4">
+                <h2 className="text-lg font-semibold text-white">Served Zipcodes</h2>
+                <p className="mt-0.5 text-xs text-gray-500">Clients can only book services for addresses in these zipcodes</p>
+
+                <div className="mt-4 flex items-center gap-3">
+                  <input
+                    type="text"
+                    maxLength={5}
+                    placeholder="e.g. 02149"
+                    value={zipInput}
+                    onChange={(e) => setZipInput(e.target.value.replace(/\D/g, '').slice(0, 5))}
+                    className="w-28 rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none"
+                  />
+                  <button
+                    onClick={async () => {
+                      if (!/^\d{5}$/.test(zipInput)) { setZipMsg('Enter a 5-digit zipcode'); return; }
+                      setZipSaving(true); setZipMsg('');
+                      try {
+                        const res = await api.post('/admin/zipcodes', { zipcode: zipInput });
+                        setZipcodes(res.data.servedZipcodes);
+                        setZipInput('');
+                        setZipMsg('Added');
+                      } catch (err) { setZipMsg(err.response?.data?.error?.message || 'Failed'); }
+                      setZipSaving(false);
+                      setTimeout(() => setZipMsg(''), 3000);
+                    }}
+                    disabled={zipSaving}
+                    className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+                  >
+                    {zipSaving ? 'Adding...' : 'Add'}
+                  </button>
+                  {zipMsg && <span className={`text-xs ${zipMsg === 'Added' ? 'text-green-400' : 'text-red-400'}`}>{zipMsg}</span>}
+                </div>
+
+                {zipcodes.length === 0 ? (
+                  <p className="mt-4 text-sm text-gray-500">No zipcodes configured. All addresses will be blocked until you add at least one.</p>
+                ) : (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {zipcodes.map((z) => (
+                      <div key={z} className="flex items-center gap-1.5 rounded-full border border-gray-600 bg-gray-700 px-3 py-1.5">
+                        <span className="text-sm font-medium text-white">{z}</span>
+                        <button
+                          onClick={async () => {
+                            try {
+                              const res = await api.delete(`/admin/zipcodes/${z}`);
+                              setZipcodes(res.data.servedZipcodes);
+                            } catch { }
+                          }}
+                          className="rounded-full p-0.5 text-gray-400 hover:text-red-400 transition"
+                        >
+                          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="mt-8">

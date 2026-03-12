@@ -7,6 +7,19 @@ router.get('/categories', serviceController.getCategories);
 router.get('/types/:categorySlug', serviceController.getTypes);
 router.post('/seed', authenticate, requireRole('admin', 'superadmin'), serviceController.seed);
 
+router.get('/check-zipcode', async (req, res, next) => {
+  try {
+    const { zip } = req.query;
+    if (!zip || !/^\d{5}$/.test(zip.trim())) {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_ZIPCODE', message: 'A valid 5-digit zipcode is required' } });
+    }
+    const AppSettings = require('../models/AppSettings');
+    const settings = await AppSettings.get();
+    const served = settings.servedZipcodes.includes(zip.trim());
+    res.json({ success: true, data: { zipcode: zip.trim(), served } });
+  } catch (err) { next(err); }
+});
+
 router.get('/pricing', (req, res) => {
   res.json({
     success: true,

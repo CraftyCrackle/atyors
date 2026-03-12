@@ -49,6 +49,7 @@ function BookContent() {
   const [curbItemPhotos, setCurbItemPhotos] = useState([]);
   const [curbItemPreviews, setCurbItemPreviews] = useState([]);
   const [dateFullyBooked, setDateFullyBooked] = useState(false);
+  const [zipNotServed, setZipNotServed] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -178,6 +179,12 @@ function BookContent() {
       barrelCount: addr.barrelCount || prev.barrelCount || 1,
       trashDay: addr.trashDay || prev.trashDay || '',
     }));
+    setZipNotServed(false);
+    if (addr.zip) {
+      api.get(`/services/check-zipcode?zip=${addr.zip}`)
+        .then((res) => { if (!res.data.served) setZipNotServed(true); })
+        .catch(() => {});
+    }
   }
 
   async function handleConfirm() {
@@ -367,7 +374,23 @@ function BookContent() {
                 </div>
               )}
 
-              {selected.addressId && (
+              {selected.addressId && zipNotServed && (
+                <div className="mt-6 rounded-xl border border-brand-200 bg-brand-50 px-5 py-5 text-center">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-brand-100">
+                    <svg className="h-6 w-6 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="mt-3 text-base font-bold text-gray-900">We're not in your area yet</h3>
+                  <p className="mt-2 text-sm text-gray-600 leading-relaxed">
+                    Thanks for your interest! We don't serve this zipcode right now, but knowing you're here helps us decide where to expand next.
+                  </p>
+                  <p className="mt-3 text-xs text-brand-600 font-medium">We'll notify you when we launch in your area.</p>
+                </div>
+              )}
+
+              {selected.addressId && !zipNotServed && (
                 <CascadingDatePicker
                   key={selected.addressId}
                   trashDay={selected.trashDay}
@@ -376,14 +399,14 @@ function BookContent() {
                 />
               )}
 
-              {selected.addressId && selected.date && dateFullyBooked && (
+              {selected.addressId && !zipNotServed && selected.date && dateFullyBooked && (
                 <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
                   <p className="text-sm font-semibold text-red-700">This date is fully booked.</p>
                   <p className="mt-0.5 text-xs text-red-500">Please pick another day to continue.</p>
                 </div>
               )}
 
-              {selected.addressId && selected.date && !dateFullyBooked && (
+              {selected.addressId && !zipNotServed && selected.date && !dateFullyBooked && (
                 <button onClick={next}
                   className="mt-6 w-full rounded-xl bg-brand-600 py-3.5 font-semibold text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700 active:scale-[0.98]">
                   Continue

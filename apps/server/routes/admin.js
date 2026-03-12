@@ -203,4 +203,71 @@ router.patch('/settings', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+router.post('/zipcodes', async (req, res, next) => {
+  try {
+    const { zipcode } = req.body;
+    if (!zipcode || !/^\d{5}$/.test(zipcode.trim())) {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_ZIPCODE', message: 'A valid 5-digit zipcode is required' } });
+    }
+    const settings = await AppSettings.get();
+    const zip = zipcode.trim();
+    if (settings.servedZipcodes.includes(zip)) {
+      return res.status(409).json({ success: false, error: { code: 'DUPLICATE', message: 'Zipcode already added' } });
+    }
+    settings.servedZipcodes.push(zip);
+    settings.servedZipcodes.sort();
+    await settings.save();
+
+    const Address = require('../models/Address');
+    const notificationService = require('../services/notificationService');
+    const emailService = require('../services/emailService');
+    const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://atyors.com';
+
+    Address.find({ zip }).populate('userId').then(async (addresses) => {
+      const notifiedUserIds = new Set();
+      for (const addr of addresses) {
+        const user = addr.userId;
+        if (!user || !user.isActive || notifiedUserIds.has(user._id.toString())) continue;
+        notifiedUserIds.add(user._id.toString());
+
+        notificationService.create({
+          userId: user._id,
+          type: 'zone:expanded',
+          title: 'We now serve your area!',
+          body: `Great news — atyors is now available in your zipcode (${zip}). Book your first service today!`,
+        }).catch(() => {});
+
+        emailService.send({
+          to: user.email,
+          subject: 'atyors is now in your area!',
+          text: `Great news, ${user.firstName}! atyors now serves your area (${zip}). You can book your first curbside service at ${BASE_URL}/book. Thank you for your patience — we're excited to help!`,
+          html: `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head><body style="margin:0;padding:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:40px 20px;"><tr><td align="center"><table width="520" cellpadding="0" cellspacing="0" style="max-width:520px;width:100%;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08);"><tr><td align="center" style="padding:32px 24px 16px;"><img src="${BASE_URL}/icons/icon-192.png" alt="atyors" width="48" height="48" style="display:block;border-radius:10px;" /><p style="margin:8px 0 0;font-size:14px;font-weight:600;color:#6b7280;letter-spacing:0.5px;">ATYORS</p></td></tr><tr><td style="padding:0 24px;"><hr style="border:none;border-top:1px solid #e5e7eb;margin:0;" /></td></tr><tr><td align="center" style="padding:32px 24px 8px;"><div style="display:inline-block;width:56px;height:56px;background:#dbeafe;border-radius:50%;text-align:center;line-height:56px;"><span style="font-size:28px;">📍</span></div></td></tr><tr><td align="center" style="padding:8px 24px 8px;"><h1 style="margin:0;font-size:22px;font-weight:700;color:#111827;">We're now in your area!</h1></td></tr><tr><td align="center" style="padding:0 24px 24px;"><p style="margin:0;font-size:15px;color:#6b7280;line-height:1.6;">Hi ${user.firstName}, great news! atyors now serves zipcode <strong>${zip}</strong>. You can start booking curbside services right away.</p></td></tr><tr><td align="center" style="padding:0 24px 32px;"><a href="${BASE_URL}/book" style="display:inline-block;padding:14px 32px;background:#4472c4;color:#fff;font-weight:600;font-size:15px;text-decoration:none;border-radius:8px;">Book a Service</a></td></tr><tr><td style="padding:0 24px;"><hr style="border:none;border-top:1px solid #e5e7eb;margin:0;" /></td></tr><tr><td style="padding:24px;text-align:center;"><p style="margin:0 0 8px;font-size:13px;color:#9ca3af;">Questions? Reach us at <a href="mailto:admin@atyors.com" style="color:#2563eb;text-decoration:none;">admin@atyors.com</a></p><p style="margin:0;font-size:12px;color:#d1d5db;">atyors — At Your Service</p></td></tr></table></td></tr></table></body></html>`,
+        }).catch((err) => {
+          console.error(`[Zipcode] Failed to email ${user.email}:`, err.message);
+        });
+      }
+      if (notifiedUserIds.size > 0) {
+        console.log(`[Zipcode] Notified ${notifiedUserIds.size} user(s) about new zipcode ${zip}`);
+      }
+    }).catch((err) => {
+      console.error(`[Zipcode] Failed to notify users for ${zip}:`, err.message);
+    });
+
+    res.status(201).json({ success: true, data: { servedZipcodes: settings.servedZipcodes } });
+  } catch (err) { next(err); }
+});
+
+router.delete('/zipcodes/:zipcode', async (req, res, next) => {
+  try {
+    const settings = await AppSettings.get();
+    const idx = settings.servedZipcodes.indexOf(req.params.zipcode);
+    if (idx === -1) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Zipcode not in served list' } });
+    }
+    settings.servedZipcodes.splice(idx, 1);
+    await settings.save();
+    res.json({ success: true, data: { servedZipcodes: settings.servedZipcodes } });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
