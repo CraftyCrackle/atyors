@@ -35,8 +35,8 @@ export default function ServicerRoutePage() {
     try {
       const [jobsRes, activeRes, plannedRes] = await Promise.all([
         api.get('/servicer/jobs/mine?limit=100'),
-        api.get('/servicer/routes/active').catch(() => ({ data: { route: null } })),
-        api.get('/servicer/routes/planned').catch(() => ({ data: { route: null } })),
+        api.get('/servicer/routes/active').catch((e) => { console.warn('Failed to load active route:', e.message); return { data: { route: null } }; }),
+        api.get('/servicer/routes/planned').catch((e) => { console.warn('Failed to load planned route:', e.message); return { data: { route: null } }; }),
       ]);
       setJobs(jobsRes.data.bookings || []);
       setActiveRoute(activeRes.data.route);

@@ -41,10 +41,17 @@ async function createRoute(servicerId, date, bookingIds, { optimize = false } = 
     status: { $in: ['planned', 'in-progress'] },
   });
   if (existing) {
-    const err = new Error('A route already exists for this date');
-    err.status = 400;
-    err.code = 'ROUTE_EXISTS';
-    throw err;
+    if (existing.status === 'in-progress') {
+      const err = new Error('You have an active route in progress. Complete or finish it before creating a new one.');
+      err.status = 400;
+      err.code = 'ROUTE_IN_PROGRESS';
+      throw err;
+    }
+    await Route.deleteOne({ _id: existing._id });
+    await Booking.updateMany(
+      { routeId: existing._id },
+      { $unset: { routeId: '', routeOrder: '' } },
+    );
   }
 
   let bookings = await Booking.find({
