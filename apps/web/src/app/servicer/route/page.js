@@ -60,7 +60,7 @@ export default function ServicerRoutePage() {
         bookingIds: activeJobs.map((b) => b._id),
       });
       setOptimizedStops(res.data.stops);
-    } catch (err) { alert(err.response?.data?.error?.message || 'Failed to optimize'); }
+    } catch (err) { alert(err.message || 'Failed to optimize'); }
     setActing(false);
   }
 
@@ -75,7 +75,7 @@ export default function ServicerRoutePage() {
       await api.post('/servicer/routes', { date: today, bookingIds: ids, optimize: !optimizedStops });
       await load();
       setOptimizedStops(null);
-    } catch (err) { alert(err.response?.data?.error?.message || 'Failed to create route'); }
+    } catch (err) { alert(err.message || 'Failed to create route'); }
     setActing(false);
   }
 
@@ -85,7 +85,7 @@ export default function ServicerRoutePage() {
     try {
       await api.patch(`/servicer/routes/${plannedRoute._id}/start`);
       await load();
-    } catch (err) { alert(err.response?.data?.error?.message || 'Failed to start route'); }
+    } catch (err) { alert(err.message || 'Failed to start route'); }
     setActing(false);
   }
 
@@ -95,7 +95,7 @@ export default function ServicerRoutePage() {
     try {
       await api.patch(`/servicer/routes/${activeRoute._id}/mark-arrived`);
       await load();
-    } catch (err) { alert(err.response?.data?.error?.message || 'Failed'); }
+    } catch (err) { alert(err.message || 'Failed'); }
     setActing(false);
   }
 
@@ -105,7 +105,7 @@ export default function ServicerRoutePage() {
     try {
       await api.patch(`/servicer/routes/${activeRoute._id}/complete-stop`);
       await load();
-    } catch (err) { alert(err.response?.data?.error?.message || 'Failed'); }
+    } catch (err) { alert(err.message || 'Failed'); }
     setActing(false);
   }
 
@@ -115,7 +115,7 @@ export default function ServicerRoutePage() {
     try {
       await api.patch(`/servicer/routes/${activeRoute._id}/skip-stop`);
       await load();
-    } catch (err) { alert(err.response?.data?.error?.message || 'Failed'); }
+    } catch (err) { alert(err.message || 'Failed'); }
     setActing(false);
   }
 

@@ -37,11 +37,17 @@ async function deleteUser(userId, requestingUserId) {
     }
   }
 
+  const assignedBookings = await Booking.find({
+    userId,
+    status: { $in: ['pending', 'active'] },
+    assignedTo: { $ne: null },
+  }).select('_id assignedTo serviceTypeId').populate('serviceTypeId');
+
   await Promise.all([
     Address.deleteMany({ userId }),
     Booking.updateMany(
       { userId, status: { $in: ['pending', 'active'] } },
-      { status: 'cancelled', cancelledAt: new Date() },
+      { status: 'cancelled', assignedTo: null, cancelledAt: new Date() },
     ),
     Subscription.deleteMany({ userId }),
     Notification.deleteMany({ userId }),
@@ -49,6 +55,20 @@ async function deleteUser(userId, requestingUserId) {
     PushSubscription.deleteMany({ userId }),
     NativeDevice.deleteMany({ userId }),
   ]);
+
+  if (assignedBookings.length > 0) {
+    const notificationService = require('./notificationService');
+    for (const b of assignedBookings) {
+      notificationService.create({
+        userId: b.assignedTo,
+        type: 'booking:status',
+        title: 'Job Cancelled',
+        body: `A ${b.serviceTypeId?.name || 'service'} job has been cancelled — the customer's account was removed.`,
+        bookingId: b._id,
+        meta: { status: 'cancelled' },
+      }).catch(() => {});
+    }
+  }
 
   await User.deleteOne({ _id: userId });
 

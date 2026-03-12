@@ -184,7 +184,7 @@ export default function ServicerJobPage() {
       setShowDeny(false);
       setDenyReason('');
     } catch (err) {
-      setDenyError(err.response?.data?.error?.message || err.message || 'Failed to deny request.');
+      setDenyError(err.message || 'Failed to deny request.');
     }
     setDenying(false);
   }

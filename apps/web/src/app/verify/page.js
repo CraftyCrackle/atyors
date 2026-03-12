@@ -57,7 +57,7 @@ function VerifyContent() {
       setCodeSent(true);
       setCooldown(RESEND_COOLDOWN);
     } catch (err) {
-      setError(err.response?.data?.error?.message || err.message);
+      setError(err.message);
     } finally {
       setSending(false);
     }
@@ -76,7 +76,7 @@ function VerifyContent() {
       const role = res.data.user?.role;
       router.push(['admin', 'superadmin'].includes(role) ? '/admin/dashboard' : '/dashboard');
     } catch (err) {
-      setError(err.response?.data?.error?.message || err.message);
+      setError(err.message);
     } finally {
       setVerifying(false);
     }

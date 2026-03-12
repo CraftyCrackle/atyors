@@ -210,7 +210,7 @@ function ChangePasswordSection({ dark, cardCls }) {
       setForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
       setTimeout(() => { setSuccess(false); setOpen(false); }, 2000);
     } catch (err) {
-      setError(err.response?.data?.error?.message || 'Failed to change password');
+      setError(err.message || 'Failed to change password');
     } finally { setSaving(false); }
   }
 
@@ -1190,7 +1190,7 @@ function DeleteAccountSection({ onDeleted }) {
       await api.delete('/users/me');
       onDeleted();
     } catch (err) {
-      alert(err.response?.data?.error?.message || err.message || 'Failed to delete account');
+      alert(err.message || 'Failed to delete account');
       setDeleting(false);
     }
   }

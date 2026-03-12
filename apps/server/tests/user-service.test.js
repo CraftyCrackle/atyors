@@ -45,6 +45,7 @@ describe('deleteUser', () => {
   test('deletes user and all associated data', async () => {
     User.findById.mockResolvedValue(makeFakeUser());
     Subscription.find.mockResolvedValue([]);
+    Booking.find.mockReturnValue({ select: jest.fn().mockReturnValue({ populate: jest.fn().mockResolvedValue([]) }) });
     Address.deleteMany.mockResolvedValue({ deletedCount: 1 });
     Booking.updateMany.mockResolvedValue({ modifiedCount: 2 });
     Subscription.deleteMany.mockResolvedValue({ deletedCount: 0 });
@@ -61,7 +62,7 @@ describe('deleteUser', () => {
     expect(Address.deleteMany).toHaveBeenCalledWith({ userId });
     expect(Booking.updateMany).toHaveBeenCalledWith(
       { userId, status: { $in: ['pending', 'active'] } },
-      { status: 'cancelled', cancelledAt: expect.any(Date) },
+      { status: 'cancelled', assignedTo: null, cancelledAt: expect.any(Date) },
     );
     expect(Notification.deleteMany).toHaveBeenCalledWith({ userId });
     expect(RefreshToken.deleteMany).toHaveBeenCalledWith({ userId });
@@ -80,6 +81,7 @@ describe('deleteUser', () => {
   test('allows admin to delete self', async () => {
     User.findById.mockResolvedValue(makeFakeUser({ _id: userId, role: 'admin' }));
     Subscription.find.mockResolvedValue([]);
+    Booking.find.mockReturnValue({ select: jest.fn().mockReturnValue({ populate: jest.fn().mockResolvedValue([]) }) });
     Address.deleteMany.mockResolvedValue({});
     Booking.updateMany.mockResolvedValue({});
     Subscription.deleteMany.mockResolvedValue({});
@@ -98,6 +100,7 @@ describe('deleteUser', () => {
     const sub = { _id: 's1', stripeSubscriptionId: 'sub_123', status: 'active' };
     User.findById.mockResolvedValue(makeFakeUser());
     Subscription.find.mockResolvedValue([sub]);
+    Booking.find.mockReturnValue({ select: jest.fn().mockReturnValue({ populate: jest.fn().mockResolvedValue([]) }) });
     stripeService.cancelSubscription.mockResolvedValue({});
     Address.deleteMany.mockResolvedValue({});
     Booking.updateMany.mockResolvedValue({});

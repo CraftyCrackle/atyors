@@ -198,7 +198,7 @@ export default function AdminDashboardPage() {
                         setZipcodes(res.data.servedZipcodes);
                         setZipInput('');
                         setZipMsg('Added');
-                      } catch (err) { setZipMsg(err.response?.data?.error?.message || 'Failed'); }
+                      } catch (err) { setZipMsg(err.message || 'Failed'); }
                       setZipSaving(false);
                       setTimeout(() => setZipMsg(''), 3000);
                     }}

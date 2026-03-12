@@ -28,7 +28,7 @@ function UserCard({ u, expanded, onToggle, onDelete, onRoleChange, currentUserId
       await api.delete(`/admin/users/${u._id}`);
       onDelete(u._id);
     } catch (err) {
-      alert(err.response?.data?.error?.message || err.message || 'Failed to delete user');
+      alert(err.message || 'Failed to delete user');
     }
     setDeleting(false);
     setConfirmDelete(false);
@@ -40,7 +40,7 @@ function UserCard({ u, expanded, onToggle, onDelete, onRoleChange, currentUserId
       const res = await api.patch(`/admin/users/${u._id}/role`, { role: newRole });
       onRoleChange(u._id, res.data.user);
     } catch (err) {
-      alert(err.response?.data?.error?.message || err.message || 'Failed to update role');
+      alert(err.message || 'Failed to update role');
     }
     setChangingRole(false);
   }
