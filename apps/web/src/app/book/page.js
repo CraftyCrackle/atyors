@@ -903,9 +903,10 @@ function BookContent() {
                 <svg className="h-5 w-5 shrink-0 text-amber-500 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
                 </svg>
-                <p className="text-xs text-amber-800 leading-relaxed">
-                  <strong>Heads up:</strong> Please make sure your instructions are accurate. If things look different when the servicer arrives, they may use their best judgement or only handle the barrels you requested.
-                </p>
+                <div className="text-xs text-amber-800 leading-relaxed">
+                  <p><strong>Heads up:</strong> Please make sure your instructions are accurate. If things look different when the servicer arrives, they may use their best judgement or only handle the barrels you requested.</p>
+                  <p className="mt-1.5">Barrels must be manageable for rollout. If a barrel is unreasonably overflowing with trash, your servicer may decline the service. You will not be charged if declined.</p>
+                </div>
               </div>
 
               {bookingConfirmed ? (

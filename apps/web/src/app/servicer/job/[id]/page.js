@@ -390,6 +390,18 @@ export default function ServicerJobPage() {
           </div>
         )}
 
+        {/* Barrel overflow notice for servicers */}
+        {svc && svc.slug !== 'curb-items' && isActive && (
+          <div className="flex gap-2.5 rounded-xl border border-amber-800/40 bg-amber-900/20 px-4 py-3">
+            <svg className="h-5 w-5 shrink-0 text-amber-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+            </svg>
+            <p className="text-xs text-amber-300 leading-relaxed">
+              If a barrel is unreasonably overflowing with trash and cannot be safely rolled out, you may decline the service. Contact the customer or note the issue before skipping.
+            </p>
+          </div>
+        )}
+
         {/* Status advance button (active → en-route, en-route → arrived) */}
         {flow && (
           <button onClick={advanceStatus} disabled={updating}
