@@ -306,10 +306,27 @@ async function getPlannedRoute(servicerId, date) {
 
   if (todayRoute) return todayRoute;
 
-  return Route.findOne({
+  const staleRoute = await Route.findOne({
     servicerId,
     status: { $in: ['planned', 'in-progress'] },
   }).sort({ date: -1 }).populate(DEEP_POPULATE);
+
+  if (!staleRoute) return null;
+
+  const bookingIds = staleRoute.stops.map((s) => s.bookingId?._id || s.bookingId);
+  const actionable = await Booking.countDocuments({
+    _id: { $in: bookingIds },
+    status: { $in: ['active', 'en-route', 'arrived', 'in-progress'] },
+  });
+
+  if (actionable === 0) {
+    staleRoute.status = 'completed';
+    staleRoute.completedAt = new Date();
+    await staleRoute.save();
+    return null;
+  }
+
+  return staleRoute;
 }
 
 async function getQueuePosition(bookingId) {

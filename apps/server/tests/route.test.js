@@ -40,6 +40,7 @@ describe('Route service queue logic', () => {
 describe('getPlannedRoute fallback', () => {
   const routeService = require('../services/routeService');
   const Route = require('../models/Route');
+  const Booking = require('../models/Booking');
 
   afterEach(() => jest.restoreAllMocks());
 
@@ -64,13 +65,31 @@ describe('getPlannedRoute fallback', () => {
     expect(Route.findOne).toHaveBeenCalledTimes(1);
   });
 
-  test('falls back to most recent planned route when none matches today', async () => {
-    const staleRoute = { _id: 'stale', status: 'planned', date: new Date('2026-03-10') };
+  test('falls back to stale route when bookings are still actionable', async () => {
+    const staleRoute = {
+      _id: 'stale', status: 'planned', date: new Date('2026-03-10'),
+      stops: [{ bookingId: 'b1' }], save: jest.fn(),
+    };
     mockFindOneChain([null, staleRoute]);
+    jest.spyOn(Booking, 'countDocuments').mockResolvedValue(1);
 
     const result = await routeService.getPlannedRoute('svc1', new Date().toISOString());
     expect(result).toEqual(staleRoute);
-    expect(Route.findOne).toHaveBeenCalledTimes(2);
+    expect(staleRoute.save).not.toHaveBeenCalled();
+  });
+
+  test('auto-completes stale route when all bookings are done', async () => {
+    const staleRoute = {
+      _id: 'stale', status: 'planned', date: new Date('2026-03-10'),
+      stops: [{ bookingId: 'b1' }], save: jest.fn().mockResolvedValue(),
+    };
+    mockFindOneChain([null, staleRoute]);
+    jest.spyOn(Booking, 'countDocuments').mockResolvedValue(0);
+
+    const result = await routeService.getPlannedRoute('svc1', new Date().toISOString());
+    expect(result).toBeNull();
+    expect(staleRoute.status).toBe('completed');
+    expect(staleRoute.save).toHaveBeenCalled();
   });
 
   test('returns null when no routes exist at all', async () => {
