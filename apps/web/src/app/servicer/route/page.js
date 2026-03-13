@@ -222,7 +222,7 @@ export default function ServicerRoutePage() {
                   </svg>
                   <div className="text-xs text-amber-300 leading-relaxed">
                     <p className="font-semibold">All jobs are bring-in services</p>
-                    <p className="mt-0.5 text-amber-400/70">Bring-in jobs can only be started the day after the scheduled trash pickup. You won&apos;t be able to start this route until the service window opens.</p>
+                    <p className="mt-0.5 text-amber-400/70">Bring-in jobs can only be started once their scheduled time window begins. You won&apos;t be able to start this route until then.</p>
                   </div>
                 </div>
               )}

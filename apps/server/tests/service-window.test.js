@@ -3,25 +3,25 @@ const { getServiceWindowStart } = require('../services/servicerService');
 describe('getServiceWindowStart', () => {
   const scheduledDate = new Date(2026, 2, 10, 12, 0, 0);
 
-  test('bring-in with 12-4 PM: window starts at noon next day', () => {
+  test('bring-in with 12-4 PM: window starts at noon on scheduled day', () => {
     const booking = {
       scheduledDate,
       bringInTime: '12–4 PM (Afternoon)',
       serviceTypeId: { slug: 'bring-in' },
     };
     const start = getServiceWindowStart(booking);
-    expect(start.getDate()).toBe(11);
+    expect(start.getDate()).toBe(10);
     expect(start.getHours()).toBe(12);
   });
 
-  test('bring-in with 4-9 PM: window starts at 4 PM next day', () => {
+  test('bring-in with 4-9 PM: window starts at 4 PM on scheduled day', () => {
     const booking = {
       scheduledDate,
       bringInTime: '4–9 PM (Evening)',
       serviceTypeId: { slug: 'bring-in' },
     };
     const start = getServiceWindowStart(booking);
-    expect(start.getDate()).toBe(11);
+    expect(start.getDate()).toBe(10);
     expect(start.getHours()).toBe(16);
   });
 
@@ -47,14 +47,14 @@ describe('getServiceWindowStart', () => {
     expect(start.getHours()).toBe(5);
   });
 
-  test('bring-in with no time string: window starts at midnight next day', () => {
+  test('bring-in with no time string: window starts at midnight on scheduled day', () => {
     const booking = {
       scheduledDate,
       bringInTime: '',
       serviceTypeId: { slug: 'bring-in' },
     };
     const start = getServiceWindowStart(booking);
-    expect(start.getDate()).toBe(11);
+    expect(start.getDate()).toBe(10);
     expect(start.getHours()).toBe(0);
   });
 
@@ -80,8 +80,8 @@ describe('getServiceWindowStart', () => {
   });
 });
 
-describe('bring-in en-route blocking', () => {
-  test('bring-in scheduled for today should be blocked if window is tomorrow', () => {
+describe('bring-in en-route timing', () => {
+  test('bring-in scheduled for today uses scheduled day, not next day', () => {
     const now = new Date();
     const booking = {
       scheduledDate: now,
@@ -89,10 +89,7 @@ describe('bring-in en-route blocking', () => {
       serviceTypeId: { slug: 'bring-in' },
     };
     const windowStart = getServiceWindowStart(booking);
-    const tomorrow = new Date(now);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(12, 0, 0, 0);
-    expect(windowStart.getDate()).toBe(tomorrow.getDate());
+    expect(windowStart.getDate()).toBe(now.getDate());
     expect(windowStart.getHours()).toBe(12);
   });
 
