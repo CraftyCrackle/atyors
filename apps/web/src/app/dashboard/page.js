@@ -130,16 +130,31 @@ function LiveTrackingCard({ booking }) {
     };
   }, [booking._id]);
 
+  const showMap = servicerPos || (status === 'arrived' && customerPos);
+  const effectiveServicerPos = servicerPos || (status === 'arrived' ? customerPos : null);
+
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
       <div className="relative h-48 bg-gray-100">
-        {servicerPos ? (
-          <TrackingMap servicerPos={servicerPos} customerPos={customerPos} />
+        {showMap ? (
+          <TrackingMap servicerPos={effectiveServicerPos} customerPos={customerPos} />
         ) : (
           <div className="flex h-full items-center justify-center">
             <div className="text-center">
-              <div className="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
-              <p className="mt-2 text-xs text-gray-400">Loading map...</p>
+              {status === 'active' ? (
+                <>
+                  <svg className="mx-auto h-8 w-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="mt-2 text-xs text-gray-400">Your servicer will start their route soon.</p>
+                  <p className="text-[10px] text-gray-300">Live tracking will appear when they&apos;re on the way.</p>
+                </>
+              ) : (
+                <>
+                  <div className="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
+                  <p className="mt-2 text-xs text-gray-400">Loading map...</p>
+                </>
+              )}
             </div>
           </div>
         )}
