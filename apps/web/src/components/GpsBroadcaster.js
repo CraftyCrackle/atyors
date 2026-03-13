@@ -52,9 +52,12 @@ export default function GpsBroadcaster({ children }) {
     try {
       const { api } = await import('../services/api');
 
-      const routeRes = await api.get('/servicer/routes/active');
-      const route = routeRes.data.route;
-      if (route && route.status === 'in-progress') {
+      const [activeRes, plannedRes] = await Promise.all([
+        api.get('/servicer/routes/active').catch(() => ({ data: { route: null } })),
+        api.get('/servicer/routes/planned').catch(() => ({ data: { route: null } })),
+      ]);
+      const route = activeRes.data.route || (plannedRes.data.route?.status === 'in-progress' ? plannedRes.data.route : null);
+      if (route) {
         setActiveRouteId((prev) => prev !== route._id ? route._id : prev);
         setActiveBookingIds([]);
         return;
@@ -64,7 +67,7 @@ export default function GpsBroadcaster({ children }) {
 
       const jobsRes = await api.get('/servicer/jobs/mine?limit=50');
       const liveJobs = (jobsRes.data.bookings || []).filter(
-        (b) => ['en-route', 'arrived'].includes(b.status) && !b.routeId
+        (b) => ['en-route', 'arrived'].includes(b.status)
       );
       const ids = liveJobs.map((b) => b._id).sort();
       setActiveBookingIds((prev) => {

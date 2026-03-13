@@ -45,7 +45,7 @@ export default function TrackingPage() {
       });
 
       socket.on('queue:position', (data) => {
-        setQueue((prev) => ({ ...prev, position: data.position, total: data.total, isNext: false }));
+        setQueue((prev) => ({ ...prev, position: data.position, total: data.total, isNext: data.position === 1 }));
       });
 
       socket.on('status:update', (data) => {

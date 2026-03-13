@@ -77,7 +77,7 @@ const LIVE_COLORS = {
   'in-progress': 'bg-orange-500',
 };
 
-function LiveTrackingCard({ booking }) {
+function LiveTrackingCard({ booking, onStatusChange }) {
   const status = booking.status;
   const svc = booking.serviceTypeId;
   const servicer = booking.assignedTo;
@@ -115,6 +115,9 @@ function LiveTrackingCard({ booking }) {
       socket.on('location:update', (data) => {
         if (!disposed) setServicerPos({ lat: data.lat, lng: data.lng });
       });
+
+      socket.on('status:update', () => { if (!disposed && onStatusChange) onStatusChange(); });
+      socket.on('booking:status', () => { if (!disposed && onStatusChange) onStatusChange(); });
     }
 
     fetchInitialPosition();
@@ -516,7 +519,7 @@ export default function DashboardPage() {
         {liveBookings.length > 0 && (
           <div className="mx-4 mt-4 space-y-3">
             {liveBookings.map((b) => (
-              <LiveTrackingCard key={b._id} booking={b} />
+              <LiveTrackingCard key={b._id} booking={b} onStatusChange={loadBookings} />
             ))}
           </div>
         )}

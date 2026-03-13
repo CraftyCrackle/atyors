@@ -19,19 +19,26 @@ const customerIcon = new L.DivIcon({
   className: '',
 });
 
-function FitBounds({ servicerPos, customerPos }) {
+function FollowServicer({ servicerPos, customerPos }) {
   const map = useMap();
   const fittedRef = useRef(false);
 
   useEffect(() => {
-    if (!servicerPos || !customerPos) return;
-    if (fittedRef.current) return;
-    const bounds = L.latLngBounds(
-      [servicerPos.lat, servicerPos.lng],
-      [customerPos.lat, customerPos.lng]
-    );
-    map.fitBounds(bounds.pad(0.3));
-    fittedRef.current = true;
+    if (!servicerPos) return;
+
+    if (!fittedRef.current && customerPos) {
+      const bounds = L.latLngBounds(
+        [servicerPos.lat, servicerPos.lng],
+        [customerPos.lat, customerPos.lng]
+      );
+      map.fitBounds(bounds.pad(0.3));
+      fittedRef.current = true;
+      return;
+    }
+
+    if (!map.getBounds().contains([servicerPos.lat, servicerPos.lng])) {
+      map.panTo([servicerPos.lat, servicerPos.lng], { animate: true, duration: 0.5 });
+    }
   }, [servicerPos, customerPos, map]);
 
   return null;
@@ -60,7 +67,7 @@ export default function TrackingMap({ servicerPos, customerPos }) {
           <Popup>Your address</Popup>
         </Marker>
       )}
-      <FitBounds servicerPos={servicerPos} customerPos={customerPos} />
+      <FollowServicer servicerPos={servicerPos} customerPos={customerPos} />
     </MapContainer>
   );
 }
