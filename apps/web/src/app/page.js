@@ -98,8 +98,8 @@ function WebLanding() {
 
         <div className="relative mx-auto max-w-lg text-center">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-accent-50 px-4 py-1.5 text-sm font-medium text-accent-700">
-            <span className="h-1.5 w-1.5 rounded-full bg-accent-500" />
-            Now serving Everett, MA &amp; surrounding areas
+            <span className="h-1.5 w-1.5 rounded-full bg-accent-500 animate-pulse" />
+            Now accepting service requests
           </div>
 
           <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-gray-900 sm:text-5xl">
