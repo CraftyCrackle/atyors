@@ -51,8 +51,13 @@ export default function ServicerEarningsPage() {
     );
   }
 
-  const { today, thisWeek, thisMonth, allTime, dailyBreakdown } = stats;
+  const { today, thisWeek, thisMonth, allTime, lastPayPeriod, dailyBreakdown, servicerShareRate } = stats;
   const maxDaily = Math.max(...dailyBreakdown.map((d) => d.total), 1);
+  const sharePct = Math.round((servicerShareRate || 0.30) * 100);
+
+  const payPeriodLabel = lastPayPeriod?.startDate
+    ? `${new Date(lastPayPeriod.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${new Date(new Date(lastPayPeriod.endDate).getTime() - 1).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+    : '';
 
   return (
     <div className="flex min-h-[100dvh] min-h-[100vh] flex-col bg-gray-900 pb-8">
@@ -61,11 +66,12 @@ export default function ServicerEarningsPage() {
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
         </button>
         <h1 className="font-semibold text-white">Earnings</h1>
+        <span className="ml-auto rounded-full bg-green-900/40 border border-green-800/50 px-2.5 py-0.5 text-[10px] font-semibold text-green-400">Your share ({sharePct}%)</span>
       </header>
 
       {/* Hero card — today */}
       <div className="mx-4 mt-6 rounded-2xl bg-gradient-to-br from-brand-600 to-brand-700 p-6 text-white shadow-xl shadow-brand-700/30">
-        <p className="text-sm font-medium text-brand-200">Today's Earnings</p>
+        <p className="text-sm font-medium text-brand-200">Today&apos;s Earnings</p>
         <p className="mt-1 text-4xl font-extrabold">${(today.total || 0).toFixed(2)}</p>
         <div className="mt-3 flex gap-6 text-sm">
           <div>
@@ -75,6 +81,20 @@ export default function ServicerEarningsPage() {
           <div>
             <span className="text-brand-200">Barrels</span>
             <p className="font-bold">{today.barrels || 0}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Last Pay Period */}
+      <div className="mx-4 mt-4 rounded-xl border border-amber-800/40 bg-amber-900/20 p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-semibold uppercase text-amber-400">Last Pay Period</p>
+            {payPeriodLabel && <p className="mt-0.5 text-[10px] text-amber-500/70">{payPeriodLabel}</p>}
+          </div>
+          <div className="text-right">
+            <p className="text-xl font-bold text-white">${(lastPayPeriod?.total || 0).toFixed(2)}</p>
+            <p className="text-[10px] text-amber-400/70">{lastPayPeriod?.count || 0} jobs</p>
           </div>
         </div>
       </div>
@@ -118,7 +138,7 @@ export default function ServicerEarningsPage() {
               const dayName = DAY_LABELS[new Date(d._id + 'T12:00:00').getDay()];
               return (
                 <div key={d._id} className="flex flex-1 flex-col items-center gap-1">
-                  <span className="text-[10px] font-medium text-gray-400">${d.total}</span>
+                  <span className="text-[10px] font-medium text-gray-400">${d.total.toFixed(2)}</span>
                   <div className="w-full rounded-t-lg bg-brand-600 transition-all" style={{ height: `${pct}%` }} />
                   <span className="text-[10px] text-gray-500">{dayName}</span>
                 </div>

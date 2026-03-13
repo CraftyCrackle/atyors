@@ -165,7 +165,15 @@ router.get('/reports/summary', async (req, res, next) => {
     const todayEnd = new Date(todayStart);
     todayEnd.setDate(todayEnd.getDate() + 1);
 
-    const [totalBookings, activeBookings, completedBookings, totalCustomers, settings, todayBooked] = await Promise.all([
+    const weekStart = new Date(now);
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+    weekStart.setHours(0, 0, 0, 0);
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const revenueExpr = { $ifNull: ['$serviceValue', '$amount'] };
+    const completedMatch = { status: 'completed' };
+
+    const [totalBookings, activeBookings, completedBookings, totalCustomers, settings, todayBooked, revenueAll, revenueWeek, revenueMonth] = await Promise.all([
       Booking.countDocuments(),
       Booking.countDocuments({ status: { $in: ['pending', 'active', 'en-route', 'arrived', 'in-progress'] } }),
       Booking.countDocuments({ status: 'completed' }),
@@ -175,8 +183,16 @@ router.get('/reports/summary', async (req, res, next) => {
         scheduledDate: { $gte: todayStart, $lt: todayEnd },
         status: { $in: ['pending', 'active', 'en-route', 'arrived', 'completed'] },
       }),
+      Booking.aggregate([{ $match: completedMatch }, { $group: { _id: null, total: { $sum: revenueExpr } } }]),
+      Booking.aggregate([{ $match: { ...completedMatch, completedAt: { $gte: weekStart } }, }, { $group: { _id: null, total: { $sum: revenueExpr } } }]),
+      Booking.aggregate([{ $match: { ...completedMatch, completedAt: { $gte: monthStart } }, }, { $group: { _id: null, total: { $sum: revenueExpr } } }]),
     ]);
-    res.json({ success: true, data: { totalBookings, activeBookings, completedBookings, totalCustomers, dailyBookingCap: settings.dailyBookingCap, todayBooked } });
+
+    const totalRevenue = revenueAll[0]?.total || 0;
+    const weekRevenue = revenueWeek[0]?.total || 0;
+    const monthRevenue = revenueMonth[0]?.total || 0;
+
+    res.json({ success: true, data: { totalBookings, activeBookings, completedBookings, totalCustomers, dailyBookingCap: settings.dailyBookingCap, todayBooked, totalRevenue, weekRevenue, monthRevenue } });
   } catch (err) { next(err); }
 });
 

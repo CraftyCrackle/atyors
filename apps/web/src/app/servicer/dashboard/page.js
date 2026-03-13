@@ -11,6 +11,8 @@ import { useInstall } from '../../../components/InstallContext';
 import Logo from '../../../components/Logo';
 import PhotoViewer from '../../../components/PhotoViewer';
 
+const SERVICER_SHARE = 0.30;
+
 const STATUS_COLORS = {
   pending: 'bg-yellow-100 text-yellow-800',
   active: 'bg-blue-100 text-blue-800',
@@ -50,7 +52,7 @@ function JobCard({ booking, onAccept, accepting, onRate, alreadyRated }) {
               ? <span className="mx-1">&middot; {booking.itemCount || 1} item{(booking.itemCount || 1) > 1 ? 's' : ''}</span>
               : booking.barrelCount > 0 && <span className="mx-1">&middot; {booking.barrelCount} barrel{booking.barrelCount > 1 ? 's' : ''}</span>
             }
-            <span className="mx-1">&middot; ${Number(booking.serviceValue ?? booking.amount ?? 0).toFixed(2)}</span>
+            <span className="mx-1">&middot; ${(Number(booking.serviceValue ?? booking.amount ?? 0) * SERVICER_SHARE).toFixed(2)}</span>
           </p>
         </div>
         <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[booking.status] || 'bg-gray-600 text-gray-300'}`}>
@@ -185,7 +187,7 @@ function isDueToday(booking) {
 function CityGroup({ city, jobs, onAccept, accepting, onRate, reviewedMap }) {
   const todayCount = jobs.filter(isDueToday).length;
   const [open, setOpen] = useState(todayCount > 0);
-  const totalValue = jobs.reduce((sum, b) => sum + Number(b.serviceValue ?? b.amount ?? 0), 0);
+  const totalValue = jobs.reduce((sum, b) => sum + Number(b.serviceValue ?? b.amount ?? 0), 0) * SERVICER_SHARE;
   const hasDueToday = todayCount > 0;
 
   return (
@@ -406,7 +408,7 @@ const EMPTY_ICONS = {
 
 function ServiceTypeGroup({ type, jobs, onAccept, accepting, onRate, reviewedMap, onCancel, cancelling, dark }) {
   const [open, setOpen] = useState(false);
-  const totalValue = jobs.reduce((sum, b) => sum + Number(b.serviceValue ?? b.amount ?? 0), 0);
+  const totalValue = jobs.reduce((sum, b) => sum + Number(b.serviceValue ?? b.amount ?? 0), 0) * SERVICER_SHARE;
 
   const cardCls = dark
     ? 'rounded-xl border border-gray-700 bg-gray-800/60 overflow-hidden'

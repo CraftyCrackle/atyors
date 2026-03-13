@@ -8,6 +8,8 @@ import { api } from '../../../../services/api';
 import useGpsTracking from '../../../../hooks/useGpsTracking';
 import PhotoViewer from '../../../../components/PhotoViewer';
 
+const SERVICER_SHARE = 0.30;
+
 const STATUS_FLOW = {
   active: { next: 'en-route', label: 'Start Route', color: 'bg-purple-600 hover:bg-purple-700' },
   'en-route': { next: 'arrived', label: 'Mark Arrived', color: 'bg-indigo-600 hover:bg-indigo-700' },
@@ -240,7 +242,7 @@ export default function ServicerJobPage() {
             {new Date(booking.scheduledDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
-            <span className="rounded-full bg-green-900/40 px-2.5 py-0.5 text-xs font-medium text-green-400">${Number(booking.serviceValue ?? booking.amount ?? 0).toFixed(2)}</span>
+            <span className="rounded-full bg-green-900/40 px-2.5 py-0.5 text-xs font-medium text-green-400">${(Number(booking.serviceValue ?? booking.amount ?? 0) * SERVICER_SHARE).toFixed(2)}</span>
             {booking.barrelCount > 0 && (
               <span className="rounded-full bg-purple-900/40 px-2.5 py-0.5 text-xs font-medium text-purple-400">{booking.barrelCount} barrel{booking.barrelCount > 1 ? 's' : ''}</span>
             )}

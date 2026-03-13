@@ -45,13 +45,17 @@ describe('Admin routes', () => {
   });
 
   describe('GET /admin/reports/summary', () => {
-    test('returns aggregate counts with capacity info', async () => {
+    test('returns aggregate counts with capacity and revenue info', async () => {
       Booking.countDocuments
         .mockResolvedValueOnce(42)
         .mockResolvedValueOnce(5)
         .mockResolvedValueOnce(30)
         .mockResolvedValueOnce(7);
       User.countDocuments.mockResolvedValue(10);
+      Booking.aggregate
+        .mockResolvedValueOnce([{ _id: null, total: 500 }])
+        .mockResolvedValueOnce([{ _id: null, total: 120 }])
+        .mockResolvedValueOnce([{ _id: null, total: 300 }]);
 
       const res = await request(app).get('/admin/reports/summary');
 
@@ -63,6 +67,9 @@ describe('Admin routes', () => {
         totalCustomers: 10,
         dailyBookingCap: 100,
         todayBooked: 7,
+        totalRevenue: 500,
+        weekRevenue: 120,
+        monthRevenue: 300,
       });
     });
   });
