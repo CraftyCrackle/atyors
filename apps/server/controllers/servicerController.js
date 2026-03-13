@@ -234,4 +234,15 @@ async function denyJob(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { getAvailableJobs, getMyJobs, getJobDetail, acceptJob, updateJobStatus, completeWithPhoto, getEarnings, updateLocation, denyJob };
+async function getCalendarJobs(req, res, next) {
+  try {
+    const month = req.query.month;
+    if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_MONTH', message: 'month query param required (YYYY-MM)' } });
+    }
+    const bookings = await servicerService.getCalendarJobs(req.user._id, month);
+    res.json({ success: true, data: { bookings } });
+  } catch (err) { next(err); }
+}
+
+module.exports = { getAvailableJobs, getMyJobs, getJobDetail, acceptJob, updateJobStatus, completeWithPhoto, getEarnings, updateLocation, denyJob, getCalendarJobs };

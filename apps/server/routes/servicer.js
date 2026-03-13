@@ -27,6 +27,7 @@ router.use(authenticate, requireRole('servicer', 'admin', 'superadmin'));
 
 router.get('/jobs/available', servicerController.getAvailableJobs);
 router.get('/jobs/mine', servicerController.getMyJobs);
+router.get('/jobs/calendar', servicerController.getCalendarJobs);
 router.get('/jobs/:id', servicerController.getJobDetail);
 router.post('/jobs/:id/accept', servicerController.acceptJob);
 router.patch('/jobs/:id/status', servicerController.updateJobStatus);

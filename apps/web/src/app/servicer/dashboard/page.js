@@ -225,6 +225,179 @@ function CityGroup({ city, jobs, onAccept, accepting, onRate, reviewedMap }) {
   );
 }
 
+const SVC_PILL_COLORS = {
+  'put-out': 'bg-green-900/60 text-green-300 border-green-700/50',
+  'bring-in': 'bg-blue-900/60 text-blue-300 border-blue-700/50',
+  'both': 'bg-purple-900/60 text-purple-300 border-purple-700/50',
+  'curb-items': 'bg-amber-900/60 text-amber-300 border-amber-700/50',
+};
+
+const SVC_SHORT = { 'put-out': 'Out', 'bring-in': 'In', 'both': 'Both', 'curb-items': 'Curb' };
+
+function CalendarView({ user }) {
+  const [month, setMonth] = useState(() => { const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() }; });
+  const [jobs, setJobs] = useState([]);
+  const [selectedDay, setSelectedDay] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    setLoading(true);
+    const key = `${month.year}-${String(month.month + 1).padStart(2, '0')}`;
+    api.get(`/servicer/jobs/calendar?month=${key}`)
+      .then((res) => { setJobs(res.data.bookings || []); })
+      .catch(() => setJobs([]))
+      .finally(() => setLoading(false));
+  }, [user, month.year, month.month]);
+
+  const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const firstDay = new Date(month.year, month.month, 1).getDay();
+  const daysInMonth = new Date(month.year, month.month + 1, 0).getDate();
+  const today = new Date();
+  const isCurrentMonth = today.getFullYear() === month.year && today.getMonth() === month.month;
+
+  const jobsByDay = {};
+  jobs.forEach((j) => {
+    const d = new Date(j.scheduledDate).getDate();
+    if (!jobsByDay[d]) jobsByDay[d] = [];
+    jobsByDay[d].push(j);
+  });
+
+  function prevMonth() {
+    setMonth((m) => m.month === 0 ? { year: m.year - 1, month: 11 } : { year: m.year, month: m.month - 1 });
+    setSelectedDay(null);
+  }
+  function nextMonth() {
+    setMonth((m) => m.month === 11 ? { year: m.year + 1, month: 0 } : { year: m.year, month: m.month + 1 });
+    setSelectedDay(null);
+  }
+
+  const monthLabel = new Date(month.year, month.month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const selectedJobs = selectedDay ? (jobsByDay[selectedDay] || []) : [];
+  const selectedLabel = selectedDay
+    ? new Date(month.year, month.month, selectedDay).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+    : '';
+
+  const MAX_PILLS = 2;
+
+  return (
+    <div className="space-y-3">
+      <div className="rounded-xl border border-gray-700 bg-gray-800 overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3">
+          <button onClick={prevMonth} className="rounded-lg p-2 text-gray-400 transition hover:bg-gray-700 active:scale-95">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+          </button>
+          <h3 className="text-sm font-bold text-white">{monthLabel}</h3>
+          <button onClick={nextMonth} className="rounded-lg p-2 text-gray-400 transition hover:bg-gray-700 active:scale-95">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-7 border-t border-gray-700">
+          {DAYS.map((d) => (
+            <div key={d} className="py-1.5 text-center text-[10px] font-semibold uppercase tracking-wider text-gray-500">{d}</div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-7 border-t border-gray-700">
+          {Array.from({ length: firstDay }).map((_, i) => (
+            <div key={`e-${i}`} className="min-h-[4.5rem] border-b border-r border-gray-700/50 bg-gray-900/30" />
+          ))}
+          {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
+            const dayJobs = jobsByDay[day] || [];
+            const isToday = isCurrentMonth && today.getDate() === day;
+            const isSelected = selectedDay === day;
+            const shown = dayJobs.slice(0, MAX_PILLS);
+            const overflow = dayJobs.length - MAX_PILLS;
+            return (
+              <button
+                key={day}
+                onClick={() => setSelectedDay(isSelected ? null : day)}
+                className={`min-h-[4.5rem] border-b border-r border-gray-700/50 p-1 text-left transition-colors ${isSelected ? 'bg-brand-600/15' : 'hover:bg-gray-800/80'}`}
+              >
+                <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-semibold ${isToday ? 'bg-brand-600 text-white' : 'text-gray-300'}`}>
+                  {day}
+                </span>
+                <div className="mt-0.5 space-y-0.5">
+                  {shown.map((j, idx) => {
+                    const slug = j.serviceTypeId?.slug || '';
+                    const colors = SVC_PILL_COLORS[slug] || 'bg-gray-700 text-gray-300 border-gray-600';
+                    const label = SVC_SHORT[slug] || 'Svc';
+                    const count = slug === 'curb-items' ? j.itemCount || 1 : j.barrelCount || 0;
+                    const completed = j.status === 'completed';
+                    return (
+                      <div key={idx} className={`truncate rounded border px-1 text-[9px] font-medium leading-tight ${colors} ${completed ? 'opacity-50 line-through' : ''}`}>
+                        {label}{count > 0 ? ` · ${count}` : ''}
+                      </div>
+                    );
+                  })}
+                  {overflow > 0 && (
+                    <div className="text-[9px] font-medium text-gray-500 px-0.5">+{overflow} more</div>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+          {(() => {
+            const trailing = (firstDay + daysInMonth) % 7;
+            if (trailing === 0) return null;
+            return Array.from({ length: 7 - trailing }).map((_, i) => (
+              <div key={`t-${i}`} className="min-h-[4.5rem] border-b border-r border-gray-700/50 bg-gray-900/30" />
+            ));
+          })()}
+        </div>
+      </div>
+
+      {loading && (
+        <div className="py-8 text-center text-sm text-gray-500">Loading calendar...</div>
+      )}
+
+      {selectedDay && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold uppercase text-gray-500">{selectedLabel} &mdash; {selectedJobs.length} job{selectedJobs.length !== 1 ? 's' : ''}</p>
+          {selectedJobs.length === 0 ? (
+            <div className="rounded-xl border border-gray-700 bg-gray-800/40 py-8 text-center text-sm text-gray-500">No jobs scheduled</div>
+          ) : (
+            selectedJobs.map((j) => {
+              const addr = j.addressId;
+              const svc = j.serviceTypeId;
+              const slug = svc?.slug || '';
+              const count = slug === 'curb-items' ? j.itemCount || 1 : j.barrelCount || 0;
+              const unit = slug === 'curb-items' ? 'item' : 'barrel';
+              const time = j.putOutTime || j.bringInTime || '';
+              return (
+                <div key={j._id} className="rounded-xl border border-gray-700 bg-gray-800 p-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-white">{svc?.name || 'Service'}</p>
+                      <p className="mt-0.5 text-xs text-gray-400">
+                        {count > 0 && <span>{count} {unit}{count !== 1 ? 's' : ''}</span>}
+                        {time && <span className="mx-1">&middot; {time}</span>}
+                      </p>
+                    </div>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUS_COLORS[j.status] || 'bg-gray-600 text-gray-300'}`}>{j.status}</span>
+                  </div>
+                  {addr && (
+                    <div className="mt-2 rounded-lg bg-gray-900/50 px-3 py-2">
+                      <p className="text-sm text-gray-300">{addr.street}{addr.unit ? `, ${addr.unit}` : ''}</p>
+                      <p className="text-xs text-gray-500">{addr.city}, {addr.state} {addr.zip}</p>
+                    </div>
+                  )}
+                  {['active', 'en-route', 'arrived'].includes(j.status) && (
+                    <Link href={`/servicer/job/${j._id}`} className="mt-2 block rounded-lg bg-brand-600/20 py-2 text-center text-xs font-semibold text-brand-400 transition hover:bg-brand-600/30">
+                      Manage Job
+                    </Link>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const EMPTY_ICONS = {
   available: 'M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0',
   active: 'M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15a2.25 2.25 0 012.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z',
@@ -497,8 +670,8 @@ export default function ServicerDashboard() {
         </div>
       </div>
 
-      <div className="mt-4 flex gap-1.5 px-4">
-        {[['available', `Available (${available.length})`], ['active', `My Jobs (${activeJobs.length})`], ['completed', `Done (${completedJobs.length})`]].map(([key, label]) => (
+      <div className="mt-4 flex gap-1 px-4">
+        {[['available', `Available (${available.length})`], ['active', `My Jobs (${activeJobs.length})`], ['completed', `Done (${completedJobs.length})`], ['calendar', 'Calendar']].map(([key, label]) => (
           <button key={key} onClick={() => switchTab(key)}
             className={`flex-1 rounded-xl py-2.5 text-xs font-semibold transition ${tab === key ? 'bg-brand-600 text-white shadow-md shadow-brand-600/25' : 'bg-gray-800/60 text-gray-400 hover:text-gray-300'}`}>
             {label}
@@ -527,6 +700,8 @@ export default function ServicerDashboard() {
               <CityGroup key={g.city} city={g.city} jobs={g.jobs} onAccept={handleAccept} accepting={accepting} onRate={setReviewBooking} reviewedMap={reviewedMap} />
             ))
           )
+        ) : tab === 'calendar' ? (
+          <CalendarView user={user} />
         ) : tab === 'completed' ? (
           serviceTypeGroups.length === 0 ? (
             <EmptyState icon="completed" title="No completed jobs yet" subtitle="Completed jobs will show here" />

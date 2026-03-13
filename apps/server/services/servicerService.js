@@ -302,4 +302,20 @@ async function denyJob(bookingId, servicerId, reason) {
   return booking;
 }
 
-module.exports = { getAvailableJobs, getMyJobs, acceptJob, updateJobStatus, completeWithPhoto, getJobDetail, denyJob, getServiceWindowStart };
+async function getCalendarJobs(servicerId, month) {
+  const [year, mon] = month.split('-').map(Number);
+  const start = new Date(Date.UTC(year, mon - 1, 1));
+  const end = new Date(Date.UTC(year, mon, 1));
+
+  return Booking.find({
+    assignedTo: servicerId,
+    scheduledDate: { $gte: start, $lt: end },
+    status: { $nin: ['cancelled', 'denied'] },
+  })
+    .populate('addressId serviceTypeId')
+    .select('scheduledDate status addressId serviceTypeId barrelCount itemCount putOutTime bringInTime')
+    .sort({ scheduledDate: 1 })
+    .lean();
+}
+
+module.exports = { getAvailableJobs, getMyJobs, acceptJob, updateJobStatus, completeWithPhoto, getJobDetail, denyJob, getServiceWindowStart, getCalendarJobs };

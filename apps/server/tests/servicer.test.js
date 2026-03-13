@@ -63,3 +63,48 @@ describe('Servicer accept-date enforcement', () => {
     expect(earliest.getDate()).toBe(10);
   });
 });
+
+describe('getCalendarJobs', () => {
+  const mongoose = require('mongoose');
+
+  beforeEach(() => jest.restoreAllMocks());
+
+  test('queries bookings for given month range', async () => {
+    const mockBookings = [
+      { _id: 'b1', scheduledDate: new Date('2026-03-05'), status: 'active', serviceTypeId: { slug: 'put-out' } },
+      { _id: 'b2', scheduledDate: new Date('2026-03-12'), status: 'completed', serviceTypeId: { slug: 'bring-in' } },
+    ];
+
+    const Booking = require('../models/Booking');
+    const chain = { select: jest.fn().mockReturnValue({ sort: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(mockBookings) }) }) };
+    const populateMock = jest.fn().mockReturnValue(chain);
+    jest.spyOn(Booking, 'find').mockReturnValue({ populate: populateMock });
+
+    const { getCalendarJobs } = require('../services/servicerService');
+    const servicerId = new mongoose.Types.ObjectId();
+    const result = await getCalendarJobs(servicerId, '2026-03');
+
+    expect(Booking.find).toHaveBeenCalledWith({
+      assignedTo: servicerId,
+      scheduledDate: { $gte: new Date(Date.UTC(2026, 2, 1)), $lt: new Date(Date.UTC(2026, 3, 1)) },
+      status: { $nin: ['cancelled', 'denied'] },
+    });
+    expect(result).toHaveLength(2);
+    expect(result[0]._id).toBe('b1');
+  });
+
+  test('returns empty array for month with no jobs', async () => {
+    const Booking = require('../models/Booking');
+    const chain = { select: jest.fn().mockReturnValue({ sort: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue([]) }) }) };
+    jest.spyOn(Booking, 'find').mockReturnValue({ populate: jest.fn().mockReturnValue(chain) });
+
+    const { getCalendarJobs } = require('../services/servicerService');
+    const servicerId = new mongoose.Types.ObjectId();
+    const result = await getCalendarJobs(servicerId, '2026-06');
+
+    expect(result).toEqual([]);
+    expect(Booking.find).toHaveBeenCalledWith(expect.objectContaining({
+      scheduledDate: { $gte: new Date(Date.UTC(2026, 5, 1)), $lt: new Date(Date.UTC(2026, 6, 1)) },
+    }));
+  });
+});
