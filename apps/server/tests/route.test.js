@@ -100,3 +100,46 @@ describe('getPlannedRoute fallback', () => {
     expect(Route.findOne).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('completeCurrentStop saves completion photo', () => {
+  const routeService = require('../services/routeService');
+  const Route = require('../models/Route');
+  const Booking = require('../models/Booking');
+
+  afterEach(() => jest.restoreAllMocks());
+
+  test('completeCurrentStop accepts photoUrl parameter', () => {
+    expect(routeService.completeCurrentStop.length).toBe(3);
+  });
+
+  test('saves completionPhotoUrl on the booking', async () => {
+    const savedBooking = {};
+    const mockBooking = {
+      _id: 'b1',
+      status: 'arrived',
+      statusHistory: [],
+      canTransitionTo: () => true,
+      save: jest.fn().mockImplementation(function () { Object.assign(savedBooking, this); return Promise.resolve(); }),
+    };
+    const mockRoute = {
+      _id: 'r1',
+      servicerId: 'svc1',
+      status: 'in-progress',
+      currentStopIndex: 0,
+      stops: [{ bookingId: 'b1', status: 'en-route' }],
+      save: jest.fn().mockResolvedValue(),
+      populate: jest.fn().mockReturnThis(),
+    };
+
+    jest.spyOn(Route, 'findOne').mockResolvedValue(mockRoute);
+    jest.spyOn(Booking, 'findById').mockResolvedValue(mockBooking);
+    const { chargeBookingOnCompletion } = require('../services/bookingService');
+    jest.spyOn(require('../services/bookingService'), 'chargeBookingOnCompletion').mockResolvedValue();
+
+    await routeService.completeCurrentStop('r1', 'svc1', '/uploads/test-photo.jpg');
+
+    expect(mockBooking.completionPhotoUrl).toBe('/uploads/test-photo.jpg');
+    expect(mockBooking.status).toBe('completed');
+    expect(mockBooking.save).toHaveBeenCalled();
+  });
+});

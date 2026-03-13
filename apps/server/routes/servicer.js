@@ -43,7 +43,7 @@ router.get('/routes/active', routeController.getActiveRoute);
 router.get('/routes/planned', routeController.getPlannedRoute);
 router.patch('/routes/:id/start', routeController.startRoute);
 router.patch('/routes/:id/mark-arrived', routeController.markArrived);
-router.patch('/routes/:id/complete-stop', routeController.completeStop);
+router.patch('/routes/:id/complete-stop', upload.single('photo'), routeController.completeStop);
 router.patch('/routes/:id/skip-stop', routeController.skipStop);
 
 module.exports = router;

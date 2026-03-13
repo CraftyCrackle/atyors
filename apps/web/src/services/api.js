@@ -4,7 +4,8 @@ let refreshPromise = null;
 
 async function request(path, options = {}) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-  const headers = { 'Content-Type': 'application/json', ...options.headers };
+  const isFormData = options.body instanceof FormData;
+  const headers = isFormData ? { ...options.headers } : { 'Content-Type': 'application/json', ...options.headers };
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
@@ -61,7 +62,7 @@ async function doRefresh() {
 
 export const api = {
   get: (path) => request(path),
-  post: (path, body) => request(path, { method: 'POST', body: JSON.stringify(body) }),
-  patch: (path, body) => request(path, { method: 'PATCH', body: JSON.stringify(body) }),
+  post: (path, body, opts) => request(path, { method: 'POST', body: body instanceof FormData ? body : JSON.stringify(body), ...opts }),
+  patch: (path, body, opts) => request(path, { method: 'PATCH', body: body instanceof FormData ? body : JSON.stringify(body), ...opts }),
   delete: (path) => request(path, { method: 'DELETE' }),
 };

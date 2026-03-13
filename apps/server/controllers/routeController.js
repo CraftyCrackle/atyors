@@ -63,7 +63,13 @@ async function startRoute(req, res, next) {
 
 async function completeStop(req, res, next) {
   try {
-    const route = await routeService.completeCurrentStop(req.params.id, req.user._id);
+    if (!req.file) {
+      const err = new Error('Completion photo is required');
+      err.status = 400;
+      return next(err);
+    }
+    const photoUrl = `/uploads/${req.file.filename}`;
+    const route = await routeService.completeCurrentStop(req.params.id, req.user._id, photoUrl);
 
     const io = req.app.locals.io;
     const completedIdx = route.currentStopIndex - 1;

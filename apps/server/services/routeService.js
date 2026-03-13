@@ -155,7 +155,7 @@ async function startRoute(routeId, servicerId) {
   return route.populate(DEEP_POPULATE);
 }
 
-async function completeCurrentStop(routeId, servicerId) {
+async function completeCurrentStop(routeId, servicerId, photoUrl) {
   const route = await Route.findOne({ _id: routeId, servicerId, status: 'in-progress' });
   if (!route) {
     const err = new Error('No active route found');
@@ -180,6 +180,7 @@ async function completeCurrentStop(routeId, servicerId) {
   route.stops[idx].status = 'completed';
   completedBooking.status = 'completed';
   completedBooking.completedAt = new Date();
+  if (photoUrl) completedBooking.completionPhotoUrl = photoUrl;
   completedBooking.statusHistory.push({ status: 'completed', changedAt: new Date(), changedBy: servicerId });
   await completedBooking.save();
   await chargeBookingOnCompletion(completedBooking._id);

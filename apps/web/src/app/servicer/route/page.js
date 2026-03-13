@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
@@ -105,11 +105,13 @@ export default function ServicerRoutePage() {
     setActing(false);
   }
 
-  async function handleCompleteStop() {
-    if (!activeRoute) return;
+  async function handleCompleteStop(photoFile) {
+    if (!activeRoute || !photoFile) return;
     setActing(true);
     try {
-      await api.patch(`/servicer/routes/${activeRoute._id}/complete-stop`);
+      const formData = new FormData();
+      formData.append('photo', photoFile);
+      await api.patch(`/servicer/routes/${activeRoute._id}/complete-stop`, formData);
       await load();
     } catch (err) { alert(err.message || 'Failed'); }
     setActing(false);
@@ -360,72 +362,160 @@ function CurrentStopCard({ stop, index, total, acting, onNavigate, onArrived, on
   const addr = b?.addressId;
   const svc = b?.serviceTypeId;
   const customer = b?.userId;
+  const fileRef = useRef(null);
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+
+  function openPhotoCapture() {
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    setShowPhotoModal(true);
+    setTimeout(() => fileRef.current?.click(), 100);
+  }
+
+  function handleFileChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoFile(file);
+    const reader = new FileReader();
+    reader.onload = (ev) => setPhotoPreview(ev.target.result);
+    reader.readAsDataURL(file);
+  }
+
+  function handleRetake() {
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    fileRef.current.value = '';
+    setTimeout(() => fileRef.current?.click(), 100);
+  }
+
+  function handleSubmit() {
+    if (photoFile) {
+      onComplete(photoFile);
+      setShowPhotoModal(false);
+      setPhotoFile(null);
+      setPhotoPreview(null);
+    }
+  }
 
   return (
-    <div className="rounded-xl border border-brand-500 bg-gray-800 p-4">
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-semibold text-brand-400">Stop {index + 1} of {total}</p>
-        <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-          stop.status === 'en-route' ? 'bg-purple-900/50 text-purple-400' :
-          stop.status === 'arrived' ? 'bg-indigo-900/50 text-indigo-400' :
-          'bg-yellow-900/50 text-yellow-400'
-        }`}>{stop.status}</span>
+    <>
+      <div className="rounded-xl border border-brand-500 bg-gray-800 p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold text-brand-400">Stop {index + 1} of {total}</p>
+          <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+            stop.status === 'en-route' ? 'bg-purple-900/50 text-purple-400' :
+            stop.status === 'arrived' ? 'bg-indigo-900/50 text-indigo-400' :
+            'bg-yellow-900/50 text-yellow-400'
+          }`}>{stop.status}</span>
+        </div>
+
+        <p className="mt-2 text-lg font-bold text-white">{addr?.street}{addr?.unit ? `, ${addr.unit}` : ''}</p>
+        <p className="text-sm text-gray-400">{addr?.city}, {addr?.state} {addr?.zip}</p>
+
+        <div className="mt-3 rounded-lg bg-gray-900/60 p-3 space-y-1">
+          <p className="text-sm text-gray-300">{svc?.name} &middot; {b?.barrelCount || 0} barrel{(b?.barrelCount || 0) !== 1 ? 's' : ''}</p>
+          {customer && <p className="text-xs text-gray-500">Customer: {customer.firstName} {customer.lastName}</p>}
+          {addr?.barrelLocation && <p className="text-xs text-gray-400">Location: {addr.barrelLocation}</p>}
+          {addr?.barrelPlacementInstructions && <p className="text-xs text-blue-400">Curb: {addr.barrelPlacementInstructions}</p>}
+          {addr?.barrelReturnInstructions && <p className="text-xs text-amber-400">Return: {addr.barrelReturnInstructions}</p>}
+        </div>
+
+        {(addr?.barrelPhotoUrl || addr?.photos?.length > 0) && (
+          <div className="mt-3">
+            <p className="mb-1 text-[10px] uppercase font-medium text-gray-500">Customer Photos</p>
+            <div className="flex gap-1.5 overflow-x-auto">
+              {addr.barrelPhotoUrl && <PhotoViewer src={addr.barrelPhotoUrl} alt="Barrel" className="h-16 w-20 shrink-0 rounded-lg object-cover" />}
+              {addr.photos?.map((url, i) => <PhotoViewer key={i} src={url} alt={`Photo ${i + 1}`} className="h-16 w-20 shrink-0 rounded-lg object-cover" />)}
+            </div>
+          </div>
+        )}
+
+        <div className="mt-4 space-y-2">
+          <button onClick={onNavigate}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700 active:scale-[0.98]">
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Navigate
+          </button>
+
+          <div className="flex gap-2">
+            {stop.status === 'en-route' && (
+              <button onClick={onArrived} disabled={acting}
+                className="flex-1 rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-50">
+                {acting ? '...' : 'Mark Arrived'}
+              </button>
+            )}
+            {(stop.status === 'arrived' || stop.status === 'en-route') && (
+              <button onClick={openPhotoCapture} disabled={acting}
+                className="flex-1 rounded-xl bg-green-600 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-50">
+                <span className="flex items-center justify-center gap-1.5">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" /><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" /></svg>
+                  {acting ? '...' : 'Complete Stop'}
+                </span>
+              </button>
+            )}
+            <button onClick={onSkip} disabled={acting}
+              className="rounded-xl border border-gray-600 px-4 py-2.5 text-sm text-gray-400 transition hover:bg-gray-800 disabled:opacity-50">
+              Skip
+            </button>
+          </div>
+
+          <Link href={`/servicer/job/${b?._id}`} className="block text-center text-sm text-brand-400 underline">
+            View full job details
+          </Link>
+        </div>
       </div>
 
-      <p className="mt-2 text-lg font-bold text-white">{addr?.street}{addr?.unit ? `, ${addr.unit}` : ''}</p>
-      <p className="text-sm text-gray-400">{addr?.city}, {addr?.state} {addr?.zip}</p>
+      <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
 
-      <div className="mt-3 rounded-lg bg-gray-900/60 p-3 space-y-1">
-        <p className="text-sm text-gray-300">{svc?.name} &middot; {b?.barrelCount || 0} barrel{(b?.barrelCount || 0) !== 1 ? 's' : ''}</p>
-        {customer && <p className="text-xs text-gray-500">Customer: {customer.firstName} {customer.lastName}</p>}
-        {addr?.barrelLocation && <p className="text-xs text-gray-400">Location: {addr.barrelLocation}</p>}
-        {addr?.barrelPlacementInstructions && <p className="text-xs text-blue-400">Curb: {addr.barrelPlacementInstructions}</p>}
-        {addr?.barrelReturnInstructions && <p className="text-xs text-amber-400">Return: {addr.barrelReturnInstructions}</p>}
-      </div>
+      {showPhotoModal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm" onClick={() => { if (!acting) { setShowPhotoModal(false); setPhotoFile(null); setPhotoPreview(null); } }}>
+          <div className="w-full max-w-lg rounded-t-2xl bg-gray-800 p-5 pb-8 safe-bottom" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-white">Completion Photo</h3>
+              <button onClick={() => { setShowPhotoModal(false); setPhotoFile(null); setPhotoPreview(null); }} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-700">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
 
-      {(addr?.barrelPhotoUrl || addr?.photos?.length > 0) && (
-        <div className="mt-3">
-          <p className="mb-1 text-[10px] uppercase font-medium text-gray-500">Customer Photos</p>
-          <div className="flex gap-1.5 overflow-x-auto">
-            {addr.barrelPhotoUrl && <PhotoViewer src={addr.barrelPhotoUrl} alt="Barrel" className="h-16 w-20 shrink-0 rounded-lg object-cover" />}
-            {addr.photos?.map((url, i) => <PhotoViewer key={i} src={url} alt={`Photo ${i + 1}`} className="h-16 w-20 shrink-0 rounded-lg object-cover" />)}
+            {photoPreview ? (
+              <div className="space-y-4">
+                <div className="overflow-hidden rounded-xl border border-gray-600">
+                  <img src={photoPreview} alt="Completion preview" className="w-full object-cover" style={{ maxHeight: '40vh' }} />
+                </div>
+                <div className="flex gap-3">
+                  <button onClick={handleRetake} disabled={acting}
+                    className="flex-1 rounded-xl border border-gray-600 py-3 text-sm font-semibold text-gray-300 transition hover:bg-gray-700 disabled:opacity-50">
+                    Retake
+                  </button>
+                  <button onClick={handleSubmit} disabled={acting}
+                    className="flex-1 rounded-xl bg-green-600 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-50">
+                    {acting ? 'Submitting...' : 'Submit & Complete'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex h-48 items-center justify-center rounded-xl border-2 border-dashed border-gray-600">
+                  <div className="text-center">
+                    <svg className="mx-auto h-10 w-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" /><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" /></svg>
+                    <p className="mt-2 text-sm text-gray-400">Take a photo of the completed job</p>
+                  </div>
+                </div>
+                <button onClick={() => fileRef.current?.click()}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 py-3 font-semibold text-white transition hover:bg-brand-700 active:scale-[0.98]">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" /><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" /></svg>
+                  Open Camera
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
-
-      <div className="mt-4 space-y-2">
-        <button onClick={onNavigate}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700 active:scale-[0.98]">
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          Navigate
-        </button>
-
-        <div className="flex gap-2">
-          {stop.status === 'en-route' && (
-            <button onClick={onArrived} disabled={acting}
-              className="flex-1 rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-50">
-              {acting ? '...' : 'Mark Arrived'}
-            </button>
-          )}
-          {(stop.status === 'arrived' || stop.status === 'en-route') && (
-            <button onClick={onComplete} disabled={acting}
-              className="flex-1 rounded-xl bg-green-600 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-50">
-              {acting ? '...' : 'Complete Stop'}
-            </button>
-          )}
-          <button onClick={onSkip} disabled={acting}
-            className="rounded-xl border border-gray-600 px-4 py-2.5 text-sm text-gray-400 transition hover:bg-gray-800 disabled:opacity-50">
-            Skip
-          </button>
-        </div>
-
-        <Link href={`/servicer/job/${b?._id}`} className="block text-center text-sm text-brand-400 underline">
-          View full job details
-        </Link>
-      </div>
-    </div>
+    </>
   );
 }
