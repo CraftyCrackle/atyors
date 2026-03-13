@@ -39,8 +39,14 @@ export default function ServicerRoutePage() {
         api.get('/servicer/routes/planned').catch((e) => { console.warn('Failed to load planned route:', e.message); return { data: { route: null } }; }),
       ]);
       setJobs(jobsRes.data.bookings || []);
-      setActiveRoute(activeRes.data.route);
-      setPlannedRoute(plannedRes.data.route);
+      let active = activeRes.data.route;
+      let planned = plannedRes.data.route;
+      if (!active && planned?.status === 'in-progress') {
+        active = planned;
+        planned = null;
+      }
+      setActiveRoute(active);
+      setPlannedRoute(planned);
     } catch { }
     setLoading(false);
   }, [user]);

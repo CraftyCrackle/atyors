@@ -527,10 +527,13 @@ export default function ServicerDashboard() {
       setAvailable(avail.data.bookings);
       const activeJobs = (activeRes.data.bookings || []).filter((b) => b.status !== 'completed');
       setMyJobs([...activeJobs, ...(doneRes.data.bookings || [])]);
-      setHasActiveRoute(!!activeRouteRes.data.route);
-      setHasPlannedRoute(!!plannedRouteRes.data.route);
+      const activeR = activeRouteRes.data.route;
+      const plannedR = plannedRouteRes.data.route;
+      const isActiveViaPlanned = !activeR && plannedR?.status === 'in-progress';
+      setHasActiveRoute(!!activeR || isActiveViaPlanned);
+      setHasPlannedRoute(!!plannedR && !isActiveViaPlanned);
       const inProgress = activeJobs.some((b) => ['en-route', 'arrived', 'in-progress'].includes(b.status));
-      setHasInProgressJobs(inProgress && !activeRouteRes.data.route);
+      setHasInProgressJobs(inProgress && !activeR && !isActiveViaPlanned);
     } catch { }
     setLoading(false);
   }
