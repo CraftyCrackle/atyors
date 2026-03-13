@@ -108,10 +108,11 @@ export default function TrackingPage() {
   const currentStepIndex = STATUS_STEPS.indexOf(booking.status);
   const isCompleted = booking.status === 'completed';
   const statusImpliesNext = ['en-route', 'arrived'].includes(booking.status);
-  const isNext = queue?.isNext === true || (statusImpliesNext && !queue?.inRoute);
-  const showMap = isNext && servicerPos;
+  const isNext = queue?.isNext === true || statusImpliesNext;
   const customerCoords = booking.addressId?.location?.coordinates;
   const customerLatLng = customerCoords ? { lat: customerCoords[1], lng: customerCoords[0] } : null;
+  const effectiveServicerPos = servicerPos || (booking.status === 'arrived' ? customerLatLng : null);
+  const showMap = isNext && effectiveServicerPos;
 
   return (
     <AuthGuard>
@@ -126,10 +127,14 @@ export default function TrackingPage() {
         {/* Map or Queue Position */}
         {isCompleted ? null : showMap ? (
           <div className="relative h-72">
-            <TrackingMap servicerPos={servicerPos} customerPos={customerLatLng} />
+            <TrackingMap servicerPos={effectiveServicerPos} customerPos={customerLatLng} />
             <div className="absolute bottom-4 left-4 rounded-xl bg-white/95 px-4 py-3 shadow-lg backdrop-blur">
-              <p className="text-xs text-gray-500">Servicer is heading to you</p>
-              <p className="text-lg font-bold text-brand-600">You're next!</p>
+              <p className="text-xs text-gray-500">
+                {booking.status === 'arrived' ? 'Servicer is at your address' : 'Servicer is heading to you'}
+              </p>
+              <p className="text-lg font-bold text-brand-600">
+                {booking.status === 'arrived' ? 'They\'ve arrived!' : 'You\'re next!'}
+              </p>
             </div>
           </div>
         ) : isNext ? (
