@@ -322,7 +322,7 @@ export default function ServicerRoutePage() {
                 const svc = b?.serviceTypeId;
                 const isCurrent = i === route.currentStopIndex;
                 return (
-                  <div key={s._id || i} className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 ${isCurrent ? 'border-brand-500 bg-brand-900/30' : s.status === 'completed' ? 'border-green-800 bg-green-900/20' : s.status === 'skipped' ? 'border-gray-700 bg-gray-800/50 opacity-50' : 'border-gray-700 bg-gray-800'}`}>
+                  <Link key={s._id || i} href={`/servicer/job/${b?._id}`} className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 transition active:scale-[0.98] ${isCurrent ? 'border-brand-500 bg-brand-900/30' : s.status === 'completed' ? 'border-green-800 bg-green-900/20' : s.status === 'skipped' ? 'border-gray-700 bg-gray-800/50 opacity-50' : 'border-gray-700 bg-gray-800'}`}>
                     <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${s.status === 'completed' ? 'bg-green-600' : s.status === 'skipped' ? 'bg-gray-600' : isCurrent ? 'bg-brand-600' : 'bg-gray-600'}`}>
                       {s.status === 'completed' ? '✓' : s.status === 'skipped' ? '—' : i + 1}
                     </div>
@@ -337,7 +337,8 @@ export default function ServicerRoutePage() {
                       s.status === 'skipped' ? 'bg-gray-700 text-gray-400' :
                       'bg-gray-700 text-gray-400'
                     }`}>{s.status}</span>
-                  </div>
+                    <svg className="h-4 w-4 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                  </Link>
                 );
               })}
             </div>
