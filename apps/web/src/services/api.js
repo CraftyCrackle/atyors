@@ -1,5 +1,7 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
 
+let refreshPromise = null;
+
 async function request(path, options = {}) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
   const headers = { 'Content-Type': 'application/json', ...options.headers };
@@ -13,7 +15,8 @@ async function request(path, options = {}) {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
-      window.location.href = '/login';
+      const isServicer = window.location.pathname.startsWith('/servicer');
+      window.location.href = isServicer ? '/servicer/login' : '/login';
     }
   }
 
@@ -28,6 +31,16 @@ async function request(path, options = {}) {
 }
 
 async function tryRefresh() {
+  if (refreshPromise) return refreshPromise;
+  refreshPromise = doRefresh();
+  try {
+    return await refreshPromise;
+  } finally {
+    refreshPromise = null;
+  }
+}
+
+async function doRefresh() {
   const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
   if (!refreshToken) return false;
   try {

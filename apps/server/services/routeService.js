@@ -71,6 +71,23 @@ async function createRoute(servicerId, date, bookingIds, { optimize = false } = 
     bookings = optimizeStops(bookings);
   }
 
+  const populatedBookings = await Booking.find({
+    _id: { $in: bookings.map((b) => b._id) },
+  }).populate('serviceTypeId');
+  const now = new Date();
+  const allFuture = populatedBookings.every((b) => now < getServiceWindowStart(b));
+  if (allFuture) {
+    const earliest = populatedBookings.reduce((min, b) => {
+      const ws = getServiceWindowStart(b);
+      return ws < min ? ws : min;
+    }, getServiceWindowStart(populatedBookings[0]));
+    const label = earliest.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    const err = new Error(`None of these jobs can start yet. The earliest service window opens ${label}. Bring-in jobs start the day after the scheduled trash pickup.`);
+    err.status = 400;
+    err.code = 'ALL_WINDOWS_FUTURE';
+    throw err;
+  }
+
   const orderedIds = bookings.map((b) => b._id);
   const stops = orderedIds.map((id, i) => ({
     bookingId: id,
@@ -118,7 +135,9 @@ async function startRoute(routeId, servicerId) {
   const windowStart = getServiceWindowStart(firstBooking);
   if (new Date() < windowStart) {
     const label = windowStart.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-    const err = new Error(`The first job's service window hasn't started yet. You can start the route on ${label}.`);
+    const isBringIn = firstBooking.serviceTypeId?.slug === 'bring-in';
+    const hint = isBringIn ? ' Bring-in jobs start the day after the scheduled trash pickup.' : '';
+    const err = new Error(`The first job's service window hasn't started yet. You can start the route on ${label}.${hint}`);
     err.status = 400;
     err.code = 'WINDOW_NOT_STARTED';
     err.meta = { windowStart: windowStart.toISOString() };

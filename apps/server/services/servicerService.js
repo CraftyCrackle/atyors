@@ -195,7 +195,9 @@ async function updateJobStatus(bookingId, servicerId, newStatus) {
     const windowStart = getServiceWindowStart(booking);
     if (new Date() < windowStart) {
       const label = windowStart.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-      const err = new Error(`This job's service window hasn't started yet. You can start it on ${label}.`);
+      const isBringIn = booking.serviceTypeId?.slug === 'bring-in';
+      const hint = isBringIn ? ' Bring-in jobs start the day after the scheduled trash pickup.' : '';
+      const err = new Error(`This job's service window hasn't started yet. You can start it on ${label}.${hint}`);
       err.status = 400;
       err.code = 'WINDOW_NOT_STARTED';
       err.meta = { windowStart: windowStart.toISOString() };

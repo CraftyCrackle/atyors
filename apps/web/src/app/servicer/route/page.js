@@ -211,8 +211,21 @@ export default function ServicerRoutePage() {
           )}
 
           {/* No route yet: plan one */}
-          {!route && activeJobs.length > 0 && (
+          {!route && activeJobs.length > 0 && (() => {
+            const allBringIn = activeJobs.every((b) => b.serviceTypeId?.slug === 'bring-in');
+            return (
             <>
+              {allBringIn && (
+                <div className="rounded-xl border border-amber-800/40 bg-amber-900/20 px-4 py-3 flex gap-2.5">
+                  <svg className="h-5 w-5 shrink-0 text-amber-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                  </svg>
+                  <div className="text-xs text-amber-300 leading-relaxed">
+                    <p className="font-semibold">All jobs are bring-in services</p>
+                    <p className="mt-0.5 text-amber-400/70">Bring-in jobs can only be started the day after the scheduled trash pickup. You won&apos;t be able to start this route until the service window opens.</p>
+                  </div>
+                </div>
+              )}
               {optimizedStops && (
                 <div className="space-y-2">
                   <p className="text-xs font-semibold uppercase text-gray-500">Optimized Order</p>
@@ -240,7 +253,8 @@ export default function ServicerRoutePage() {
                 </button>
               </div>
             </>
-          )}
+            );
+          })()}
 
           {/* No route and no jobs */}
           {!route && activeJobs.length === 0 && (
