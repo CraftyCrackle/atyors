@@ -298,11 +298,18 @@ async function getPlannedRoute(servicerId, date) {
   const next = new Date(d);
   next.setDate(next.getDate() + 1);
 
-  return Route.findOne({
+  const todayRoute = await Route.findOne({
     servicerId,
     date: { $gte: d, $lt: next },
     status: { $in: ['planned', 'in-progress'] },
   }).populate(DEEP_POPULATE);
+
+  if (todayRoute) return todayRoute;
+
+  return Route.findOne({
+    servicerId,
+    status: { $in: ['planned', 'in-progress'] },
+  }).sort({ date: -1 }).populate(DEEP_POPULATE);
 }
 
 async function getQueuePosition(bookingId) {

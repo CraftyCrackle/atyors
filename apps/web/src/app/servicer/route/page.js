@@ -129,6 +129,7 @@ export default function ServicerRoutePage() {
 
   const route = activeRoute || plannedRoute;
   const activeJobs = jobs.filter((b) => b.status === 'active');
+  const inProgressJobs = jobs.filter((b) => ['en-route', 'arrived', 'in-progress'].includes(b.status));
   const currentStop = route && route.currentStopIndex >= 0 ? route.stops[route.currentStopIndex] : null;
 
   const mapStops = route
@@ -149,7 +150,7 @@ export default function ServicerRoutePage() {
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
         </button>
         <h1 className="font-semibold text-white">
-          {activeRoute ? 'Active Route' : plannedRoute ? 'Planned Route' : 'Plan Route'}
+          {activeRoute ? 'Active Route' : plannedRoute ? 'Planned Route' : inProgressJobs.length > 0 ? 'Active Jobs' : 'Plan Route'}
         </h1>
         {route && (
           <span className="ml-auto rounded-full bg-brand-600/20 px-2.5 py-0.5 text-xs font-medium text-brand-400">
@@ -256,8 +257,55 @@ export default function ServicerRoutePage() {
             );
           })()}
 
+          {/* In-progress jobs managed without a formal route */}
+          {!route && inProgressJobs.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-xs font-semibold uppercase text-gray-500">Jobs In Progress</p>
+              {inProgressJobs.map((b) => {
+                const addr = b.addressId;
+                const svc = b.serviceTypeId;
+                const coords = addr?.location?.coordinates;
+                return (
+                  <div key={b._id} className="rounded-xl border border-brand-500/60 bg-gray-800 p-3.5">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white">
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-white">{addr?.street || 'Address'}{addr?.unit ? `, ${addr.unit}` : ''}</p>
+                        <p className="text-xs text-gray-400">{addr?.city}, {addr?.state} {addr?.zip}</p>
+                        <p className="mt-1 text-xs text-gray-400">{svc?.name || 'Service'} &middot; {b.barrelCount || 0} barrel{(b.barrelCount || 0) !== 1 ? 's' : ''}</p>
+                      </div>
+                      <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-medium ${
+                        b.status === 'en-route' ? 'bg-purple-900/50 text-purple-400' :
+                        b.status === 'arrived' ? 'bg-indigo-900/50 text-indigo-400' :
+                        'bg-yellow-900/50 text-yellow-400'
+                      }`}>{b.status}</span>
+                    </div>
+                    <div className="mt-3 flex gap-2">
+                      {coords && (
+                        <button onClick={() => openNavigation(coords[1], coords[0])}
+                          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-blue-600 py-2 text-xs font-semibold text-white transition hover:bg-blue-700 active:scale-[0.98]">
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                          Navigate
+                        </button>
+                      )}
+                      <Link href={`/servicer/job/${b._id}`}
+                        className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-brand-600 py-2 text-xs font-semibold text-brand-400 transition hover:bg-brand-600/10 active:scale-[0.98]">
+                        Manage Job
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+              {activeJobs.length > 0 && (
+                <p className="text-xs text-gray-500 text-center pt-1">You also have {activeJobs.length} unstarted job{activeJobs.length !== 1 ? 's' : ''} ready to plan.</p>
+              )}
+            </div>
+          )}
+
           {/* No route and no jobs */}
-          {!route && activeJobs.length === 0 && (
+          {!route && activeJobs.length === 0 && inProgressJobs.length === 0 && (
             <div className="py-16 text-center">
               <p className="text-gray-400">No active jobs to plan a route.</p>
               <button onClick={() => router.push('/servicer/dashboard')} className="mt-4 text-sm font-medium text-brand-400">Back to Dashboard</button>
