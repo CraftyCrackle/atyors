@@ -94,25 +94,12 @@ export async function registerNativePush() {
       console.log('[Push] APNs token received:', token.value.substring(0, 20) + '...');
       tokenValue = token.value;
       try {
-        const accessToken = localStorage.getItem('accessToken');
+        const { api } = await import('./api');
         const platform = Capacitor.getPlatform();
-        const res = await fetch('/api/v1/push/device/register', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({ token: token.value, platform }),
-        });
-        const data = await res.json();
-        if (res.ok) {
-          registered = true;
-          lastError = null;
-          console.log('[Push] Device registered with server OK');
-        } else {
-          lastError = `Server error: ${data?.error || res.status}`;
-          console.error('[Push] Server registration failed:', data);
-        }
+        await api.post('/push/device/register', { token: token.value, platform });
+        registered = true;
+        lastError = null;
+        console.log('[Push] Device registered with server OK');
       } catch (err) {
         lastError = `Server register failed: ${err.message}`;
         console.error('[Push] Failed to register device token:', err);
@@ -124,9 +111,11 @@ export async function registerNativePush() {
       console.error('[Push] APNs registration error:', JSON.stringify(err));
     });
 
-    await PushNotifications.addListener('pushNotificationReceived', async (notification) => {
+    await PushNotifications.addListener('pushNotificationReceived', (notification) => {
       console.log('[Push] Foreground notification:', notification.title, notification.body);
-      try { await PushNotifications.removeAllDeliveredNotifications(); } catch {}
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('native-push', { detail: notification }));
+      }
     });
 
     await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {

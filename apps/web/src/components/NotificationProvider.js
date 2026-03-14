@@ -167,6 +167,17 @@ export default function NotificationProvider({ children }) {
   }, [userId]);
 
   useEffect(() => {
+    function handleNativePush(e) {
+      const n = e.detail;
+      if (n?.title || n?.body) {
+        pushNotif('info', n.body || n.title, n.data);
+      }
+    }
+    window.addEventListener('native-push', handleNativePush);
+    return () => window.removeEventListener('native-push', handleNativePush);
+  }, []);
+
+  useEffect(() => {
     if (!userId) return;
 
     if (socketRef.current) {
