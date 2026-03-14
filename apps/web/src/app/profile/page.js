@@ -6,11 +6,12 @@ import BottomNav from '../../components/BottomNav';
 import { useAuthStore } from '../../stores/authStore';
 import { api } from '../../services/api';
 import { useInstall } from '../../components/InstallContext';
+import AppStoreBadge from '../../components/AppStoreBadge';
 import PhotoViewer from '../../components/PhotoViewer';
 
 export default function ProfilePage() {
   const { user, logout, updateUser } = useAuthStore();
-  const { canInstall, isStandalone, triggerInstall } = useInstall();
+  const { canInstall, isStandalone, isIos, hasAppStore, triggerInstall } = useInstall();
   const [addresses, setAddresses] = useState([]);
   const [editing, setEditing] = useState(false);
   const [addingAddress, setAddingAddress] = useState(false);
@@ -162,7 +163,12 @@ export default function ProfilePage() {
 
           {isCustomer && <InvoiceSection />}
 
-          {canInstall && !isStandalone && (
+          {!isStandalone && isIos && hasAppStore && (
+            <div className="mt-4 flex justify-center">
+              <AppStoreBadge height={40} />
+            </div>
+          )}
+          {!isStandalone && canInstall && !isIos && (
             <button
               onClick={triggerInstall}
               className={`mt-4 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-semibold transition active:scale-[0.98] ${dark ? 'border border-brand-500/30 bg-brand-500/10 text-brand-400 hover:bg-brand-500/20' : 'bg-brand-50 text-brand-600 hover:bg-brand-100'}`}

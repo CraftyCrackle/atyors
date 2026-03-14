@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '../stores/authStore';
 import Logo from '../components/Logo';
+import AppStoreBadge from '../components/AppStoreBadge';
+import { useInstall } from '../components/InstallContext';
 
 const FEATURES = [
   {
@@ -82,6 +84,8 @@ function NativeAppLanding() {
 }
 
 function WebLanding() {
+  const { isIos, hasAppStore, canInstall, isStandalone, triggerInstall } = useInstall();
+
   return (
     <main className="min-h-screen-safe bg-white">
       <nav className="flex items-center justify-between px-6 pb-4 pt-sticky-safe">
@@ -120,6 +124,18 @@ function WebLanding() {
               I already have an account
             </Link>
           </div>
+
+          {!isStandalone && (
+            <div className="mt-6 flex justify-center gap-3">
+              {isIos && hasAppStore && <AppStoreBadge height={40} />}
+              {!isIos && canInstall && (
+                <button onClick={triggerInstall} className="inline-flex items-center gap-2 rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-800 active:scale-[0.97]">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                  Install App
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </section>
 
@@ -225,10 +241,18 @@ function WebLanding() {
         <div className="mx-auto max-w-lg text-center">
           <h2 className="text-2xl font-bold text-white">Never drag a barrel again.</h2>
           <p className="mt-2 text-brand-100">Sign up, book your first service, and let us do the heavy lifting.</p>
-          <Link href="/signup" className="mt-6 inline-flex items-center gap-2 rounded-xl bg-white px-8 py-4 font-semibold text-brand-600 shadow-lg transition hover:bg-brand-50 active:scale-[0.98]">
-            Get Started
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
-          </Link>
+          <div className="mt-6 flex flex-col items-center gap-4">
+            <Link href="/signup" className="inline-flex items-center gap-2 rounded-xl bg-white px-8 py-4 font-semibold text-brand-600 shadow-lg transition hover:bg-brand-50 active:scale-[0.98]">
+              Get Started
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+            </Link>
+            {isIos && hasAppStore && !isStandalone && (
+              <div className="flex flex-col items-center gap-2">
+                <p className="text-sm text-brand-200">or get the app</p>
+                <AppStoreBadge height={40} />
+              </div>
+            )}
+          </div>
         </div>
       </section>
 

@@ -2,10 +2,13 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
+import { getAppStoreUrl } from './AppStoreBadge';
+
 const InstallCtx = createContext({
   canInstall: false,
   isIos: false,
   isStandalone: false,
+  hasAppStore: false,
   triggerInstall: () => {},
   showIosGuide: false,
   setShowIosGuide: () => {},
@@ -84,6 +87,7 @@ export default function InstallProvider({ children }) {
         canInstall: !isStandalone && (!!deferredPrompt || isIos),
         isIos,
         isStandalone,
+        hasAppStore: !!getAppStoreUrl(),
         triggerInstall,
         showIosGuide,
         setShowIosGuide,

@@ -8,6 +8,7 @@ import { api } from '../../../services/api';
 import ReviewModal from '../../../components/ReviewModal';
 import { useNotifications } from '../../../components/NotificationProvider';
 import { useInstall } from '../../../components/InstallContext';
+import AppStoreBadge from '../../../components/AppStoreBadge';
 import Logo from '../../../components/Logo';
 import PhotoViewer from '../../../components/PhotoViewer';
 
@@ -472,7 +473,7 @@ export default function ServicerDashboard() {
   const { user, loading: authLoading, init, logout } = useAuthStore();
   const router = useRouter();
   const { unreadBump } = useNotifications();
-  const { canInstall, isStandalone, triggerInstall } = useInstall();
+  const { canInstall, isStandalone, isIos, hasAppStore, triggerInstall } = useInstall();
   const [tab, setTab] = useState('available');
   const [available, setAvailable] = useState([]);
   const [myJobs, setMyJobs] = useState([]);
@@ -669,7 +670,12 @@ export default function ServicerDashboard() {
             <svg className="h-5 w-5 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
             <span className="text-xs font-medium text-gray-300">Profile</span>
           </Link>
-          {canInstall && !isStandalone && (
+          {!isStandalone && isIos && hasAppStore && (
+            <div className="flex flex-1 items-center justify-center rounded-xl border border-brand-500/20 bg-brand-600/10 py-2">
+              <AppStoreBadge height={34} />
+            </div>
+          )}
+          {!isStandalone && canInstall && !isIos && (
             <button onClick={triggerInstall} className="flex flex-1 flex-col items-center gap-1.5 rounded-xl border border-brand-500/20 bg-brand-600/10 py-3 transition hover:bg-brand-600/20 active:scale-[0.98]">
               <svg className="h-5 w-5 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
               <span className="text-xs font-medium text-brand-300">Get App</span>

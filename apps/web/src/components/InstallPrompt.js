@@ -2,12 +2,14 @@
 
 import { useEffect } from 'react';
 import { useInstall } from './InstallContext';
+import AppStoreBadge from './AppStoreBadge';
 
 export default function InstallPrompt() {
   const {
     canInstall,
     isIos,
     isStandalone,
+    hasAppStore,
     triggerInstall,
     showIosGuide,
     setShowIosGuide,
@@ -18,13 +20,24 @@ export default function InstallPrompt() {
   useEffect(() => {
     if (isStandalone || bannerDismissed) return;
     if (sessionStorage.getItem('pwa-install-dismissed')) return;
-    if (isIos) {
+    if (isIos && !hasAppStore) {
       const timer = setTimeout(() => setShowIosGuide(true), 3000);
       return () => clearTimeout(timer);
     }
-  }, [isIos, isStandalone, bannerDismissed, setShowIosGuide]);
+  }, [isIos, isStandalone, bannerDismissed, hasAppStore, setShowIosGuide]);
 
   if (bannerDismissed || isStandalone) return null;
+
+  if (isIos && hasAppStore) {
+    return (
+      <SmallCard onDismiss={dismissBanner}>
+        <p className="mt-0.5 text-sm text-gray-500">Get the full app experience</p>
+        <div className="mt-3">
+          <AppStoreBadge height={40} className="w-full" />
+        </div>
+      </SmallCard>
+    );
+  }
 
   if (canInstall && !isIos) {
     return (
