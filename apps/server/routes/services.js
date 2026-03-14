@@ -29,9 +29,6 @@ router.get('/pricing', (req, res) => {
       monthlyBaseBoth: pricingService.MONTHLY_BASE_BOTH,
       monthlyIncludedBarrels: pricingService.MONTHLY_INCLUDED_BARRELS,
       extraBarrelMonthly: pricingService.EXTRA_BARREL_MONTHLY,
-      subscriptionDiscount: pricingService.SUBSCRIPTION_DISCOUNT_STANDARD,
-      subscriptionDiscountLarge: pricingService.SUBSCRIPTION_DISCOUNT_LARGE,
-      subscriptionDiscountThreshold: pricingService.SUBSCRIPTION_DISCOUNT_THRESHOLD,
       curbItemPrice: pricingService.CURB_ITEM_PRICE,
     },
   });

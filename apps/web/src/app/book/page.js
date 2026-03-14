@@ -91,13 +91,10 @@ function BookContent() {
   function back() { step === 0 ? router.back() : setStep((s) => s - 1); }
 
   const perBarrel = pricing?.perBarrel ?? 1.50;
-  const monthlyBase = pricing?.monthlyBase ?? 15;
-  const monthlyBaseBoth = pricing?.monthlyBaseBoth ?? 25;
+  const monthlyBase = pricing?.monthlyBase ?? 24;
+  const monthlyBaseBoth = pricing?.monthlyBaseBoth ?? 24;
   const monthlyIncluded = pricing?.monthlyIncludedBarrels ?? 3;
   const extraBarrelMonthly = pricing?.extraBarrelMonthly ?? 2;
-  const subDiscount = pricing?.subscriptionDiscount ?? 1;
-  const subDiscountLarge = pricing?.subscriptionDiscountLarge ?? 2;
-  const subDiscountThreshold = pricing?.subscriptionDiscountThreshold ?? 3;
   const curbItemPrice = pricing?.curbItemPrice ?? 0.80;
 
   function isBothSvc(svc) {
@@ -134,15 +131,11 @@ function BookContent() {
     return isBoth() ? perBarrel * 2 * selected.barrelCount : perBarrel * selected.barrelCount;
   }
 
-  function getSubscriptionDiscount() {
-    return selected.barrelCount <= subDiscountThreshold ? subDiscount : subDiscountLarge;
-  }
-
   function monthlyPrice() {
     const base = isBoth() ? monthlyBaseBoth : monthlyBase;
     const extra = Math.max(0, selected.barrelCount - monthlyIncluded);
     const extraCost = isBoth() ? extra * extraBarrelMonthly * 2 : extra * extraBarrelMonthly;
-    return base + extraCost - getSubscriptionDiscount();
+    return base + extraCost;
   }
 
   function currentPrice() {
@@ -569,8 +562,7 @@ function BookContent() {
                     One-Time
                   </button>
                   <button onClick={() => setSelected({ ...selected, bookingType: 'subscription' })}
-                    className={`relative flex-1 rounded-xl border-2 py-3 text-sm font-medium transition ${selected.bookingType === 'subscription' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-100 text-gray-500'}`}>
-                    <span className="absolute -top-2.5 right-2 rounded-full bg-green-500 px-2 py-0.5 text-[10px] font-bold text-white">SAVE</span>
+                    className={`flex-1 rounded-xl border-2 py-3 text-sm font-medium transition ${selected.bookingType === 'subscription' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-100 text-gray-500'}`}>
                     Monthly
                   </button>
                 </div>
@@ -633,14 +625,10 @@ function BookContent() {
                         <span className="font-medium">${((selected.barrelCount - monthlyIncluded) * (isBoth() ? extraBarrelMonthly * 2 : extraBarrelMonthly))}/mo</span>
                       </div>
                     )}
-                    <div className="flex justify-between text-sm text-green-700">
-                      <span>Subscription discount</span>
-                      <span className="font-medium">-${getSubscriptionDiscount()}/mo</span>
-                    </div>
                     <hr className="border-brand-200" />
                     <div className="flex items-baseline justify-between">
                       <span className="font-semibold text-gray-700">Monthly total</span>
-                      <span className="text-xl font-bold text-green-600">${monthlyPrice()}/mo</span>
+                      <span className="text-xl font-bold text-brand-600">${monthlyPrice()}/mo</span>
                     </div>
                     {(() => {
                       const weeklyOneTime = oneTimePrice();
