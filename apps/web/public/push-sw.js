@@ -8,18 +8,22 @@ self.addEventListener('push', (event) => {
     payload = { title: 'atyors', body: event.data.text() };
   }
 
+  const isIOS = /iPhone|iPad|iPod/.test(self.navigator?.userAgent || '');
+
   const options = {
     body: payload.body || '',
     icon: payload.icon || '/icons/icon-192.png',
     badge: payload.badge || '/icons/icon-192.png',
     data: payload.data || {},
-    vibrate: [200, 100, 200],
     tag: payload.data?.type || 'default',
-    renotify: true,
-    silent: false,
-    requireInteraction: true,
-    actions: [{ action: 'view', title: 'View' }],
   };
+
+  if (!isIOS) {
+    options.vibrate = [200, 100, 200];
+    options.renotify = true;
+    options.requireInteraction = true;
+    options.actions = [{ action: 'view', title: 'View' }];
+  }
 
   event.waitUntil(
     self.registration.showNotification(payload.title || 'atyors', options)
@@ -27,6 +31,9 @@ self.addEventListener('push', (event) => {
         if (self.navigator && self.navigator.setAppBadge) {
           return self.navigator.setAppBadge();
         }
+      })
+      .catch((err) => {
+        console.error('[SW] showNotification failed:', err);
       })
   );
 });

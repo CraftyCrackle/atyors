@@ -6,8 +6,13 @@ async function create({ userId, type, title, body, bookingId, meta }) {
   const uid = userId?._id || userId;
   const notification = await Notification.create({ userId: uid, type, title, body, bookingId, meta });
 
+  const activeTypes = ['booking:accepted', 'booking:status', 'job:available', 'booking:en-route', 'booking:arrived'];
+  const pushUrl = bookingId
+    ? (activeTypes.includes(type) ? `/tracking/${bookingId}` : `/booking/${bookingId}`)
+    : '/notifications';
+
   pushService
-    .sendToUser(uid, { title, body, data: { type, bookingId: bookingId?.toString(), url: bookingId ? `/booking/${bookingId}` : '/notifications' } })
+    .sendToUser(uid, { title, body, data: { type, bookingId: bookingId?.toString(), url: pushUrl } })
     .catch(() => {});
 
   return notification;

@@ -3,15 +3,40 @@
 import { useEffect, useState, createContext, useContext, useCallback, useRef } from 'react';
 import { useAuthStore } from '../stores/authStore';
 
-const NotificationContext = createContext({ notifications: [], unreadBump: 0 });
+const NotificationContext = createContext({ notifications: [], unreadBump: 0, pushStatus: null });
 
 export function useNotifications() {
   return useContext(NotificationContext);
 }
 
+function detectPushSupport() {
+  if (typeof window === 'undefined') return { supported: false, reason: 'ssr' };
+  const ua = navigator.userAgent;
+  const isIOS = /iPhone|iPad|iPod/.test(ua);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true;
+
+  if (isIOS && !isStandalone) {
+    return { supported: false, reason: 'ios-not-installed', isIOS: true };
+  }
+
+  if (!('serviceWorker' in navigator)) {
+    return { supported: false, reason: 'no-sw' };
+  }
+  if (!('PushManager' in window)) {
+    return { supported: false, reason: 'no-push-api', isIOS };
+  }
+
+  return { supported: true, isIOS };
+}
+
 export default function NotificationProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
   const [unreadBump, setUnreadBump] = useState(0);
+  const [pushStatus, setPushStatus] = useState(null);
+  const [pushBannerDismissed, setPushBannerDismissed] = useState(() => {
+    try { return sessionStorage.getItem('push-banner-dismissed') === '1'; } catch { return false; }
+  });
   const user = useAuthStore((s) => s.user);
   const userId = user?._id;
   const socketRef = useRef(null);
@@ -69,20 +94,38 @@ export default function NotificationProvider({ children }) {
     (async () => {
       try {
         const isNative = await attemptNativePush();
-        if (isNative) return;
+        if (isNative) {
+          setPushStatus({ subscribed: true, native: true });
+          return;
+        }
       } catch (err) {
         console.error('[Push] Native push setup error:', err);
       }
 
-      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+      const support = detectPushSupport();
+      if (!support.supported) {
+        console.warn(`[Push] Not available: ${support.reason}`);
+        setPushStatus({ subscribed: false, reason: support.reason, isIOS: support.isIOS });
+        return;
+      }
+
       navigator.serviceWorker.ready.then(async (reg) => {
         try {
           const existing = await reg.pushManager.getSubscription();
-          if (existing) return;
+          if (existing) {
+            setPushStatus({ subscribed: true });
+            return;
+          }
           const perm = await Notification.requestPermission();
-          if (perm !== 'granted') return;
+          if (perm !== 'granted') {
+            setPushStatus({ subscribed: false, reason: 'denied' });
+            return;
+          }
           const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-          if (!vapidKey) return;
+          if (!vapidKey) {
+            setPushStatus({ subscribed: false, reason: 'no-vapid' });
+            return;
+          }
           const padding = '='.repeat((4 - (vapidKey.length % 4)) % 4);
           const b64 = (vapidKey + padding).replace(/-/g, '+').replace(/_/g, '/');
           const raw = atob(b64);
@@ -95,8 +138,10 @@ export default function NotificationProvider({ children }) {
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({ subscription: sub.toJSON() }),
           });
+          setPushStatus({ subscribed: true });
         } catch (err) {
           console.error('[Push] Web push subscription error:', err);
+          setPushStatus({ subscribed: false, reason: 'error' });
         }
       });
     })();
@@ -159,9 +204,49 @@ export default function NotificationProvider({ children }) {
     };
   }, [userId]);
 
+  const showBanner = userId && pushStatus && !pushStatus.subscribed && !pushBannerDismissed
+    && pushStatus.reason !== 'denied' && pushStatus.reason !== 'no-vapid' && pushStatus.reason !== 'error';
+
+  let bannerMessage = null;
+  if (showBanner) {
+    if (pushStatus.reason === 'ios-not-installed') {
+      bannerMessage = 'To receive notifications on iPhone, add atyors to your home screen: tap the Share button, then "Add to Home Screen."';
+    } else if (pushStatus.reason === 'no-push-api') {
+      bannerMessage = pushStatus.isIOS
+        ? 'Your iOS version doesn\u2019t support push notifications. Please update to iOS 16.4 or later.'
+        : 'Your browser doesn\u2019t support push notifications. Try using Chrome, Edge, or Safari.';
+    } else if (pushStatus.reason === 'no-sw') {
+      bannerMessage = 'Notifications are not available in this browser. Try Chrome, Edge, or Safari.';
+    }
+  }
+
   return (
-    <NotificationContext.Provider value={{ notifications, unreadBump }}>
+    <NotificationContext.Provider value={{ notifications, unreadBump, pushStatus }}>
       {children}
+
+      {bannerMessage && (
+        <div className="fixed bottom-20 left-4 right-4 z-[99] mx-auto max-w-sm animate-slide-in rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-lg">
+          <div className="flex items-start gap-3">
+            <svg className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-amber-900">Notifications Unavailable</p>
+              <p className="mt-1 text-xs text-amber-700">{bannerMessage}</p>
+            </div>
+            <button
+              onClick={() => {
+                setPushBannerDismissed(true);
+                try { sessionStorage.setItem('push-banner-dismissed', '1'); } catch {}
+              }}
+              className="shrink-0 rounded p-1 text-amber-500 hover:bg-amber-100"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 w-80">
         {notifications.map((n) => (
           <div key={n.id}
