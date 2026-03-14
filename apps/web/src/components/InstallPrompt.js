@@ -33,7 +33,7 @@ export default function InstallPrompt() {
       <SmallCard onDismiss={dismissBanner}>
         <p className="mt-0.5 text-sm text-gray-500">Get the full app experience</p>
         <div className="mt-3">
-          <AppStoreBadge height={40} className="w-full" />
+          <AppStoreBadge height={54} className="w-full" />
         </div>
       </SmallCard>
     );

@@ -6,7 +6,7 @@ export function getAppStoreUrl() {
   return APP_STORE_URL;
 }
 
-export default function AppStoreBadge({ className = '', height = 44 }) {
+export default function AppStoreBadge({ className = '', height = 54 }) {
   return (
     <a
       href={APP_STORE_URL}

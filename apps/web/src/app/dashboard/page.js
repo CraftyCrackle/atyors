@@ -514,7 +514,7 @@ export default function DashboardPage() {
 
         {!isStandalone && isIos && hasAppStore && (
           <div className="mx-4 mt-3 flex justify-center">
-            <AppStoreBadge height={40} />
+            <AppStoreBadge />
           </div>
         )}
         {!isStandalone && canInstall && !isIos && (

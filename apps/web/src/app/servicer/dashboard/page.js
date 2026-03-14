@@ -672,7 +672,7 @@ export default function ServicerDashboard() {
           </Link>
           {!isStandalone && isIos && hasAppStore && (
             <div className="flex flex-1 items-center justify-center rounded-xl border border-brand-500/20 bg-brand-600/10 py-2">
-              <AppStoreBadge height={34} />
+              <AppStoreBadge height={44} />
             </div>
           )}
           {!isStandalone && canInstall && !isIos && (

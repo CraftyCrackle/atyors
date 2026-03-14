@@ -127,7 +127,7 @@ function WebLanding() {
 
           {!isStandalone && (
             <div className="mt-6 flex justify-center gap-3">
-              {isIos && hasAppStore && <AppStoreBadge height={40} />}
+              {isIos && hasAppStore && <AppStoreBadge />}
               {!isIos && canInstall && (
                 <button onClick={triggerInstall} className="inline-flex items-center gap-2 rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-800 active:scale-[0.97]">
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
@@ -249,7 +249,7 @@ function WebLanding() {
             {isIos && hasAppStore && !isStandalone && (
               <div className="flex flex-col items-center gap-2">
                 <p className="text-sm text-brand-200">or get the app</p>
-                <AppStoreBadge height={40} />
+                <AppStoreBadge />
               </div>
             )}
           </div>

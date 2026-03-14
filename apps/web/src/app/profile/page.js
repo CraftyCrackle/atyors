@@ -165,7 +165,7 @@ export default function ProfilePage() {
 
           {!isStandalone && isIos && hasAppStore && (
             <div className="mt-4 flex justify-center">
-              <AppStoreBadge height={40} />
+              <AppStoreBadge />
             </div>
           )}
           {!isStandalone && canInstall && !isIos && (
