@@ -78,16 +78,16 @@ describe('Pricing Service', () => {
       expect(calculateMonthlyPriceBoth(3)).toBe(24);
     });
 
-    test('4 barrels = $24 + 1*$2*2 = $28/mo', () => {
-      expect(calculateMonthlyPriceBoth(4)).toBe(28);
+    test('4 barrels = $24 + 1*$2 = $26/mo', () => {
+      expect(calculateMonthlyPriceBoth(4)).toBe(26);
     });
 
-    test('5 barrels = $24 + 2*$2*2 = $32/mo', () => {
-      expect(calculateMonthlyPriceBoth(5)).toBe(32);
+    test('5 barrels = $24 + 2*$2 = $28/mo', () => {
+      expect(calculateMonthlyPriceBoth(5)).toBe(28);
     });
 
-    test('6 barrels = $24 + 3*$2*2 = $36/mo', () => {
-      expect(calculateMonthlyPriceBoth(6)).toBe(36);
+    test('6 barrels = $24 + 3*$2 = $30/mo', () => {
+      expect(calculateMonthlyPriceBoth(6)).toBe(30);
     });
   });
 });

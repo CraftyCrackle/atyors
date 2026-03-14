@@ -134,7 +134,7 @@ function BookContent() {
   function monthlyPrice() {
     const base = isBoth() ? monthlyBaseBoth : monthlyBase;
     const extra = Math.max(0, selected.barrelCount - monthlyIncluded);
-    const extraCost = isBoth() ? extra * extraBarrelMonthly * 2 : extra * extraBarrelMonthly;
+    const extraCost = extra * extraBarrelMonthly;
     return base + extraCost;
   }
 
@@ -621,8 +621,8 @@ function BookContent() {
                     </div>
                     {selected.barrelCount > monthlyIncluded && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">{selected.barrelCount - monthlyIncluded} extra barrel{selected.barrelCount - monthlyIncluded > 1 ? 's' : ''} × ${isBoth() ? (extraBarrelMonthly * 2) : extraBarrelMonthly}/mo</span>
-                        <span className="font-medium">${((selected.barrelCount - monthlyIncluded) * (isBoth() ? extraBarrelMonthly * 2 : extraBarrelMonthly))}/mo</span>
+                        <span className="text-gray-600">{selected.barrelCount - monthlyIncluded} extra barrel{selected.barrelCount - monthlyIncluded > 1 ? 's' : ''} × ${extraBarrelMonthly}/mo</span>
+                        <span className="font-medium">${((selected.barrelCount - monthlyIncluded) * extraBarrelMonthly)}/mo</span>
                       </div>
                     )}
                     <hr className="border-brand-200" />

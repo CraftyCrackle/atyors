@@ -17,7 +17,7 @@ function calculateMonthlyPrice(barrelCount) {
 
 function calculateMonthlyPriceBoth(barrelCount) {
   const extraBarrels = Math.max(0, barrelCount - MONTHLY_INCLUDED_BARRELS);
-  return MONTHLY_BASE_BOTH + (extraBarrels * EXTRA_BARREL_MONTHLY * 2);
+  return MONTHLY_BASE_BOTH + (extraBarrels * EXTRA_BARREL_MONTHLY);
 }
 
 function calculateCurbItemPrice(itemCount) {
