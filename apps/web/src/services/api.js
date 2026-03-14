@@ -19,6 +19,7 @@ async function request(path, options = {}) {
       const isServicer = window.location.pathname.startsWith('/servicer');
       window.location.href = isServicer ? '/servicer/login' : '/login';
     }
+    return {};
   }
 
   let data;

@@ -208,13 +208,18 @@ export default function NotificationProvider({ children }) {
     && pushStatus.reason !== 'denied' && pushStatus.reason !== 'no-vapid' && pushStatus.reason !== 'error';
 
   let bannerMessage = null;
+  let bannerAction = null;
   if (showBanner) {
     if (pushStatus.reason === 'ios-not-installed') {
-      bannerMessage = 'To receive notifications on iPhone, add atyors to your home screen: tap the Share button, then "Add to Home Screen."';
+      bannerMessage = 'To receive notifications on iPhone, download the atyors app from the App Store.';
+      bannerAction = { label: 'Get the App', url: 'https://apps.apple.com/us/app/atyors/id6760164528' };
     } else if (pushStatus.reason === 'no-push-api') {
       bannerMessage = pushStatus.isIOS
-        ? 'Your iOS version doesn\u2019t support push notifications. Please update to iOS 16.4 or later.'
+        ? 'Download the atyors app from the App Store to receive push notifications.'
         : 'Your browser doesn\u2019t support push notifications. Try using Chrome, Edge, or Safari.';
+      if (pushStatus.isIOS) {
+        bannerAction = { label: 'Get the App', url: 'https://apps.apple.com/us/app/atyors/id6760164528' };
+      }
     } else if (pushStatus.reason === 'no-sw') {
       bannerMessage = 'Notifications are not available in this browser. Try Chrome, Edge, or Safari.';
     }
@@ -233,6 +238,11 @@ export default function NotificationProvider({ children }) {
             <div className="flex-1">
               <p className="text-sm font-semibold text-amber-900">Notifications Unavailable</p>
               <p className="mt-1 text-xs text-amber-700">{bannerMessage}</p>
+              {bannerAction && (
+                <a href={bannerAction.url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-amber-700">
+                  {bannerAction.label}
+                </a>
+              )}
             </div>
             <button
               onClick={() => {
