@@ -91,7 +91,7 @@ export default function AdminDashboardPage() {
 
   return (
     <AdminGuard>
-      <div className="flex min-h-[100dvh] min-h-[100vh] flex-col bg-gray-900">
+      <div className="flex min-h-[100dvh] min-h-[100vh] flex-col overflow-x-hidden bg-gray-900">
         <header className="sticky top-0 z-10 border-b border-gray-800 bg-gray-900 px-4 pb-3 pt-header-safe">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -107,7 +107,7 @@ export default function AdminDashboardPage() {
           </div>
         </header>
 
-        <div className="mx-auto max-w-5xl px-4 py-4">
+        <div className="mx-auto w-full max-w-5xl px-4 py-4">
           <h1 className="text-xl font-bold text-white">Dashboard</h1>
           <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
             <Link href="/admin/bookings" className="shrink-0 rounded-lg bg-brand-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-brand-700">
@@ -138,40 +138,17 @@ export default function AdminDashboardPage() {
                 <StatCard label="Customers" value={stats?.totalCustomers} icon="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" color="bg-purple-500/20 text-purple-400" />
               </div>
 
-              <div className="mt-4 grid grid-cols-3 gap-3 sm:gap-4">
-                <div className="rounded-xl border border-gray-700 bg-gray-800 p-3 sm:p-5">
-                  <div className="flex items-center gap-2.5 sm:gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg sm:h-10 sm:w-10 bg-green-500/20 text-green-400">
-                      <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[10px] text-gray-400 uppercase font-semibold">Total Revenue</p>
-                      <p className="text-lg font-bold text-white sm:text-xl">${(stats?.totalRevenue || 0).toFixed(2)}</p>
-                    </div>
+              <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-4">
+                {[
+                  { label: 'Total Revenue', value: stats?.totalRevenue },
+                  { label: 'This Week', value: stats?.weekRevenue },
+                  { label: 'This Month', value: stats?.monthRevenue },
+                ].map((r) => (
+                  <div key={r.label} className="rounded-xl border border-gray-700 bg-gray-800 p-2.5 sm:p-5">
+                    <p className="text-[10px] uppercase font-semibold text-gray-400 truncate">{r.label}</p>
+                    <p className="mt-1 text-base font-bold text-white sm:text-xl">${(r.value || 0).toFixed(2)}</p>
                   </div>
-                </div>
-                <div className="rounded-xl border border-gray-700 bg-gray-800 p-3 sm:p-5">
-                  <div className="flex items-center gap-2.5 sm:gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg sm:h-10 sm:w-10 bg-green-500/20 text-green-400">
-                      <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[10px] text-gray-400 uppercase font-semibold">This Week</p>
-                      <p className="text-lg font-bold text-white sm:text-xl">${(stats?.weekRevenue || 0).toFixed(2)}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="rounded-xl border border-gray-700 bg-gray-800 p-3 sm:p-5">
-                  <div className="flex items-center gap-2.5 sm:gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg sm:h-10 sm:w-10 bg-green-500/20 text-green-400">
-                      <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[10px] text-gray-400 uppercase font-semibold">This Month</p>
-                      <p className="text-lg font-bold text-white sm:text-xl">${(stats?.monthRevenue || 0).toFixed(2)}</p>
-                    </div>
-                  </div>
-                </div>
+                ))}
               </div>
 
               <div id="settings" className="mt-8 rounded-xl border border-gray-700 bg-gray-800 p-4">
