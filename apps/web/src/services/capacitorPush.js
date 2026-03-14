@@ -9,6 +9,7 @@ let registered = false;
 let lastError = null;
 let permissionState = null;
 let tokenValue = null;
+let registrationResolve = null;
 
 async function initCapacitor() {
   if (initPromise) return initPromise;
@@ -65,18 +66,32 @@ function withTimeout(promise, ms, label) {
   ]);
 }
 
+function waitForToken(timeoutMs = 8000) {
+  if (registered) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    registrationResolve = resolve;
+    setTimeout(() => {
+      registrationResolve = null;
+      resolve(false);
+    }, timeoutMs);
+  });
+}
+
+/**
+ * Returns { status, reason? }
+ * status: 'registered' | 'denied' | 'failed'
+ */
 export async function registerNativePush() {
   await initCapacitor();
 
   if (!isNativeApp()) {
-    console.log('[Push] Not a native app, skipping');
-    return;
+    return { status: 'failed', reason: 'not-native' };
   }
 
   if (!PushNotifications) {
     lastError = lastError || 'PushNotifications plugin not available';
     console.error('[Push]', lastError);
-    return;
+    return { status: 'failed', reason: 'no-plugin' };
   }
 
   console.log('[Push] Starting native push registration...');
@@ -104,11 +119,19 @@ export async function registerNativePush() {
         lastError = `Server register failed: ${err.message}`;
         console.error('[Push] Failed to register device token:', err);
       }
+      if (registrationResolve) {
+        registrationResolve(registered);
+        registrationResolve = null;
+      }
     });
 
     await PushNotifications.addListener('registrationError', (err) => {
       lastError = `APNs registration error: ${JSON.stringify(err)}`;
       console.error('[Push] APNs registration error:', JSON.stringify(err));
+      if (registrationResolve) {
+        registrationResolve(false);
+        registrationResolve = null;
+      }
     });
 
     await PushNotifications.addListener('pushNotificationReceived', (notification) => {
@@ -155,22 +178,29 @@ export async function registerNativePush() {
     if (permResult.receive !== 'granted') {
       lastError = `Permission ${permResult.receive}`;
       console.warn('[Push] Permission not granted:', permResult.receive);
-      return;
+      return { status: 'denied', reason: permResult.receive };
     }
   } catch (err) {
     lastError = `requestPermissions: ${err.message}`;
     console.error('[Push] requestPermissions failed:', err);
-    return;
+    return { status: 'failed', reason: 'permission-error' };
   }
 
   try {
     console.log('[Push] Calling register()...');
     await withTimeout(PushNotifications.register(), 10000, 'register');
-    console.log('[Push] register() completed');
+    console.log('[Push] register() completed, waiting for token...');
   } catch (err) {
     lastError = `register: ${err.message}`;
     console.error('[Push] register() failed:', err);
+    return { status: 'failed', reason: 'register-error' };
   }
+
+  const gotToken = await waitForToken(8000);
+  if (gotToken) {
+    return { status: 'registered' };
+  }
+  return { status: 'failed', reason: lastError || 'token-timeout' };
 }
 
 export async function clearNativeBadge() {

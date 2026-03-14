@@ -63,23 +63,33 @@ export default function NotificationProvider({ children }) {
       const { isNativeApp, registerNativePush, isPushRegistered, getPushDiagnostics } =
         await import('../services/capacitorPush');
 
-      if (!isNativeApp()) return false;
+      if (!isNativeApp()) return null;
 
       console.log('[Push] Native platform detected, registering...');
-      await registerNativePush();
-
+      const result = await registerNativePush();
       const diag = getPushDiagnostics();
-      console.log('[Push] After registration attempt:', JSON.stringify(diag));
+      console.log('[Push] Registration result:', JSON.stringify(result), 'diag:', JSON.stringify(diag));
+
+      if (result.status === 'registered') {
+        return { subscribed: true, native: true };
+      }
+
+      if (result.status === 'denied') {
+        return { subscribed: false, native: true, reason: 'native-denied' };
+      }
 
       if (!isPushRegistered() && !disposed) {
-        const delays = [3000, 8000, 15000];
+        const delays = [5000, 12000];
         delays.forEach((delay, i) => {
           const t = setTimeout(async () => {
             if (disposed || isPushRegistered()) return;
             console.log(`[Push] Retry ${i + 1} after ${delay}ms...`);
             try {
-              await registerNativePush();
-              console.log('[Push] Retry result:', JSON.stringify(getPushDiagnostics()));
+              const retry = await registerNativePush();
+              console.log('[Push] Retry result:', JSON.stringify(retry));
+              if (retry.status === 'registered' && !disposed) {
+                setPushStatus({ subscribed: true, native: true });
+              }
             } catch (e) {
               console.error(`[Push] Retry ${i + 1} failed:`, e);
             }
@@ -88,14 +98,14 @@ export default function NotificationProvider({ children }) {
         });
       }
 
-      return true;
+      return { subscribed: false, native: true, reason: 'native-failed' };
     }
 
     (async () => {
       try {
-        const isNative = await attemptNativePush();
-        if (isNative) {
-          setPushStatus({ subscribed: true, native: true });
+        const nativeResult = await attemptNativePush();
+        if (nativeResult) {
+          setPushStatus(nativeResult);
           return;
         }
       } catch (err) {
@@ -216,12 +226,18 @@ export default function NotificationProvider({ children }) {
   }, [userId]);
 
   const showBanner = userId && pushStatus && !pushStatus.subscribed && !pushBannerDismissed
-    && pushStatus.reason !== 'denied' && pushStatus.reason !== 'no-vapid' && pushStatus.reason !== 'error';
+    && pushStatus.reason !== 'no-vapid' && pushStatus.reason !== 'error';
 
   let bannerMessage = null;
   let bannerAction = null;
   if (showBanner) {
-    if (pushStatus.reason === 'ios-not-installed') {
+    if (pushStatus.reason === 'native-denied') {
+      bannerMessage = 'Notifications are turned off for atyors. Go to Settings \u2192 atyors \u2192 Notifications and enable Allow Notifications.';
+    } else if (pushStatus.reason === 'native-failed') {
+      bannerMessage = 'We couldn\u2019t set up push notifications. Try closing and reopening the app, or check Settings \u2192 atyors \u2192 Notifications.';
+    } else if (pushStatus.reason === 'denied') {
+      bannerMessage = 'Notification permission was denied. Please enable notifications in your browser settings.';
+    } else if (pushStatus.reason === 'ios-not-installed') {
       bannerMessage = 'To receive notifications on iPhone, download the atyors app from the App Store.';
       bannerAction = { label: 'Get the App', url: 'https://apps.apple.com/us/app/atyors/id6760164528' };
     } else if (pushStatus.reason === 'no-push-api') {
