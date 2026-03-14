@@ -273,6 +273,38 @@ router.post('/zipcodes', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+router.get('/zipcodes/demand', async (req, res, next) => {
+  try {
+    const Address = require('../models/Address');
+    const settings = await AppSettings.get();
+    const served = new Set(settings.servedZipcodes);
+
+    const pipeline = [
+      { $match: { zip: { $exists: true, $ne: '' } } },
+      { $group: {
+        _id: '$zip',
+        addressCount: { $sum: 1 },
+        users: { $addToSet: '$userId' },
+      }},
+      { $project: {
+        zip: '$_id',
+        _id: 0,
+        addressCount: 1,
+        userCount: { $size: '$users' },
+      }},
+      { $sort: { addressCount: -1 } },
+    ];
+
+    const results = await Address.aggregate(pipeline);
+    const data = results.map((r) => ({
+      ...r,
+      served: served.has(r.zip),
+    }));
+
+    res.json({ success: true, data });
+  } catch (err) { next(err); }
+});
+
 router.delete('/zipcodes/:zipcode', async (req, res, next) => {
   try {
     const settings = await AppSettings.get();
