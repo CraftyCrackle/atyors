@@ -85,6 +85,8 @@ function LiveTrackingCard({ booking, onStatusChange }) {
   const isMoving = status === 'en-route';
   const [servicerPos, setServicerPos] = useState(null);
   const socketRef = useRef(null);
+  const onStatusChangeRef = useRef(onStatusChange);
+  onStatusChangeRef.current = onStatusChange;
 
   const customerCoords = booking.addressId?.location?.coordinates;
   const customerPos = customerCoords ? { lat: customerCoords[1], lng: customerCoords[0] } : null;
@@ -117,8 +119,8 @@ function LiveTrackingCard({ booking, onStatusChange }) {
         if (!disposed) setServicerPos({ lat: data.lat, lng: data.lng });
       });
 
-      socket.on('status:update', () => { if (!disposed && onStatusChange) onStatusChange(); });
-      socket.on('booking:status', () => { if (!disposed && onStatusChange) onStatusChange(); });
+      socket.on('status:update', () => { if (!disposed) onStatusChangeRef.current?.(); });
+      socket.on('booking:status', () => { if (!disposed) onStatusChangeRef.current?.(); });
     }
 
     fetchInitialPosition();

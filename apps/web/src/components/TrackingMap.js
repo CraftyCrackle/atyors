@@ -26,12 +26,16 @@ function FollowServicer({ servicerPos, customerPos }) {
   useEffect(() => {
     if (!servicerPos) return;
 
-    if (!fittedRef.current && customerPos) {
-      const bounds = L.latLngBounds(
-        [servicerPos.lat, servicerPos.lng],
-        [customerPos.lat, customerPos.lng]
-      );
-      map.fitBounds(bounds.pad(0.3));
+    if (!fittedRef.current) {
+      if (customerPos) {
+        const bounds = L.latLngBounds(
+          [servicerPos.lat, servicerPos.lng],
+          [customerPos.lat, customerPos.lng]
+        );
+        map.fitBounds(bounds.pad(0.3));
+      } else {
+        map.setView([servicerPos.lat, servicerPos.lng], 16);
+      }
       fittedRef.current = true;
       return;
     }

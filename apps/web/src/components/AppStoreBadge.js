@@ -7,8 +7,6 @@ export function getAppStoreUrl() {
 }
 
 export default function AppStoreBadge({ className = '', height = 44 }) {
-  if (!APP_STORE_URL) return null;
-
   return (
     <a
       href={APP_STORE_URL}
