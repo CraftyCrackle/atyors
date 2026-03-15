@@ -84,7 +84,7 @@ function NativeAppLanding() {
 }
 
 function WebLanding() {
-  const { isIos, hasAppStore, canInstall, isStandalone, triggerInstall } = useInstall();
+  const { isIos, isAndroid, hasAppStore, canInstall, isStandalone, triggerInstall } = useInstall();
 
   return (
     <main className="min-h-screen-safe bg-white">
@@ -245,10 +245,19 @@ function WebLanding() {
               Get Started
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
             </Link>
-            {isIos && hasAppStore && !isStandalone && (
+            {!isStandalone && isIos && hasAppStore && (
               <div className="flex flex-col items-center gap-2">
                 <p className="text-sm text-brand-200">or get the app</p>
                 <AppStoreBadge />
+              </div>
+            )}
+            {!isStandalone && !isIos && canInstall && (
+              <div className="flex flex-col items-center gap-2">
+                <p className="text-sm text-brand-200">or get the app</p>
+                <button onClick={triggerInstall} className="inline-flex items-center gap-2 rounded-lg bg-white/10 border border-white/20 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-white/20 active:scale-[0.97]">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                  Install App
+                </button>
               </div>
             )}
           </div>

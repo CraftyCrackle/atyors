@@ -8,11 +8,14 @@ export default function InstallPrompt() {
   const {
     canInstall,
     isIos,
+    isAndroid,
     isStandalone,
     hasAppStore,
     triggerInstall,
     showIosGuide,
     setShowIosGuide,
+    showAndroidGuide,
+    setShowAndroidGuide,
     dismissBanner,
     bannerDismissed,
   } = useInstall();
@@ -27,6 +30,10 @@ export default function InstallPrompt() {
   }, [isIos, isStandalone, bannerDismissed, hasAppStore, setShowIosGuide]);
 
   if (bannerDismissed || isStandalone) return null;
+
+  if (showAndroidGuide) {
+    return <AndroidFullScreenGuide onDismiss={dismissBanner} />;
+  }
 
   if (isIos && hasAppStore) {
     return (
@@ -130,6 +137,96 @@ function IosFullScreenGuide({ onDismiss }) {
         <div className="flex items-center justify-center gap-2 animate-ios-arrow-bounce">
           <SafariShareIcon className="h-6 w-6 text-white" />
           <span className="text-sm font-medium text-white">Tap the Share button below</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ChromeMenuIcon({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <circle cx="12" cy="5" r="2" />
+      <circle cx="12" cy="12" r="2" />
+      <circle cx="12" cy="19" r="2" />
+    </svg>
+  );
+}
+
+function AndroidFullScreenGuide({ onDismiss }) {
+  return (
+    <div className="fixed inset-0 z-[200] flex flex-col bg-black/60 backdrop-blur-sm animate-ios-overlay-in">
+      <div className="flex-1 flex items-center justify-center px-6">
+        <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl animate-ios-card-in">
+          <div className="flex flex-col items-center text-center">
+            <img src="/icons/icon-192.png" alt="" className="h-20 w-20 rounded-2xl shadow-lg" />
+            <h2 className="mt-4 text-xl font-bold text-gray-900">Install atyors</h2>
+            <p className="mt-1 text-sm text-gray-500">Add to your home screen for one-tap access</p>
+          </div>
+
+          <div className="mt-6 space-y-4">
+            <div className="flex items-start gap-4 rounded-2xl bg-gray-50 p-4">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white">1</div>
+              <div>
+                <p className="text-sm font-semibold text-gray-900">
+                  Open in Chrome
+                </p>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  Make sure you&apos;re using Google Chrome browser
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4 rounded-2xl bg-gray-50 p-4">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white">2</div>
+              <div>
+                <p className="text-sm font-semibold text-gray-900">
+                  Tap the menu
+                </p>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  Tap <ChromeMenuIcon className="inline h-5 w-5 text-brand-600 align-text-bottom" /> at the top right of Chrome
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4 rounded-2xl bg-gray-50 p-4">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white">3</div>
+              <div>
+                <p className="text-sm font-semibold text-gray-900">
+                  Tap &quot;Add to Home screen&quot;
+                </p>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  Or &quot;Install app&quot; if Chrome shows it
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4 rounded-2xl bg-gray-50 p-4">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white">4</div>
+              <div>
+                <p className="text-sm font-semibold text-gray-900">
+                  Tap &quot;Add&quot;
+                </p>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  The app icon will appear on your home screen
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={onDismiss}
+            className="mt-6 w-full rounded-xl bg-gray-100 py-3 text-sm font-semibold text-gray-600 transition hover:bg-gray-200 active:scale-[0.98]"
+          >
+            Maybe Later
+          </button>
+        </div>
+      </div>
+
+      <div className="pb-safe px-6 pb-4">
+        <div className="flex items-center justify-center gap-2 animate-ios-arrow-bounce">
+          <ChromeMenuIcon className="h-6 w-6 text-white" />
+          <span className="text-sm font-medium text-white">Tap the menu button above</span>
         </div>
       </div>
     </div>

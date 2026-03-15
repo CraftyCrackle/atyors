@@ -7,11 +7,14 @@ import { getAppStoreUrl } from './AppStoreBadge';
 const InstallCtx = createContext({
   canInstall: false,
   isIos: false,
+  isAndroid: false,
   isStandalone: false,
   hasAppStore: false,
   triggerInstall: () => {},
   showIosGuide: false,
   setShowIosGuide: () => {},
+  showAndroidGuide: false,
+  setShowAndroidGuide: () => {},
   dismissBanner: () => {},
   bannerDismissed: false,
 });
@@ -28,6 +31,11 @@ function detectIos() {
   return (isIosUA || isMacSafari) && !('beforeinstallprompt' in window);
 }
 
+function detectAndroid() {
+  if (typeof window === 'undefined') return false;
+  return /android/i.test(navigator.userAgent);
+}
+
 function detectStandalone() {
   if (typeof window === 'undefined') return false;
   if (window.Capacitor?.isNativePlatform?.()) return true;
@@ -40,13 +48,16 @@ function detectStandalone() {
 export default function InstallProvider({ children }) {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isIos, setIsIos] = useState(false);
+  const [isAndroid, setIsAndroid] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [showIosGuide, setShowIosGuide] = useState(false);
+  const [showAndroidGuide, setShowAndroidGuide] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
 
   useEffect(() => {
     setIsStandalone(detectStandalone());
     setIsIos(detectIos());
+    setIsAndroid(detectAndroid());
 
     if (detectStandalone()) return;
 
@@ -57,6 +68,8 @@ export default function InstallProvider({ children }) {
     window.addEventListener('beforeinstallprompt', handler);
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
+
+  const canInstall = !isStandalone && (!!deferredPrompt || isIos || isAndroid);
 
   const triggerInstall = useCallback(async () => {
     if (deferredPrompt) {
@@ -72,25 +85,33 @@ export default function InstallProvider({ children }) {
       setShowIosGuide(true);
       return 'ios-guide';
     }
+    if (isAndroid) {
+      setShowAndroidGuide(true);
+      return 'android-guide';
+    }
     return null;
-  }, [deferredPrompt, isIos]);
+  }, [deferredPrompt, isIos, isAndroid]);
 
   const dismissBanner = useCallback(() => {
     setBannerDismissed(true);
     setShowIosGuide(false);
+    setShowAndroidGuide(false);
     sessionStorage.setItem('pwa-install-dismissed', '1');
   }, []);
 
   return (
     <InstallCtx.Provider
       value={{
-        canInstall: !isStandalone && (!!deferredPrompt || isIos),
+        canInstall,
         isIos,
+        isAndroid,
         isStandalone,
         hasAppStore: !!getAppStoreUrl(),
         triggerInstall,
         showIosGuide,
         setShowIosGuide,
+        showAndroidGuide,
+        setShowAndroidGuide,
         dismissBanner,
         bannerDismissed,
       }}
