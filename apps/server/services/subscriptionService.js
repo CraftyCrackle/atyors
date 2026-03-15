@@ -7,6 +7,18 @@ const config = require('../config');
 const { calculateMonthlyPrice, calculateMonthlyPriceBoth, calculateOneTimePrice } = require('./pricingService');
 
 async function create(userId, data) {
+  const existing = await Subscription.findOne({
+    userId,
+    addressId: data.addressId,
+    status: { $in: ['active', 'past_due', 'trialing'] },
+  });
+  if (existing) {
+    const err = new Error('You already have an active subscription for this address. Cancel it first to start a new one.');
+    err.status = 409;
+    err.code = 'DUPLICATE_SUBSCRIPTION';
+    throw err;
+  }
+
   const barrelCount = Math.max(1, parseInt(data.barrelCount) || 1);
 
   const svcType = await ServiceType.findById(data.serviceTypeId);

@@ -50,6 +50,7 @@ function BookContent() {
   const [curbItemPreviews, setCurbItemPreviews] = useState([]);
   const [dateFullyBooked, setDateFullyBooked] = useState(false);
   const [zipNotServed, setZipNotServed] = useState(false);
+  const [activeSubs, setActiveSubs] = useState([]);
 
   useEffect(() => {
     async function load() {
@@ -65,8 +66,9 @@ function BookContent() {
         setAddresses(addrRes.data.addresses);
         setPricing(priceRes.data);
         setHasCard((methodsRes.data.methods || []).length > 0);
-        const activeSubs = (subsRes.data.subscriptions || []).filter((s) => s.status !== 'cancelled');
-        if (activeSubs.length > 0 || searchParams.get('plan') === 'subscription') {
+        const activeSubs_ = (subsRes.data.subscriptions || []).filter((s) => s.status !== 'cancelled');
+        setActiveSubs(activeSubs_);
+        if (activeSubs_.length > 0 || searchParams.get('plan') === 'subscription') {
           setSelected((prev) => ({ ...prev, bookingType: 'subscription' }));
         }
       } catch { }
@@ -166,11 +168,16 @@ function BookContent() {
   }
 
   function selectAddress(addr) {
+    const addrHasSub = activeSubs.some((s) => {
+      const id = s.addressId?._id || s.addressId;
+      return id === addr._id || String(id) === String(addr._id);
+    });
     setSelected((prev) => ({
       ...prev,
       addressId: addr._id,
       barrelCount: addr.barrelCount || prev.barrelCount || 1,
       trashDay: addr.trashDay || prev.trashDay || '',
+      bookingType: addrHasSub ? 'one-time' : prev.bookingType,
     }));
     setZipNotServed(false);
     if (addr.zip) {
@@ -253,6 +260,10 @@ function BookContent() {
   }
 
   const selectedAddr = addresses.find((a) => a._id === selected.addressId);
+  const hasActiveSubForAddress = selected.addressId && activeSubs.some((s) => {
+    const subAddrId = s.addressId?._id || s.addressId;
+    return subAddrId === selected.addressId || String(subAddrId) === String(selected.addressId);
+  });
 
   if (loading) {
     return (
@@ -571,11 +582,15 @@ function BookContent() {
                     className={`flex-1 rounded-xl border-2 py-3 text-sm font-medium transition ${selected.bookingType === 'one-time' ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-gray-100 text-gray-500'}`}>
                     One-Time
                   </button>
-                  <button onClick={() => setSelected({ ...selected, bookingType: 'subscription' })}
-                    className={`flex-1 rounded-xl border-2 py-3 text-sm font-medium transition ${selected.bookingType === 'subscription' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-100 text-gray-500'}`}>
+                  <button onClick={() => !hasActiveSubForAddress && setSelected({ ...selected, bookingType: 'subscription' })}
+                    disabled={hasActiveSubForAddress}
+                    className={`flex-1 rounded-xl border-2 py-3 text-sm font-medium transition ${hasActiveSubForAddress ? 'border-gray-100 text-gray-300 cursor-not-allowed' : selected.bookingType === 'subscription' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-100 text-gray-500'}`}>
                     Monthly
                   </button>
                 </div>
+                {hasActiveSubForAddress && (
+                  <p className="mt-2 text-xs text-amber-600">You already have an active monthly subscription for this address.</p>
+                )}
               </div>
 
               {/* Barrel count */}
