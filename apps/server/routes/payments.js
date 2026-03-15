@@ -58,6 +58,22 @@ router.patch('/methods/:id/default', authenticate, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+router.post('/verify-card', authenticate, async (req, res, next) => {
+  try {
+    if (config.stripe.skip) {
+      return res.json({ success: true, data: { verified: true } });
+    }
+    const { paymentMethodId } = req.body;
+    if (!paymentMethodId) {
+      const err = new Error('paymentMethodId is required');
+      err.status = 400;
+      throw err;
+    }
+    const result = await stripeService.verifyCardZip(req.user, paymentMethodId);
+    res.json({ success: true, data: result });
+  } catch (err) { next(err); }
+});
+
 router.get('/history', authenticate, async (req, res, next) => {
   try {
     if (config.stripe.skip) {

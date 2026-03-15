@@ -1319,16 +1319,31 @@ function AddCardModal({ clientSecret, user, onSuccess, onClose }) {
     const billingDetails = {};
     if (user?.firstName || user?.lastName) billingDetails.name = `${user.firstName || ''} ${user.lastName || ''}`.trim();
     if (user?.email) billingDetails.email = user.email;
-    const { error: err } = await stripe.confirmCardSetup(clientSecret, {
+    const { error: err, setupIntent } = await stripe.confirmCardSetup(clientSecret, {
       payment_method: { card: cardElement, billing_details: billingDetails },
     });
     if (err) {
       setError(err.message);
       setSaving(false);
-    } else {
-      setSuccess(true);
-      setTimeout(() => onSuccess(), 1200);
+      return;
     }
+    try {
+      const pmId = setupIntent?.payment_method;
+      if (pmId) {
+        const verifyRes = await api.post('/payments/verify-card', { paymentMethodId: pmId });
+        if (!verifyRes.data.verified) {
+          setError('The ZIP code doesn\u2019t match your card\u2019s billing address. Please try again with the correct billing ZIP.');
+          setSaving(false);
+          return;
+        }
+      }
+    } catch {
+      setError('Could not verify your card. Please try again.');
+      setSaving(false);
+      return;
+    }
+    setSuccess(true);
+    setTimeout(() => onSuccess(), 1200);
   }
 
   return (

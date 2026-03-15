@@ -228,6 +228,23 @@ async function listCharges(customerId, limit = 20) {
   return charges.data;
 }
 
+async function verifyCardZip(user, paymentMethodId) {
+  const customerId = await ensureCustomer(user);
+  const stripe = getStripe();
+  const pm = await stripe.paymentMethods.retrieve(paymentMethodId);
+  if (pm.customer !== customerId) {
+    const err = new Error('Payment method does not belong to you');
+    err.status = 403;
+    throw err;
+  }
+  const zipCheck = pm.card?.checks?.address_postal_code_check;
+  if (zipCheck === 'fail') {
+    await stripe.paymentMethods.detach(paymentMethodId);
+    return { verified: false, reason: 'zip_mismatch' };
+  }
+  return { verified: true };
+}
+
 async function refundPaymentIntent(paymentIntentId, { deductAmountDollars = 0 } = {}) {
   if (!paymentIntentId) return null;
   const stripe = getStripe();
@@ -271,4 +288,5 @@ module.exports = {
   hasDefaultPaymentMethod,
   chargeOffSession,
   listCharges,
+  verifyCardZip,
 };
