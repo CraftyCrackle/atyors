@@ -63,10 +63,9 @@ router.get('/history', authenticate, async (req, res, next) => {
     if (config.stripe.skip) {
       return res.json({ success: true, data: { charges: [] } });
     }
-    const stripe = require('stripe')(config.stripe.secretKey);
     const customerId = await stripeService.ensureCustomer(req.user);
-    const charges = await stripe.charges.list({ customer: customerId, limit: 20 });
-    res.json({ success: true, data: { charges: charges.data } });
+    const charges = await stripeService.listCharges(customerId);
+    res.json({ success: true, data: { charges } });
   } catch (err) { next(err); }
 });
 

@@ -7,9 +7,18 @@ function getStripe() {
 }
 
 async function ensureCustomer(user) {
-  if (user.stripeCustomerId) return user.stripeCustomerId;
-
   const stripe = getStripe();
+
+  if (user.stripeCustomerId) {
+    try {
+      const existing = await stripe.customers.retrieve(user.stripeCustomerId);
+      if (!existing.deleted) return user.stripeCustomerId;
+    } catch (err) {
+      if (err.code !== 'resource_missing') throw err;
+    }
+    await User.findByIdAndUpdate(user._id, { $unset: { stripeCustomerId: 1 } });
+  }
+
   const customer = await stripe.customers.create({
     email: user.email,
     name: `${user.firstName} ${user.lastName}`,
@@ -28,6 +37,7 @@ async function createSetupIntent(user) {
   const intent = await stripe.setupIntents.create({
     customer: customerId,
     usage: 'off_session',
+    payment_method_types: ['card'],
   });
   return intent;
 }
@@ -212,6 +222,12 @@ async function chargeOffSession(user, amount, bookingId, { description } = {}) {
   }, { idempotencyKey });
 }
 
+async function listCharges(customerId, limit = 20) {
+  const stripe = getStripe();
+  const charges = await stripe.charges.list({ customer: customerId, limit });
+  return charges.data;
+}
+
 async function refundPaymentIntent(paymentIntentId, { deductAmountDollars = 0 } = {}) {
   if (!paymentIntentId) return null;
   const stripe = getStripe();
@@ -254,4 +270,5 @@ module.exports = {
   refundPaymentIntent,
   hasDefaultPaymentMethod,
   chargeOffSession,
+  listCharges,
 };
