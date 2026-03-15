@@ -159,7 +159,7 @@ export default function ProfilePage() {
 
           {isCustomer && <SubscriptionSection />}
 
-          {isCustomer && <PaymentMethodsSection />}
+          {isCustomer && <PaymentMethodsSection user={user} />}
 
           {isCustomer && <InvoiceSection />}
 
@@ -925,7 +925,7 @@ function CardIcon({ brand }) {
   );
 }
 
-function PaymentMethodsSection() {
+function PaymentMethodsSection({ user }) {
   const [methods, setMethods] = useState([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -1067,6 +1067,7 @@ function PaymentMethodsSection() {
       {showCardForm && setupSecret && (
         <AddCardModal
           clientSecret={setupSecret}
+          user={user}
           onSuccess={handleCardSaved}
           onClose={() => { setShowCardForm(false); setSetupSecret(null); }}
         />
@@ -1268,7 +1269,7 @@ function DeleteAccountSection({ onDeleted }) {
   );
 }
 
-function AddCardModal({ clientSecret, onSuccess, onClose }) {
+function AddCardModal({ clientSecret, user, onSuccess, onClose }) {
   const [stripe, setStripe] = useState(null);
   const [elements, setElements] = useState(null);
   const [cardReady, setCardReady] = useState(false);
@@ -1315,8 +1316,11 @@ function AddCardModal({ clientSecret, onSuccess, onClose }) {
     setSaving(true);
     setError('');
     const cardElement = elements.getElement('card');
+    const billingDetails = {};
+    if (user?.firstName || user?.lastName) billingDetails.name = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+    if (user?.email) billingDetails.email = user.email;
     const { error: err } = await stripe.confirmCardSetup(clientSecret, {
-      payment_method: { card: cardElement },
+      payment_method: { card: cardElement, billing_details: billingDetails },
     });
     if (err) {
       setError(err.message);
@@ -1373,6 +1377,7 @@ function AddCardModal({ clientSecret, onSuccess, onClose }) {
               <div className="rounded-xl border-2 border-gray-200 focus-within:border-brand-500 bg-gray-50 px-4 py-4 transition-colors">
                 <div id="card-element" className="min-h-[28px]" />
               </div>
+              <p className="mt-1.5 text-xs text-gray-400">The ZIP code must match your card&apos;s billing address, not your service address.</p>
 
               {error && (
                 <div className="mt-3 flex items-start gap-2 rounded-lg bg-red-50 p-3">
