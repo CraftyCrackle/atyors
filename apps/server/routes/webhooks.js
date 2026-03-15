@@ -33,7 +33,7 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
       const { bookingId } = event.data.object.metadata;
       if (bookingId) {
         await Booking.updateMany(
-          { $or: [{ _id: bookingId }, { linkedBookingId: bookingId }], paymentStatus: 'pending_payment' },
+          { $or: [{ _id: bookingId }, { linkedBookingId: bookingId }], paymentStatus: { $in: ['pending_payment', 'charge_failed'] } },
           { stripePaymentIntentId: event.data.object.id, paymentStatus: 'paid' },
         );
       }

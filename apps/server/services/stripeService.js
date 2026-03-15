@@ -209,7 +209,7 @@ async function chargeOffSession(user, amount, bookingId, { description } = {}) {
       throw err;
     }
   }
-  const idempotencyKey = `off_${bookingId}_${customerId}`;
+  const idempotencyKey = `off_${bookingId}_${defaultPm}`;
   return stripe.paymentIntents.create({
     amount: Math.round(amount * 100),
     currency: 'usd',

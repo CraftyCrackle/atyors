@@ -452,8 +452,12 @@ export default function DashboardPage() {
       const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
       if (!stripe) throw new Error('Payment system unavailable');
 
-      const { error } = await stripe.confirmCardPayment(clientSecret);
+      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret);
       if (error) throw new Error(error.message || 'Payment failed');
+
+      if (paymentIntent?.status === 'succeeded') {
+        await api.post(`/bookings/${bookingId}/confirm-payment`).catch(() => {});
+      }
 
       await loadBookings();
     } catch (err) {

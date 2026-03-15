@@ -76,13 +76,16 @@ async function confirmPayment(req, res, next) {
 
     if (booking.stripePaymentIntentId) {
       const existingPi = await stripe.paymentIntents.retrieve(booking.stripePaymentIntentId);
-      if (existingPi.status === 'requires_action' || existingPi.status === 'requires_payment_method') {
+      if (existingPi.status === 'requires_action') {
         return res.json({ success: true, data: { clientSecret: existingPi.client_secret, paymentIntentId: existingPi.id } });
       }
       if (existingPi.status === 'succeeded') {
         booking.paymentStatus = 'paid';
         await booking.save();
         return res.json({ success: true, data: { booking, alreadyPaid: true } });
+      }
+      if (['requires_payment_method', 'requires_confirmation'].includes(existingPi.status)) {
+        await stripe.paymentIntents.cancel(existingPi.id).catch(() => {});
       }
     }
 
