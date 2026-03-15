@@ -1269,7 +1269,8 @@ function DeleteAccountSection({ onDeleted }) {
   );
 }
 
-function AddCardModal({ clientSecret, user, onSuccess, onClose }) {
+function AddCardModal({ clientSecret: initialClientSecret, user, onSuccess, onClose }) {
+  const [activeSecret, setActiveSecret] = useState(initialClientSecret);
   const [stripe, setStripe] = useState(null);
   const [elements, setElements] = useState(null);
   const [cardReady, setCardReady] = useState(false);
@@ -1284,11 +1285,16 @@ function AddCardModal({ clientSecret, user, onSuccess, onClose }) {
       const s = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
       if (!mounted || !s) return;
       setStripe(s);
-      const el = s.elements({ clientSecret, appearance: { theme: 'stripe' } });
-      setElements(el);
     })();
     return () => { mounted = false; };
-  }, [clientSecret]);
+  }, []);
+
+  useEffect(() => {
+    if (!stripe || !activeSecret) return;
+    const el = stripe.elements({ clientSecret: activeSecret, appearance: { theme: 'stripe' } });
+    setElements(el);
+    setCardReady(false);
+  }, [stripe, activeSecret]);
 
   useEffect(() => {
     if (!elements) return;
@@ -1319,7 +1325,7 @@ function AddCardModal({ clientSecret, user, onSuccess, onClose }) {
     const billingDetails = {};
     if (user?.firstName || user?.lastName) billingDetails.name = `${user.firstName || ''} ${user.lastName || ''}`.trim();
     if (user?.email) billingDetails.email = user.email;
-    const { error: err, setupIntent } = await stripe.confirmCardSetup(clientSecret, {
+    const { error: err, setupIntent } = await stripe.confirmCardSetup(activeSecret, {
       payment_method: { card: cardElement, billing_details: billingDetails },
     });
     if (err) {
@@ -1332,7 +1338,9 @@ function AddCardModal({ clientSecret, user, onSuccess, onClose }) {
       if (pmId) {
         const verifyRes = await api.post('/payments/verify-card', { paymentMethodId: pmId });
         if (!verifyRes.data.verified) {
-          setError('The ZIP code doesn\u2019t match your card\u2019s billing address. Please try again with the correct billing ZIP.');
+          const newIntent = await api.post('/payments/setup-intent');
+          setActiveSecret(newIntent.data.clientSecret);
+          setError('The ZIP code doesn\u2019t match your card\u2019s billing address. Please re-enter your card with the correct billing ZIP.');
           setSaving(false);
           return;
         }
