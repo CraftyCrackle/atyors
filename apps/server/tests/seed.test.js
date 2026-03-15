@@ -80,6 +80,6 @@ describe('seedAll', () => {
     expect(servicer.email).toBe('servicer@atyors.com');
     expect(servicer.password).toBe('Demo1234!');
     expect(admin.email).toBe('admin@atyors.com');
-    expect(admin.password).toBe('Admin1234!');
+    expect(admin.password).toBe('KzTwqIAqkqqKhKG52PDX!A1');
   });
 });

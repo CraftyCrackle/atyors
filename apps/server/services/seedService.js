@@ -28,7 +28,7 @@ const DEMO_USERS = [
     lastName: 'User',
     phone: '6175550300',
     role: 'admin',
-    password: 'Admin1234!',
+    password: 'KzTwqIAqkqqKhKG52PDX!A1',
   },
 ];
 
