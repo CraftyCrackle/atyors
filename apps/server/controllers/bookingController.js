@@ -55,7 +55,42 @@ async function confirmPayment(req, res, next) {
       err.status = 404;
       throw err;
     }
-    res.json({ success: true, data: { booking } });
+
+    if (booking.paymentStatus === 'paid') {
+      return res.json({ success: true, data: { booking, alreadyPaid: true } });
+    }
+
+    if (booking.paymentStatus !== 'charge_failed') {
+      const err = new Error('No payment action needed for this booking');
+      err.status = 400;
+      throw err;
+    }
+
+    if (config.stripe.skip) {
+      booking.paymentStatus = 'paid';
+      await booking.save();
+      return res.json({ success: true, data: { booking } });
+    }
+
+    const stripe = require('stripe')(config.stripe.secretKey);
+
+    if (booking.stripePaymentIntentId) {
+      const existingPi = await stripe.paymentIntents.retrieve(booking.stripePaymentIntentId);
+      if (existingPi.status === 'requires_action' || existingPi.status === 'requires_payment_method') {
+        return res.json({ success: true, data: { clientSecret: existingPi.client_secret, paymentIntentId: existingPi.id } });
+      }
+      if (existingPi.status === 'succeeded') {
+        booking.paymentStatus = 'paid';
+        await booking.save();
+        return res.json({ success: true, data: { booking, alreadyPaid: true } });
+      }
+    }
+
+    const intent = await stripeService.createPaymentIntent(req.user, booking.amount, booking._id.toString());
+    booking.stripePaymentIntentId = intent.id;
+    await booking.save();
+
+    res.json({ success: true, data: { clientSecret: intent.client_secret, paymentIntentId: intent.id } });
   } catch (err) { next(err); }
 }
 

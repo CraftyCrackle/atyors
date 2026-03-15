@@ -213,7 +213,7 @@ function BookContent() {
         });
       } else if (selected.bookingType === 'subscription') {
         const dayOfWeek = new Date(selected.date + 'T12:00:00').getDay();
-        await api.post('/subscriptions', {
+        const subRes = await api.post('/subscriptions', {
           addressId: selected.addressId,
           serviceTypeId: selected.serviceType._id,
           dayOfWeek,
@@ -221,6 +221,16 @@ function BookContent() {
           putOutTime: selected.putOutTime,
           bringInTime: selected.bringInTime,
         });
+
+        const clientSecret = subRes.data?.clientSecret;
+        if (clientSecret && clientSecret !== 'dev_mock_secret') {
+          const { loadStripe } = await import('@stripe/stripe-js');
+          const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+          if (stripe) {
+            const { error } = await stripe.confirmCardPayment(clientSecret);
+            if (error) throw new Error(error.message || 'Payment confirmation failed');
+          }
+        }
       } else {
         await api.post('/bookings', {
           addressId: selected.addressId,

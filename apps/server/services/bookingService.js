@@ -427,14 +427,21 @@ async function chargeBookingOnCompletion(bookingId) {
     });
   } catch (err) {
     console.error(`[Stripe] Off-session charge failed for booking ${bookingId}:`, err.message);
+
+    if (err.raw?.payment_intent?.id) {
+      booking.stripePaymentIntentId = err.raw.payment_intent.id;
+    }
     booking.paymentStatus = 'charge_failed';
     await booking.save();
 
+    const isAuthRequired = err.code === 'authentication_required' || err.raw?.payment_intent?.status === 'requires_action';
     notificationService.create({
       userId: booking.userId,
       type: 'booking:payment',
-      title: 'Payment issue',
-      body: `We couldn't process payment for your ${svcName} service. Please update your card in your Profile.`,
+      title: 'Payment requires action',
+      body: isAuthRequired
+        ? `Your bank requires verification for the $${booking.amount.toFixed(2)} charge. Please open the app and complete payment.`
+        : `We couldn't process payment for your ${svcName} service. Please update your card in your Profile.`,
       bookingId: booking._id,
     }).catch(() => {});
 

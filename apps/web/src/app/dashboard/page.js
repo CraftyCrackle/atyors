@@ -192,12 +192,13 @@ function LiveTrackingCard({ booking, onStatusChange }) {
   );
 }
 
-function BookingCard({ booking, onRate, alreadyRated, onCancel, cancelling }) {
+function BookingCard({ booking, onRate, alreadyRated, onCancel, cancelling, onCompletePayment, paymentProcessing }) {
   const date = new Date(booking.scheduledDate);
   const svc = booking.serviceTypeId;
   const isActive = ACTIVE_STATUSES.includes(booking.status);
   const isCompleted = booking.status === 'completed';
   const servicer = booking.assignedTo;
+  const needsPayment = booking.paymentStatus === 'charge_failed';
   const canCancel = booking.status === 'pending' && !booking.assignedTo && !booking.subscriptionId;
   const graceSeconds = useGraceCountdown(canCancel ? booking.createdAt : null);
   const inGrace = canCancel && graceSeconds > 0;
@@ -284,6 +285,20 @@ function BookingCard({ booking, onRate, alreadyRated, onCancel, cancelling }) {
           </button>
         </div>
       )}
+      {needsPayment && (
+        <div className="mt-3">
+          <div className="mb-2 flex items-center gap-2 rounded-lg bg-red-50 border border-red-200 px-3 py-2">
+            <svg className="h-4 w-4 shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+            </svg>
+            <p className="text-xs text-red-700">Payment requires verification. Tap below to complete.</p>
+          </div>
+          <button onClick={() => onCompletePayment(booking._id)} disabled={paymentProcessing}
+            className="w-full rounded-lg bg-red-600 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 active:scale-[0.98] disabled:opacity-50">
+            {paymentProcessing ? 'Processing...' : `Complete Payment — $${Number(booking.amount).toFixed(2)}`}
+          </button>
+        </div>
+      )}
       {(isActive || isCompleted) && !canCancel && (
         <div className="mt-3 flex gap-2">
           {isActive && (
@@ -316,7 +331,7 @@ function BookingCard({ booking, onRate, alreadyRated, onCancel, cancelling }) {
   );
 }
 
-function ServiceTypeGroup({ type, jobs, onRate, reviewedMap, onCancel, cancelling, dark }) {
+function ServiceTypeGroup({ type, jobs, onRate, reviewedMap, onCancel, cancelling, onCompletePayment, paymentProcessing, dark }) {
   const [open, setOpen] = useState(false);
   const totalValue = jobs.reduce((sum, b) => sum + Number(b.serviceValue ?? b.amount ?? 0), 0);
 
@@ -354,7 +369,7 @@ function ServiceTypeGroup({ type, jobs, onRate, reviewedMap, onCancel, cancellin
       {open && (
         <div className="space-y-3 px-3 pb-3">
           {jobs.map((b) => (
-            <BookingCard key={b._id} booking={b} onRate={onRate} alreadyRated={reviewedMap?.[b._id]} onCancel={onCancel} cancelling={cancelling} />
+            <BookingCard key={b._id} booking={b} onRate={onRate} alreadyRated={reviewedMap?.[b._id]} onCancel={onCancel} cancelling={cancelling} onCompletePayment={onCompletePayment} paymentProcessing={paymentProcessing} />
           ))}
         </div>
       )}
@@ -417,6 +432,34 @@ export default function DashboardPage() {
       alert(err?.message || 'Failed to cancel booking. Please try again.');
     }
     setCancelling(false);
+  }
+
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
+
+  async function handleCompletePayment(bookingId) {
+    setPaymentProcessing(true);
+    try {
+      const res = await api.post(`/bookings/${bookingId}/confirm-payment`);
+      if (res.data.alreadyPaid) {
+        await loadBookings();
+        setPaymentProcessing(false);
+        return;
+      }
+      const clientSecret = res.data.clientSecret;
+      if (!clientSecret) throw new Error('Unable to process payment. Please try again.');
+
+      const { loadStripe } = await import('@stripe/stripe-js');
+      const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+      if (!stripe) throw new Error('Payment system unavailable');
+
+      const { error } = await stripe.confirmCardPayment(clientSecret);
+      if (error) throw new Error(error.message || 'Payment failed');
+
+      await loadBookings();
+    } catch (err) {
+      alert(err?.message || 'Payment failed. Please try again.');
+    }
+    setPaymentProcessing(false);
   }
 
   async function loadUnreadCount() {
@@ -557,7 +600,7 @@ export default function DashboardPage() {
               </div>
             ) : (
               pastServiceTypeGroups.map((g) => (
-                <ServiceTypeGroup key={g.type} type={g.type} jobs={g.jobs} onRate={setReviewBooking} reviewedMap={reviewedMap} onCancel={handleCancelClick} cancelling={cancelling} dark={false} />
+                <ServiceTypeGroup key={g.type} type={g.type} jobs={g.jobs} onRate={setReviewBooking} reviewedMap={reviewedMap} onCancel={handleCancelClick} cancelling={cancelling} onCompletePayment={handleCompletePayment} paymentProcessing={paymentProcessing} dark={false} />
               ))
             )
           ) : tabData.length === 0 ? (
@@ -569,7 +612,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <>
-              {tabData.map((b) => <BookingCard key={b._id} booking={b} onRate={setReviewBooking} alreadyRated={reviewedMap[b._id]} onCancel={handleCancelClick} cancelling={cancelling} />)}
+              {tabData.map((b) => <BookingCard key={b._id} booking={b} onRate={setReviewBooking} alreadyRated={reviewedMap[b._id]} onCancel={handleCancelClick} cancelling={cancelling} onCompletePayment={handleCompletePayment} paymentProcessing={paymentProcessing} />)}
               {hasMore && (
                 <button onClick={() => setVisibleCount((c) => c + PAGE_SIZE)} className="w-full rounded-xl border border-gray-200 bg-white py-3 text-sm font-medium text-brand-600 transition hover:bg-brand-50 active:scale-[0.98]">
                   Show more ({nonPastData.length - visibleCount} remaining)
