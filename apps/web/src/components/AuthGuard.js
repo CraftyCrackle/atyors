@@ -43,5 +43,12 @@ export default function AuthGuard({ children }) {
   }
 
   if (!user) return null;
+
+  const role = user.role;
+  const onServicer = pathname.startsWith('/servicer');
+  const onAdmin = pathname.startsWith('/admin');
+  if (!['servicer', 'admin', 'superadmin'].includes(role) && onServicer) return null;
+  if (role === 'customer' && onAdmin) return null;
+
   return children;
 }

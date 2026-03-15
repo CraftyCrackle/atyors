@@ -94,4 +94,22 @@ async function verify(req, res, next) {
   }
 }
 
-module.exports = { register, login, refresh, me, forgotPassword, resetPassword, sendVerification, verify };
+async function logout(req, res, next) {
+  try {
+    const { refreshToken } = req.body;
+    if (refreshToken) {
+      const crypto = require('crypto');
+      const RefreshToken = require('../models/RefreshToken');
+      const hashed = crypto.createHash('sha256').update(refreshToken).digest('hex');
+      await RefreshToken.updateMany(
+        { token: hashed, revokedAt: null },
+        { revokedAt: new Date() }
+      );
+    }
+    res.json({ success: true, data: { message: 'Logged out successfully' } });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { register, login, refresh, me, forgotPassword, resetPassword, sendVerification, verify, logout };

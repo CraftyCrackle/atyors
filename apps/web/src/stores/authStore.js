@@ -40,7 +40,11 @@ export const useAuthStore = create((set, get) => ({
     return res.data;
   },
 
-  logout: () => {
+  logout: async () => {
+    const refreshToken = localStorage.getItem('refreshToken');
+    try {
+      if (refreshToken) await api.post('/auth/logout', { refreshToken });
+    } catch { /* best-effort */ }
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     set({ user: null });

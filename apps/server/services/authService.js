@@ -25,23 +25,28 @@ function validatePasswordStrength(password) {
 
 function generateAccessToken(user) {
   return jwt.sign(
-    { userId: user._id, email: user.email, role: user.role },
+    { userId: user._id, role: user.role },
     config.jwtSecret,
     { expiresIn: ACCESS_TOKEN_EXPIRY }
   );
 }
 
+function hashToken(raw) {
+  return crypto.createHash('sha256').update(raw).digest('hex');
+}
+
 async function createRefreshToken(user) {
-  const token = crypto.randomBytes(40).toString('hex');
+  const rawToken = crypto.randomBytes(40).toString('hex');
+  const hashed = hashToken(rawToken);
   const expiresAt = new Date(Date.now() + REFRESH_TOKEN_DAYS * 24 * 60 * 60 * 1000);
 
   await RefreshToken.create({
     userId: user._id,
-    token,
+    token: hashed,
     expiresAt,
   });
 
-  return token;
+  return rawToken;
 }
 
 async function generateTokens(user) {
@@ -135,11 +140,21 @@ async function login({ email, password }) {
 }
 
 async function refreshAccessToken(oldToken) {
-  const stored = await RefreshToken.findOne({ token: oldToken, revokedAt: null });
+  const hashedOld = hashToken(oldToken);
+  const stored = await RefreshToken.findOne({ token: hashedOld });
+
   if (!stored) {
     const err = new Error('Invalid or expired refresh token');
     err.status = 401;
     err.code = 'INVALID_REFRESH_TOKEN';
+    throw err;
+  }
+
+  if (stored.revokedAt) {
+    await revokeTokenFamily(stored);
+    const err = new Error('Token reuse detected — all sessions revoked');
+    err.status = 401;
+    err.code = 'TOKEN_REUSE';
     throw err;
   }
 
@@ -162,13 +177,30 @@ async function refreshAccessToken(oldToken) {
   }
 
   const newRefreshToken = await createRefreshToken(user);
+  const hashedNew = hashToken(newRefreshToken);
 
   stored.revokedAt = new Date();
-  stored.replacedByToken = newRefreshToken;
+  stored.replacedByToken = hashedNew;
   await stored.save();
 
   const accessToken = generateAccessToken(user);
   return { user: sanitizeUser(user), accessToken, refreshToken: newRefreshToken };
+}
+
+async function revokeTokenFamily(startToken) {
+  const now = new Date();
+  let current = startToken;
+  const visited = new Set([current.token]);
+  while (current.replacedByToken) {
+    const next = await RefreshToken.findOne({ token: current.replacedByToken });
+    if (!next || visited.has(next.token)) break;
+    visited.add(next.token);
+    if (!next.revokedAt) {
+      next.revokedAt = now;
+      await next.save();
+    }
+    current = next;
+  }
 }
 
 async function revokeUserTokens(userId) {

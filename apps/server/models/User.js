@@ -46,7 +46,7 @@ userSchema.virtual('fullName').get(function () {
   return `${this.firstName} ${this.lastName}`;
 });
 
-userSchema.index({ email: 1 });
+userSchema.index({ email: 1 }, { unique: true });
 userSchema.index({ cognitoId: 1 }, { sparse: true });
 userSchema.index({ stripeCustomerId: 1 });
 

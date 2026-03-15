@@ -47,6 +47,10 @@ const passwordResetLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 5, messa
 app.use('/api/v1/auth/forgot-password', passwordResetLimiter);
 app.use('/api/v1/auth/reset-password', passwordResetLimiter);
 
+const verificationLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 5, message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many verification attempts. Please try again later.' } } });
+app.use('/api/v1/auth/send-verification', verificationLimiter);
+app.use('/api/v1/auth/verify', verificationLimiter);
+
 const apiLimiter = rateLimit({ windowMs: 1 * 60 * 1000, max: 100, message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many requests. Please slow down.' } } });
 app.use('/api/v1', apiLimiter);
 

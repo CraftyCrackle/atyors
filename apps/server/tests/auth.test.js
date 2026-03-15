@@ -20,7 +20,7 @@ describe('Auth Service', () => {
 
     const decoded = jwt.verify(tokens.accessToken, 'test-secret');
     expect(decoded.userId).toBe(mockUser._id);
-    expect(decoded.email).toBe(mockUser.email);
+    expect(decoded.email).toBeUndefined();
     expect(decoded.role).toBe('customer');
   });
 
