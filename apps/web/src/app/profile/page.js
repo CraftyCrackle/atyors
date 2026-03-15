@@ -1066,10 +1066,17 @@ function PaymentMethodsSection({ user }) {
 
       {showCardForm && setupSecret && (
         <AddCardModal
+          key={setupSecret}
           clientSecret={setupSecret}
           user={user}
           onSuccess={handleCardSaved}
           onClose={() => { setShowCardForm(false); setSetupSecret(null); }}
+          onRetry={async () => {
+            try {
+              const res = await api.post('/payments/setup-intent');
+              setSetupSecret(res.data.clientSecret);
+            } catch { setShowCardForm(false); setSetupSecret(null); }
+          }}
         />
       )}
     </div>
@@ -1269,14 +1276,14 @@ function DeleteAccountSection({ onDeleted }) {
   );
 }
 
-function AddCardModal({ clientSecret: initialClientSecret, user, onSuccess, onClose }) {
-  const [activeSecret, setActiveSecret] = useState(initialClientSecret);
+function AddCardModal({ clientSecret, user, onSuccess, onClose, onRetry }) {
   const [stripe, setStripe] = useState(null);
   const [elements, setElements] = useState(null);
   const [cardReady, setCardReady] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [zipFailed, setZipFailed] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -1285,16 +1292,11 @@ function AddCardModal({ clientSecret: initialClientSecret, user, onSuccess, onCl
       const s = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
       if (!mounted || !s) return;
       setStripe(s);
+      const el = s.elements({ clientSecret, appearance: { theme: 'stripe' } });
+      setElements(el);
     })();
     return () => { mounted = false; };
-  }, []);
-
-  useEffect(() => {
-    if (!stripe || !activeSecret) return;
-    const el = stripe.elements({ clientSecret: activeSecret, appearance: { theme: 'stripe' } });
-    setElements(el);
-    setCardReady(false);
-  }, [stripe, activeSecret]);
+  }, [clientSecret]);
 
   useEffect(() => {
     if (!elements) return;
@@ -1325,7 +1327,7 @@ function AddCardModal({ clientSecret: initialClientSecret, user, onSuccess, onCl
     const billingDetails = {};
     if (user?.firstName || user?.lastName) billingDetails.name = `${user.firstName || ''} ${user.lastName || ''}`.trim();
     if (user?.email) billingDetails.email = user.email;
-    const { error: err, setupIntent } = await stripe.confirmCardSetup(activeSecret, {
+    const { error: err, setupIntent } = await stripe.confirmCardSetup(clientSecret, {
       payment_method: { card: cardElement, billing_details: billingDetails },
     });
     if (err) {
@@ -1338,9 +1340,8 @@ function AddCardModal({ clientSecret: initialClientSecret, user, onSuccess, onCl
       if (pmId) {
         const verifyRes = await api.post('/payments/verify-card', { paymentMethodId: pmId });
         if (!verifyRes.data.verified) {
-          const newIntent = await api.post('/payments/setup-intent');
-          setActiveSecret(newIntent.data.clientSecret);
-          setError('The ZIP code doesn\u2019t match your card\u2019s billing address. Please re-enter your card with the correct billing ZIP.');
+          setZipFailed(true);
+          setError('The ZIP code doesn\u2019t match your card\u2019s billing address. Please try again with the correct billing ZIP.');
           setSaving(false);
           return;
         }
@@ -1373,6 +1374,22 @@ function AddCardModal({ clientSecret: initialClientSecret, user, onSuccess, onCl
             </div>
             <p className="text-xl font-semibold text-gray-900">Card saved</p>
             <p className="mt-1 text-sm text-gray-500">Your payment method has been added.</p>
+          </div>
+        ) : zipFailed ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+              </svg>
+            </div>
+            <p className="text-lg font-semibold text-gray-900">ZIP code didn&apos;t match</p>
+            <p className="mt-2 text-sm text-gray-500 max-w-xs">The ZIP code you entered doesn&apos;t match your card&apos;s billing address. Please try again with the ZIP on your card statement.</p>
+            <button
+              onClick={onRetry}
+              className="mt-6 rounded-xl bg-brand-600 px-8 py-3.5 text-base font-semibold text-white hover:bg-brand-700 active:scale-[0.98] transition"
+            >
+              Try Again
+            </button>
           </div>
         ) : (
           <>
