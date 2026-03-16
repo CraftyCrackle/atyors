@@ -62,10 +62,10 @@ export default function ProfilePage() {
   }
 
   const dark = !isCustomer;
-  const cardCls = dark ? 'rounded-xl border border-gray-700 bg-gray-800 p-4' : 'rounded-xl bg-white p-4 shadow-sm';
+  const cardCls = dark ? 'rounded-xl border border-gray-700 bg-gray-800 p-5' : 'rounded-xl bg-white p-5 shadow-sm';
   const inputCls = dark
-    ? 'w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white placeholder-gray-400 focus:border-brand-500 focus:outline-none'
-    : 'w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none';
+    ? 'w-full rounded-xl border border-gray-600 bg-gray-700 px-4 py-3 text-base text-white placeholder-gray-400 focus:border-brand-500 focus:outline-none'
+    : 'w-full rounded-xl border border-gray-200 px-4 py-3 text-base focus:border-brand-500 focus:outline-none';
 
   return (
     <AuthGuard>
@@ -108,25 +108,25 @@ export default function ProfilePage() {
         <div className="mt-4 px-4">
           <div className={cardCls}>
             <div className="flex items-center justify-between">
-              <h2 className={`font-semibold ${dark ? 'text-white' : ''}`}>Personal Info</h2>
-              <button onClick={() => setEditing(!editing)} className="text-sm font-medium text-brand-600">
+              <h2 className={`text-base font-semibold ${dark ? 'text-white' : ''}`}>Personal Info</h2>
+              <button onClick={() => setEditing(!editing)} className="text-sm font-medium text-brand-600 py-1">
                 {editing ? 'Cancel' : 'Edit'}
               </button>
             </div>
             {editing ? (
-              <div className="mt-3 space-y-3">
+              <div className="mt-4 space-y-4">
                 <input type="text" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} placeholder="First name" className={inputCls} />
                 <input type="text" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} placeholder="Last name" className={inputCls} />
                 <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Phone" className={inputCls} />
-                <button onClick={handleSave} disabled={saving} className="w-full rounded-lg bg-brand-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
+                <button onClick={handleSave} disabled={saving} className="w-full rounded-xl bg-brand-600 py-3.5 text-base font-semibold text-white disabled:opacity-50 active:scale-[0.98] transition">
                   {saving ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             ) : (
-              <div className={`mt-3 space-y-2 text-sm ${dark ? 'text-gray-300' : ''}`}>
-                <div className="flex justify-between"><span className="text-gray-500">Name</span><span>{user?.fullName}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Email</span><span>{user?.email}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Phone</span><span>{user?.phone || '—'}</span></div>
+              <div className={`mt-4 space-y-3 text-sm ${dark ? 'text-gray-300' : ''}`}>
+                <div className="flex justify-between py-1"><span className="text-gray-500">Name</span><span>{user?.fullName}</span></div>
+                <div className="flex justify-between py-1"><span className="text-gray-500">Email</span><span>{user?.email}</span></div>
+                <div className="flex justify-between py-1"><span className="text-gray-500">Phone</span><span>{user?.phone || '—'}</span></div>
               </div>
             )}
           </div>
@@ -136,10 +136,10 @@ export default function ProfilePage() {
           <TrashDayReminderSection dark={dark} cardCls={cardCls} user={user} updateUser={updateUser} />
           <StreetCleaningReminderSection dark={dark} cardCls={cardCls} user={user} updateUser={updateUser} />
 
-          <div className={`mt-4 ${cardCls}`}>
+          <div className={`mt-5 ${cardCls}`}>
             <div className="flex items-center justify-between">
-              <h2 className={`font-semibold ${dark ? 'text-white' : ''}`}>Addresses</h2>
-              <button onClick={() => setAddingAddress(!addingAddress)} className="text-sm font-medium text-brand-600">
+              <h2 className={`text-base font-semibold ${dark ? 'text-white' : ''}`}>Addresses</h2>
+              <button onClick={() => setAddingAddress(!addingAddress)} className="text-sm font-medium text-brand-600 py-1">
                 {addingAddress ? 'Cancel' : '+ Add'}
               </button>
             </div>
@@ -147,9 +147,9 @@ export default function ProfilePage() {
               <AddAddressForm dark={dark} onAdded={(addr) => { setAddresses((prev) => [...prev, addr]); setAddingAddress(false); }} onCancel={() => setAddingAddress(false)} />
             )}
             {addresses.length === 0 ? (
-              <p className="mt-2 text-sm text-gray-400">No addresses saved</p>
+              <p className="mt-3 text-sm text-gray-400">No addresses saved</p>
             ) : (
-              <div className="mt-3 space-y-3">
+              <div className="mt-4 space-y-4">
                 {addresses.map((addr) => (
                   <AddressCard key={addr._id} address={addr} dark={dark} onUpdated={(updated) => setAddresses(addresses.map((a) => a._id === updated._id ? updated : a))} onDelete={() => deleteAddress(addr._id)} />
                 ))}
@@ -202,8 +202,8 @@ function ChangePasswordSection({ dark, cardCls }) {
   const [success, setSuccess] = useState(false);
 
   const baseCls = dark
-    ? 'w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white placeholder-gray-400 focus:border-brand-500 focus:outline-none'
-    : 'w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none';
+    ? 'w-full rounded-xl border border-gray-600 bg-gray-700 px-4 py-3 text-base text-white placeholder-gray-400 focus:border-brand-500 focus:outline-none'
+    : 'w-full rounded-xl border border-gray-200 px-4 py-3 text-base focus:border-brand-500 focus:outline-none';
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -222,28 +222,28 @@ function ChangePasswordSection({ dark, cardCls }) {
   }
 
   return (
-    <div className={`mt-4 ${cardCls}`}>
+    <div className={`mt-5 ${cardCls}`}>
       <div className="flex items-center justify-between">
-        <h2 className={`font-semibold ${dark ? 'text-white' : ''}`}>Password</h2>
-        <button onClick={() => { setOpen(!open); setError(''); setSuccess(false); }} className="text-sm font-medium text-brand-600">
+        <h2 className={`text-base font-semibold ${dark ? 'text-white' : ''}`}>Password</h2>
+        <button onClick={() => { setOpen(!open); setError(''); setSuccess(false); }} className="text-sm font-medium text-brand-600 py-1">
           {open ? 'Cancel' : 'Change'}
         </button>
       </div>
       {!open && (
-        <p className={`mt-1 text-sm ${dark ? 'text-gray-400' : 'text-gray-500'}`}>••••••••</p>
+        <p className={`mt-2 text-sm ${dark ? 'text-gray-400' : 'text-gray-500'}`}>••••••••</p>
       )}
       {open && (
-        <form onSubmit={handleSubmit} className="mt-3 space-y-3">
+        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <input type="password" placeholder="Current password" value={form.currentPassword}
             onChange={(e) => setForm({ ...form, currentPassword: e.target.value })} className={baseCls} required autoComplete="current-password" />
           <input type="password" placeholder="New password (min 8 chars)" value={form.newPassword}
             onChange={(e) => setForm({ ...form, newPassword: e.target.value })} className={baseCls} required minLength={8} autoComplete="new-password" />
           <input type="password" placeholder="Confirm new password" value={form.confirmPassword}
             onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} className={baseCls} required autoComplete="new-password" />
-          {error && <p className="text-xs text-red-500">{error}</p>}
-          {success && <p className="text-xs text-green-600">Password updated!</p>}
+          {error && <p className="text-sm text-red-500">{error}</p>}
+          {success && <p className="text-sm text-green-600">Password updated!</p>}
           <button type="submit" disabled={saving}
-            className="w-full rounded-lg bg-brand-600 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50">
+            className="w-full rounded-xl bg-brand-600 py-3.5 text-base font-semibold text-white hover:bg-brand-700 disabled:opacity-50 active:scale-[0.98] transition">
             {saving ? 'Updating...' : 'Update Password'}
           </button>
         </form>
@@ -283,25 +283,25 @@ function TrashDayReminderSection({ dark, cardCls, user, updateUser }) {
   const displayTime = TIME_OPTIONS.find((o) => o.value === timeVal)?.label || timeVal;
 
   return (
-    <div className={`mt-4 ${cardCls}`}>
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className={`font-semibold ${dark ? 'text-white' : ''}`}>Trash Day Reminders</h2>
-          <p className={`mt-0.5 text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>
+    <div className={`mt-5 ${cardCls}`}>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex-1">
+          <h2 className={`text-base font-semibold ${dark ? 'text-white' : ''}`}>Trash Day Reminders</h2>
+          <p className={`mt-1 text-sm ${dark ? 'text-gray-400' : 'text-gray-500'}`}>
             Never forget to put your barrels out
           </p>
         </div>
         <button
           disabled={saving}
           onClick={() => update('enabled', !reminder.enabled)}
-          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${reminder.enabled ? 'bg-brand-600' : dark ? 'bg-gray-600' : 'bg-gray-200'}`}
+          className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${reminder.enabled ? 'bg-brand-600' : dark ? 'bg-gray-600' : 'bg-gray-200'}`}
         >
-          <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform ${reminder.enabled ? 'translate-x-5' : 'translate-x-0'}`} />
+          <span className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition-transform ${reminder.enabled ? 'translate-x-5' : 'translate-x-0'}`} />
         </button>
       </div>
       {reminder.enabled && (
-        <div className="mt-3 space-y-2">
-          <label className={`text-xs font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>
+        <div className="mt-5 space-y-3">
+          <label className={`text-sm font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>
             What time should we remind you?
           </label>
           <div className="flex items-center gap-3">
@@ -309,7 +309,7 @@ function TrashDayReminderSection({ dark, cardCls, user, updateUser }) {
               value={timeVal}
               disabled={saving}
               onChange={(e) => update('time', e.target.value)}
-              className={`flex-1 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition focus:border-brand-600 focus:outline-none ${
+              className={`flex-1 rounded-xl border-2 px-4 py-3 text-base font-medium transition focus:border-brand-600 focus:outline-none ${
                 dark ? 'border-gray-600 bg-gray-700 text-white' : 'border-gray-200 bg-white text-gray-900'
               }`}
             >
@@ -317,13 +317,13 @@ function TrashDayReminderSection({ dark, cardCls, user, updateUser }) {
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
-            <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
+            <span className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold ${
               isEvening ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700'
             }`}>
               {isEvening ? 'Night before' : 'Morning of'}
             </span>
           </div>
-          <p className={`text-xs ${dark ? 'text-gray-500' : 'text-gray-400'}`}>
+          <p className={`text-sm ${dark ? 'text-gray-500' : 'text-gray-400'}`}>
             {isEvening
               ? `You'll get a reminder at ${displayTime} the night before your trash day`
               : `You'll get a reminder at ${displayTime} the morning of your trash day`}
@@ -365,25 +365,25 @@ function StreetCleaningReminderSection({ dark, cardCls, user, updateUser }) {
   const displayTime = TIME_OPTIONS.find((o) => o.value === timeVal)?.label || timeVal;
 
   return (
-    <div className={`mt-4 ${cardCls}`}>
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className={`font-semibold ${dark ? 'text-white' : ''}`}>Street Cleaning Reminders</h2>
-          <p className={`mt-0.5 text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>
+    <div className={`mt-5 ${cardCls}`}>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex-1">
+          <h2 className={`text-base font-semibold ${dark ? 'text-white' : ''}`}>Street Cleaning Reminders</h2>
+          <p className={`mt-1 text-sm ${dark ? 'text-gray-400' : 'text-gray-500'}`}>
             Never forget to move your car
           </p>
         </div>
         <button
           disabled={saving}
           onClick={() => update('enabled', !reminder.enabled)}
-          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${reminder.enabled ? 'bg-brand-600' : dark ? 'bg-gray-600' : 'bg-gray-200'}`}
+          className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${reminder.enabled ? 'bg-brand-600' : dark ? 'bg-gray-600' : 'bg-gray-200'}`}
         >
-          <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform ${reminder.enabled ? 'translate-x-5' : 'translate-x-0'}`} />
+          <span className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition-transform ${reminder.enabled ? 'translate-x-5' : 'translate-x-0'}`} />
         </button>
       </div>
       {reminder.enabled && (
-        <div className="mt-3 space-y-2">
-          <label className={`text-xs font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>
+        <div className="mt-5 space-y-4">
+          <label className={`text-sm font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>
             What time should we remind you?
           </label>
           <div className="flex items-center gap-3">
@@ -391,7 +391,7 @@ function StreetCleaningReminderSection({ dark, cardCls, user, updateUser }) {
               value={timeVal}
               disabled={saving}
               onChange={(e) => update('time', e.target.value)}
-              className={`flex-1 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition focus:border-brand-600 focus:outline-none ${
+              className={`flex-1 rounded-xl border-2 px-4 py-3 text-base font-medium transition focus:border-brand-600 focus:outline-none ${
                 dark ? 'border-gray-600 bg-gray-700 text-white' : 'border-gray-200 bg-white text-gray-900'
               }`}
             >
@@ -399,18 +399,18 @@ function StreetCleaningReminderSection({ dark, cardCls, user, updateUser }) {
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
-            <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
+            <span className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold ${
               isEvening ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700'
             }`}>
               {isEvening ? 'Night before' : 'Morning of'}
             </span>
           </div>
-          <p className={`text-xs ${dark ? 'text-gray-500' : 'text-gray-400'}`}>
+          <p className={`text-sm ${dark ? 'text-gray-500' : 'text-gray-400'}`}>
             {isEvening
               ? `You'll get a reminder at ${displayTime} the night before street cleaning`
               : `You'll get a reminder at ${displayTime} the morning of street cleaning`}
           </p>
-          <p className={`text-xs ${dark ? 'text-gray-500' : 'text-gray-400'}`}>
+          <p className={`text-sm ${dark ? 'text-gray-500' : 'text-gray-400'}`}>
             Set up your schedule in each address below (scan a sign or enter manually)
           </p>
         </div>
@@ -616,28 +616,28 @@ function AddressCard({ address, dark, onUpdated, onDelete }) {
   }
 
   return (
-    <div className={`rounded-lg p-3 ${dark ? 'bg-gray-900/50' : 'bg-gray-50'}`}>
+    <div className={`rounded-xl p-4 ${dark ? 'bg-gray-900/50' : 'bg-gray-50'}`}>
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
-          <p className={`text-sm font-medium ${dark ? 'text-gray-200' : ''}`}>{address.street}{address.unit ? `, ${address.unit}` : ''}</p>
-          <p className="text-xs text-gray-500">{address.city}, {address.state} {address.zip}</p>
+          <p className={`text-base font-semibold ${dark ? 'text-gray-200' : ''}`}>{address.street}{address.unit ? `, ${address.unit}` : ''}</p>
+          <p className="mt-0.5 text-sm text-gray-500">{address.city}, {address.state} {address.zip}</p>
         </div>
-        <div className="flex items-center gap-2 ml-2 shrink-0">
-          <button onClick={startEditing} className="text-xs font-medium text-brand-600 hover:text-brand-700">Edit</button>
-          <button onClick={onDelete} className="text-xs text-red-500 hover:text-red-700">Remove</button>
+        <div className="flex items-center gap-3 ml-3 shrink-0">
+          <button onClick={startEditing} className="text-sm font-medium text-brand-600 hover:text-brand-700 py-1">Edit</button>
+          <button onClick={onDelete} className="text-sm text-red-500 hover:text-red-700 py-1">Remove</button>
         </div>
       </div>
       {(address.barrelPhotoUrl || address.photos?.length > 0) ? (
-        <div className="mt-2 flex gap-1.5 overflow-x-auto">
-          {address.barrelPhotoUrl && <PhotoViewer src={address.barrelPhotoUrl} alt="Barrel" className="h-16 w-20 shrink-0 rounded-lg object-cover" />}
-          {address.photos?.map((url, i) => <PhotoViewer key={i} src={url} alt={`Photo ${i + 1}`} className="h-16 w-20 shrink-0 rounded-lg object-cover" />)}
+        <div className="mt-3 flex gap-2 overflow-x-auto">
+          {address.barrelPhotoUrl && <PhotoViewer src={address.barrelPhotoUrl} alt="Barrel" className="h-20 w-24 shrink-0 rounded-xl object-cover" />}
+          {address.photos?.map((url, i) => <PhotoViewer key={i} src={url} alt={`Photo ${i + 1}`} className="h-20 w-24 shrink-0 rounded-xl object-cover" />)}
         </div>
       ) : (
-        <label className="mt-2 flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-gray-200 px-3 py-2 text-xs text-gray-400 hover:border-brand-300 hover:text-brand-500 transition">
+        <label className="mt-3 flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-200 px-4 py-3 text-sm text-gray-400 hover:border-brand-300 hover:text-brand-500 transition">
           {uploadingBarrelPhoto ? (
-            <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
           ) : (
-            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
@@ -647,14 +647,14 @@ function AddressCard({ address, dark, onUpdated, onDelete }) {
         </label>
       )}
       {(address.barrelCount > 0 || address.barrelLocation || address.trashDay) && (
-        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-400">
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-gray-400">
           {address.barrelCount > 0 && <span>{address.barrelCount} barrel{address.barrelCount > 1 ? 's' : ''}</span>}
           {address.trashDay && <span>Trash day: {address.trashDay}</span>}
           {address.barrelLocation && <span>Location: {address.barrelLocation}</span>}
         </div>
       )}
       {(address.barrelPlacementInstructions || address.barrelReturnInstructions) && (
-        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-400">
+        <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-gray-400">
           {address.barrelPlacementInstructions && <span>Curb: {address.barrelPlacementInstructions}</span>}
           {address.barrelReturnInstructions && <span>Return: {address.barrelReturnInstructions}</span>}
         </div>
@@ -677,15 +677,15 @@ function StreetCleaningDisplay({ schedules, dark }) {
     return m > 0 ? `${h12}:${String(m).padStart(2, '0')}${ampm}` : `${h12}${ampm}`;
   }
   return (
-    <div className="mt-2 space-y-1">
+    <div className="mt-4 space-y-2">
       {schedules.map((sc, i) => (
-        <div key={i} className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs ${dark ? 'bg-blue-900/20 text-blue-300' : 'bg-blue-50 text-blue-700'}`}>
-          <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+        <div key={i} className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium ${dark ? 'bg-blue-900/20 text-blue-300' : 'bg-blue-50 text-blue-700'}`}>
+          <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
           <span>
             {PATTERN_LABELS[sc.weekPattern] || 'Every'} {sc.dayOfWeek}
-            {sc.startTime && sc.endTime ? ` ${fmtTime(sc.startTime)}–${fmtTime(sc.endTime)}` : ''}
-            {sc.side ? ` · ${sc.side}` : ''}
-            {sc.seasonStart && sc.seasonEnd ? ` · ${sc.seasonStart} to ${sc.seasonEnd}` : ''}
+            {sc.startTime && sc.endTime ? ` ${fmtTime(sc.startTime)}\u2013${fmtTime(sc.endTime)}` : ''}
+            {sc.side ? ` \u00b7 ${sc.side}` : ''}
+            {sc.seasonStart && sc.seasonEnd ? ` \u00b7 ${sc.seasonStart} to ${sc.seasonEnd}` : ''}
           </span>
         </div>
       ))}
@@ -761,8 +761,8 @@ function StreetCleaningManager({ addressId, schedules, dark, onUpdated }) {
   }
 
   const inputCls = dark
-    ? 'w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white placeholder-gray-400 focus:border-brand-500 focus:outline-none'
-    : 'w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none';
+    ? 'w-full rounded-xl border border-gray-600 bg-gray-700 px-4 py-3 text-base text-white placeholder-gray-400 focus:border-brand-500 focus:outline-none'
+    : 'w-full rounded-xl border border-gray-200 px-4 py-3 text-base focus:border-brand-500 focus:outline-none';
 
   const WEEK_PATTERNS = [
     { value: 'every', label: 'Every week' },
@@ -775,15 +775,15 @@ function StreetCleaningManager({ addressId, schedules, dark, onUpdated }) {
   ];
 
   return (
-    <div className="mt-2">
+    <div className="mt-4">
       {schedules.length > 0 && (
-        <div className="space-y-1 mb-2">
+        <div className="space-y-2 mb-3">
           {schedules.map((_, i) => (
             <div key={i} className="flex justify-end">
               <button
                 onClick={() => handleDelete(i)}
                 disabled={deleting === i}
-                className="text-[10px] text-red-400 hover:text-red-600"
+                className="text-sm text-red-400 hover:text-red-600 py-1 px-2"
               >
                 {deleting === i ? 'Removing...' : 'Remove'}
               </button>
@@ -795,40 +795,41 @@ function StreetCleaningManager({ addressId, schedules, dark, onUpdated }) {
       {!showAdd && (
         <button
           onClick={() => setShowAdd(true)}
-          className={`flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed px-3 py-2 text-xs transition ${
+          className={`flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-3.5 text-sm font-medium transition active:scale-[0.98] ${
             dark ? 'border-gray-600 text-gray-400 hover:border-blue-500 hover:text-blue-400' : 'border-gray-200 text-gray-400 hover:border-blue-400 hover:text-blue-600'
           }`}
         >
-          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
           {schedules.length > 0 ? 'Add another street cleaning schedule' : 'Add street cleaning schedule'}
         </button>
       )}
 
       {showAdd && !scannedResults && !manualForm && (
-        <div className={`mt-2 rounded-lg border p-3 space-y-2 ${dark ? 'border-gray-700 bg-gray-800/50' : 'border-blue-200 bg-blue-50/50'}`}>
+        <div className={`mt-3 rounded-xl border-2 p-5 space-y-4 ${dark ? 'border-gray-700 bg-gray-800/50' : 'border-blue-200 bg-blue-50/30'}`}>
           <div className="flex items-center justify-between">
-            <p className={`text-xs font-semibold ${dark ? 'text-gray-300' : 'text-gray-600'}`}>Add Street Cleaning Schedule</p>
-            <button onClick={() => setShowAdd(false)} className="text-xs text-gray-400 hover:text-gray-600">Cancel</button>
+            <p className={`text-sm font-semibold ${dark ? 'text-gray-200' : 'text-gray-700'}`}>Add Street Cleaning Schedule</p>
+            <button onClick={() => setShowAdd(false)} className="text-sm text-gray-400 hover:text-gray-600 py-1 px-2">Cancel</button>
           </div>
-          <div className="flex gap-2">
-            <label className={`flex-1 flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed px-3 py-3 text-sm font-medium transition active:scale-[0.98] ${
+          <p className={`text-sm ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Take a photo of your street sign, or enter the schedule yourself.</p>
+          <div className="flex gap-3">
+            <label className={`flex-1 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-5 text-sm font-medium transition active:scale-[0.97] ${
               dark ? 'border-blue-500/30 text-blue-400 hover:bg-blue-500/10' : 'border-blue-300 text-blue-600 hover:bg-blue-50'
             }`}>
               {scanning ? (
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
               ) : (
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" /><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" /></svg>
+                <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" /><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" /></svg>
               )}
-              {scanning ? 'Reading sign...' : 'Scan Sign Photo'}
+              {scanning ? 'Reading sign...' : 'Scan Sign'}
               <input type="file" accept="image/*" capture="environment" onChange={handleScanPhoto} className="hidden" disabled={scanning} />
             </label>
             <button
               onClick={() => setManualForm({ side: '', dayOfWeek: '', weekPattern: 'every', startTime: '08:00', endTime: '12:00', seasonStart: '', seasonEnd: '' })}
-              className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 border-dashed px-3 py-3 text-sm font-medium transition active:scale-[0.98] ${
+              className={`flex-1 flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-5 text-sm font-medium transition active:scale-[0.97] ${
                 dark ? 'border-gray-600 text-gray-400 hover:bg-gray-700/50' : 'border-gray-300 text-gray-600 hover:bg-gray-50'
               }`}
             >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
+              <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
               Enter Manually
             </button>
           </div>
@@ -836,10 +837,10 @@ function StreetCleaningManager({ addressId, schedules, dark, onUpdated }) {
       )}
 
       {scannedResults && (
-        <div className={`mt-2 rounded-lg border p-3 space-y-3 ${dark ? 'border-green-500/30 bg-green-900/10' : 'border-green-200 bg-green-50/50'}`}>
+        <div className={`mt-3 rounded-xl border-2 p-5 space-y-4 ${dark ? 'border-green-500/30 bg-green-900/10' : 'border-green-200 bg-green-50/30'}`}>
           <div className="flex items-center justify-between">
-            <p className={`text-xs font-semibold ${dark ? 'text-green-400' : 'text-green-700'}`}>Sign detected — confirm details</p>
-            <button onClick={() => { setScannedResults(null); setShowAdd(false); }} className="text-xs text-gray-400 hover:text-gray-600">Cancel</button>
+            <p className={`text-sm font-semibold ${dark ? 'text-green-400' : 'text-green-700'}`}>Sign detected — confirm details</p>
+            <button onClick={() => { setScannedResults(null); setShowAdd(false); }} className="text-sm text-gray-400 hover:text-gray-600 py-1 px-2">Cancel</button>
           </div>
           {scannedResults.schedules.map((entry, i) => (
             <ScannedEntryCard key={i} entry={{ ...entry, signPhotoUrl: scannedResults.photoUrl }} dark={dark} saving={saving} onConfirm={confirmScanned} />
@@ -848,51 +849,53 @@ function StreetCleaningManager({ addressId, schedules, dark, onUpdated }) {
       )}
 
       {manualForm && (
-        <div className={`mt-2 rounded-lg border p-3 space-y-3 ${dark ? 'border-gray-700 bg-gray-800/50' : 'border-gray-200 bg-gray-50/50'}`}>
+        <div className={`mt-3 rounded-xl border-2 p-5 space-y-5 ${dark ? 'border-gray-700 bg-gray-800/50' : 'border-gray-200 bg-gray-50/30'}`}>
           <div className="flex items-center justify-between">
-            <p className={`text-xs font-semibold ${dark ? 'text-gray-300' : 'text-gray-600'}`}>Enter Schedule</p>
-            <button onClick={() => { setManualForm(null); setShowAdd(false); }} className="text-xs text-gray-400 hover:text-gray-600">Cancel</button>
+            <p className={`text-sm font-semibold ${dark ? 'text-gray-200' : 'text-gray-700'}`}>Enter Schedule</p>
+            <button onClick={() => { setManualForm(null); setShowAdd(false); }} className="text-sm text-gray-400 hover:text-gray-600 py-1 px-2">Cancel</button>
           </div>
           <div>
-            <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Side of street</label>
-            <input type="text" placeholder='e.g. "Even side" or "North side"' value={manualForm.side} onChange={(e) => setManualForm({ ...manualForm, side: e.target.value })} className={inputCls} />
+            <label className={`text-sm font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>Side of street</label>
+            <input type="text" placeholder='e.g. "Even side" or "North side"' value={manualForm.side} onChange={(e) => setManualForm({ ...manualForm, side: e.target.value })} className={`mt-1 ${inputCls}`} />
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             <div className="flex-1">
-              <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Day</label>
-              <select value={manualForm.dayOfWeek} onChange={(e) => setManualForm({ ...manualForm, dayOfWeek: e.target.value })} className={inputCls}>
-                <option value="">Select</option>
+              <label className={`text-sm font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>Day</label>
+              <select value={manualForm.dayOfWeek} onChange={(e) => setManualForm({ ...manualForm, dayOfWeek: e.target.value })} className={`mt-1 ${inputCls}`}>
+                <option value="">Select day</option>
                 {['Monday','Tuesday','Wednesday','Thursday','Friday'].map((d) => <option key={d} value={d}>{d}</option>)}
               </select>
             </div>
             <div className="flex-1">
-              <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Frequency</label>
-              <select value={manualForm.weekPattern} onChange={(e) => setManualForm({ ...manualForm, weekPattern: e.target.value })} className={inputCls}>
+              <label className={`text-sm font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>Frequency</label>
+              <select value={manualForm.weekPattern} onChange={(e) => setManualForm({ ...manualForm, weekPattern: e.target.value })} className={`mt-1 ${inputCls}`}>
                 {WEEK_PATTERNS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
               </select>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             <div className="flex-1">
-              <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Start time</label>
-              <input type="time" value={manualForm.startTime} onChange={(e) => setManualForm({ ...manualForm, startTime: e.target.value })} className={inputCls} />
+              <label className={`text-sm font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>Start time</label>
+              <input type="time" value={manualForm.startTime} onChange={(e) => setManualForm({ ...manualForm, startTime: e.target.value })} className={`mt-1 ${inputCls}`} />
             </div>
             <div className="flex-1">
-              <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>End time</label>
-              <input type="time" value={manualForm.endTime} onChange={(e) => setManualForm({ ...manualForm, endTime: e.target.value })} className={inputCls} />
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Season start (optional)</label>
-              <input type="text" placeholder="MM-DD (e.g. 04-01)" value={manualForm.seasonStart} onChange={(e) => setManualForm({ ...manualForm, seasonStart: e.target.value })} className={inputCls} />
-            </div>
-            <div className="flex-1">
-              <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Season end (optional)</label>
-              <input type="text" placeholder="MM-DD (e.g. 11-30)" value={manualForm.seasonEnd} onChange={(e) => setManualForm({ ...manualForm, seasonEnd: e.target.value })} className={inputCls} />
+              <label className={`text-sm font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>End time</label>
+              <input type="time" value={manualForm.endTime} onChange={(e) => setManualForm({ ...manualForm, endTime: e.target.value })} className={`mt-1 ${inputCls}`} />
             </div>
           </div>
-          <button onClick={saveManual} disabled={saving} className="w-full rounded-lg bg-brand-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <label className={`text-sm font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>Season start</label>
+              <input type="text" placeholder="MM-DD (e.g. 04-01)" value={manualForm.seasonStart} onChange={(e) => setManualForm({ ...manualForm, seasonStart: e.target.value })} className={`mt-1 ${inputCls}`} />
+              <p className={`mt-1 text-xs ${dark ? 'text-gray-500' : 'text-gray-400'}`}>Optional</p>
+            </div>
+            <div className="flex-1">
+              <label className={`text-sm font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>Season end</label>
+              <input type="text" placeholder="MM-DD (e.g. 11-30)" value={manualForm.seasonEnd} onChange={(e) => setManualForm({ ...manualForm, seasonEnd: e.target.value })} className={`mt-1 ${inputCls}`} />
+              <p className={`mt-1 text-xs ${dark ? 'text-gray-500' : 'text-gray-400'}`}>Optional</p>
+            </div>
+          </div>
+          <button onClick={saveManual} disabled={saving} className="w-full rounded-xl bg-brand-600 py-3.5 text-base font-semibold text-white disabled:opacity-50 active:scale-[0.98] transition">
             {saving ? 'Saving...' : 'Save Schedule'}
           </button>
         </div>
@@ -905,56 +908,56 @@ function ScannedEntryCard({ entry, dark, saving, onConfirm }) {
   const [form, setForm] = useState({ ...entry });
   const PATTERN_LABELS = { every: 'Every week', '1st': '1st week', '2nd': '2nd week', '3rd': '3rd week', '4th': '4th week', '1st_and_3rd': '1st & 3rd weeks', '2nd_and_4th': '2nd & 4th weeks' };
   const inputCls = dark
-    ? 'w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none'
-    : 'w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none';
+    ? 'w-full rounded-xl border border-gray-600 bg-gray-700 px-4 py-3 text-base text-white focus:border-brand-500 focus:outline-none'
+    : 'w-full rounded-xl border border-gray-200 px-4 py-3 text-base focus:border-brand-500 focus:outline-none';
 
   return (
-    <div className={`rounded-lg p-3 space-y-2 ${dark ? 'bg-gray-800/50' : 'bg-white'}`}>
+    <div className={`rounded-xl p-4 space-y-4 ${dark ? 'bg-gray-800/50' : 'bg-white'}`}>
       {form.rawSignText && (
-        <p className={`text-xs italic ${dark ? 'text-gray-500' : 'text-gray-400'}`}>
+        <p className={`text-sm italic ${dark ? 'text-gray-400' : 'text-gray-500'}`}>
           Read from sign: &quot;{form.rawSignText}&quot;
         </p>
       )}
-      <div className="flex gap-2">
+      <div className="flex gap-3">
         <div className="flex-1">
-          <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Day</label>
-          <select value={form.dayOfWeek || ''} onChange={(e) => setForm({ ...form, dayOfWeek: e.target.value })} className={inputCls}>
-            <option value="">Select</option>
+          <label className={`text-sm font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>Day</label>
+          <select value={form.dayOfWeek || ''} onChange={(e) => setForm({ ...form, dayOfWeek: e.target.value })} className={`mt-1 ${inputCls}`}>
+            <option value="">Select day</option>
             {['Monday','Tuesday','Wednesday','Thursday','Friday'].map((d) => <option key={d} value={d}>{d}</option>)}
           </select>
         </div>
         <div className="flex-1">
-          <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Frequency</label>
-          <select value={form.weekPattern || 'every'} onChange={(e) => setForm({ ...form, weekPattern: e.target.value })} className={inputCls}>
+          <label className={`text-sm font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>Frequency</label>
+          <select value={form.weekPattern || 'every'} onChange={(e) => setForm({ ...form, weekPattern: e.target.value })} className={`mt-1 ${inputCls}`}>
             {Object.entries(PATTERN_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
         </div>
       </div>
-      <div className="flex gap-2">
+      <div className="flex gap-3">
         <div className="flex-1">
-          <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Start</label>
-          <input type="time" value={form.startTime || ''} onChange={(e) => setForm({ ...form, startTime: e.target.value })} className={inputCls} />
+          <label className={`text-sm font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>Start</label>
+          <input type="time" value={form.startTime || ''} onChange={(e) => setForm({ ...form, startTime: e.target.value })} className={`mt-1 ${inputCls}`} />
         </div>
         <div className="flex-1">
-          <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>End</label>
-          <input type="time" value={form.endTime || ''} onChange={(e) => setForm({ ...form, endTime: e.target.value })} className={inputCls} />
+          <label className={`text-sm font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>End</label>
+          <input type="time" value={form.endTime || ''} onChange={(e) => setForm({ ...form, endTime: e.target.value })} className={`mt-1 ${inputCls}`} />
         </div>
       </div>
       <div>
-        <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Side of street</label>
-        <input type="text" value={form.side || ''} onChange={(e) => setForm({ ...form, side: e.target.value })} placeholder="e.g. Even side" className={inputCls} />
+        <label className={`text-sm font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>Side of street</label>
+        <input type="text" value={form.side || ''} onChange={(e) => setForm({ ...form, side: e.target.value })} placeholder="e.g. Even side" className={`mt-1 ${inputCls}`} />
       </div>
-      <div className="flex gap-2">
+      <div className="flex gap-3">
         <div className="flex-1">
-          <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Season start</label>
-          <input type="text" placeholder="MM-DD" value={form.seasonStart || ''} onChange={(e) => setForm({ ...form, seasonStart: e.target.value })} className={inputCls} />
+          <label className={`text-sm font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>Season start</label>
+          <input type="text" placeholder="MM-DD" value={form.seasonStart || ''} onChange={(e) => setForm({ ...form, seasonStart: e.target.value })} className={`mt-1 ${inputCls}`} />
         </div>
         <div className="flex-1">
-          <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Season end</label>
-          <input type="text" placeholder="MM-DD" value={form.seasonEnd || ''} onChange={(e) => setForm({ ...form, seasonEnd: e.target.value })} className={inputCls} />
+          <label className={`text-sm font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>Season end</label>
+          <input type="text" placeholder="MM-DD" value={form.seasonEnd || ''} onChange={(e) => setForm({ ...form, seasonEnd: e.target.value })} className={`mt-1 ${inputCls}`} />
         </div>
       </div>
-      <button onClick={() => onConfirm(form)} disabled={saving} className="w-full rounded-lg bg-green-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
+      <button onClick={() => onConfirm(form)} disabled={saving} className="w-full rounded-xl bg-green-600 py-3.5 text-base font-semibold text-white disabled:opacity-50 active:scale-[0.98] transition">
         {saving ? 'Saving...' : 'Confirm & Save'}
       </button>
     </div>
