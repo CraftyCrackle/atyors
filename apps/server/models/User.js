@@ -22,6 +22,10 @@ const userSchema = new mongoose.Schema({
     enabled: { type: Boolean, default: false },
     time: { type: String, default: '18:00' },
   },
+  streetCleaningReminder: {
+    enabled: { type: Boolean, default: false },
+    time: { type: String, default: '18:00' },
+  },
   profilePhotoUrl: { type: String, trim: true },
   averageRating: { type: Number, default: 0 },
   totalReviews: { type: Number, default: 0 },

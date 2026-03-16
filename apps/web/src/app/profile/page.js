@@ -134,6 +134,7 @@ export default function ProfilePage() {
           <ChangePasswordSection dark={dark} cardCls={cardCls} />
 
           <TrashDayReminderSection dark={dark} cardCls={cardCls} user={user} updateUser={updateUser} />
+          <StreetCleaningReminderSection dark={dark} cardCls={cardCls} user={user} updateUser={updateUser} />
 
           <div className={`mt-4 ${cardCls}`}>
             <div className="flex items-center justify-between">
@@ -326,6 +327,91 @@ function TrashDayReminderSection({ dark, cardCls, user, updateUser }) {
             {isEvening
               ? `You'll get a reminder at ${displayTime} the night before your trash day`
               : `You'll get a reminder at ${displayTime} the morning of your trash day`}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StreetCleaningReminderSection({ dark, cardCls, user, updateUser }) {
+  const reminder = user?.streetCleaningReminder || { enabled: false, time: '18:00' };
+  const [saving, setSaving] = useState(false);
+
+  async function update(field, value) {
+    setSaving(true);
+    try {
+      const updated = { ...reminder, [field]: value };
+      const res = await api.patch('/users/me', { streetCleaningReminder: updated });
+      updateUser(res.data.user);
+    } catch (err) { alert(err.message || 'Failed to update'); }
+    setSaving(false);
+  }
+
+  const TIME_OPTIONS = [];
+  for (let h = 0; h < 24; h++) {
+    for (const m of [0, 30]) {
+      const val = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const h12 = h % 12 || 12;
+      const label = `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+      TIME_OPTIONS.push({ value: val, label });
+    }
+  }
+
+  const timeVal = reminder.time || '18:00';
+  const hour = parseInt(timeVal.split(':')[0], 10);
+  const isEvening = hour >= 12;
+  const displayTime = TIME_OPTIONS.find((o) => o.value === timeVal)?.label || timeVal;
+
+  return (
+    <div className={`mt-4 ${cardCls}`}>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className={`font-semibold ${dark ? 'text-white' : ''}`}>Street Cleaning Reminders</h2>
+          <p className={`mt-0.5 text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>
+            Never forget to move your car
+          </p>
+        </div>
+        <button
+          disabled={saving}
+          onClick={() => update('enabled', !reminder.enabled)}
+          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${reminder.enabled ? 'bg-brand-600' : dark ? 'bg-gray-600' : 'bg-gray-200'}`}
+        >
+          <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform ${reminder.enabled ? 'translate-x-5' : 'translate-x-0'}`} />
+        </button>
+      </div>
+      {reminder.enabled && (
+        <div className="mt-3 space-y-2">
+          <label className={`text-xs font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>
+            What time should we remind you?
+          </label>
+          <div className="flex items-center gap-3">
+            <select
+              value={timeVal}
+              disabled={saving}
+              onChange={(e) => update('time', e.target.value)}
+              className={`flex-1 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition focus:border-brand-600 focus:outline-none ${
+                dark ? 'border-gray-600 bg-gray-700 text-white' : 'border-gray-200 bg-white text-gray-900'
+              }`}
+            >
+              {TIME_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+            <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
+              isEvening ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700'
+            }`}>
+              {isEvening ? 'Night before' : 'Morning of'}
+            </span>
+          </div>
+          <p className={`text-xs ${dark ? 'text-gray-500' : 'text-gray-400'}`}>
+            {isEvening
+              ? `You'll get a reminder at ${displayTime} the night before street cleaning`
+              : `You'll get a reminder at ${displayTime} the morning of street cleaning`}
+          </p>
+          <p className={`text-xs ${dark ? 'text-gray-500' : 'text-gray-400'}`}>
+            Set up your schedule in each address below (scan a sign or enter manually)
           </p>
         </div>
       )}
@@ -573,6 +659,304 @@ function AddressCard({ address, dark, onUpdated, onDelete }) {
           {address.barrelReturnInstructions && <span>Return: {address.barrelReturnInstructions}</span>}
         </div>
       )}
+      {address.streetCleaning?.length > 0 && (
+        <StreetCleaningDisplay schedules={address.streetCleaning} dark={dark} />
+      )}
+      <StreetCleaningManager addressId={address._id} schedules={address.streetCleaning || []} dark={dark} onUpdated={onUpdated} />
+    </div>
+  );
+}
+
+function StreetCleaningDisplay({ schedules, dark }) {
+  const PATTERN_LABELS = { every: 'Every', '1st': '1st', '2nd': '2nd', '3rd': '3rd', '4th': '4th', '1st_and_3rd': '1st & 3rd', '2nd_and_4th': '2nd & 4th' };
+  function fmtTime(t) {
+    if (!t) return '';
+    const [h, m] = t.split(':').map(Number);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return m > 0 ? `${h12}:${String(m).padStart(2, '0')}${ampm}` : `${h12}${ampm}`;
+  }
+  return (
+    <div className="mt-2 space-y-1">
+      {schedules.map((sc, i) => (
+        <div key={i} className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs ${dark ? 'bg-blue-900/20 text-blue-300' : 'bg-blue-50 text-blue-700'}`}>
+          <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+          <span>
+            {PATTERN_LABELS[sc.weekPattern] || 'Every'} {sc.dayOfWeek}
+            {sc.startTime && sc.endTime ? ` ${fmtTime(sc.startTime)}–${fmtTime(sc.endTime)}` : ''}
+            {sc.side ? ` · ${sc.side}` : ''}
+            {sc.seasonStart && sc.seasonEnd ? ` · ${sc.seasonStart} to ${sc.seasonEnd}` : ''}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function StreetCleaningManager({ addressId, schedules, dark, onUpdated }) {
+  const [showAdd, setShowAdd] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [scannedResults, setScannedResults] = useState(null);
+  const [manualForm, setManualForm] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(null);
+
+  async function handleScanPhoto(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setScanning(true);
+    setScannedResults(null);
+    try {
+      const fd = new FormData();
+      fd.append('photo', file);
+      const token = localStorage.getItem('accessToken');
+      const res = await fetch('/api/v1/street-cleaning/scan', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      const data = await res.json();
+      if (data.success) {
+        setScannedResults(data.data);
+      } else {
+        alert(data.error?.message || 'Could not read sign. Try entering manually.');
+      }
+    } catch (err) {
+      alert('Failed to scan sign. Please enter details manually.');
+    }
+    setScanning(false);
+    e.target.value = '';
+  }
+
+  async function confirmScanned(entry) {
+    setSaving(true);
+    try {
+      const res = await api.post(`/street-cleaning/${addressId}`, entry);
+      if (res.data?.address) onUpdated(res.data.address);
+      setScannedResults(null);
+      setShowAdd(false);
+    } catch (err) { alert(err.message || 'Failed to save'); }
+    setSaving(false);
+  }
+
+  async function saveManual() {
+    if (!manualForm?.dayOfWeek) { alert('Please select a day'); return; }
+    setSaving(true);
+    try {
+      const res = await api.post(`/street-cleaning/${addressId}`, manualForm);
+      if (res.data?.address) onUpdated(res.data.address);
+      setManualForm(null);
+      setShowAdd(false);
+    } catch (err) { alert(err.message || 'Failed to save'); }
+    setSaving(false);
+  }
+
+  async function handleDelete(idx) {
+    setDeleting(idx);
+    try {
+      const res = await api.delete(`/street-cleaning/${addressId}/${idx}`);
+      if (res.data?.address) onUpdated(res.data.address);
+    } catch (err) { alert(err.message || 'Failed to delete'); }
+    setDeleting(null);
+  }
+
+  const inputCls = dark
+    ? 'w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white placeholder-gray-400 focus:border-brand-500 focus:outline-none'
+    : 'w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none';
+
+  const WEEK_PATTERNS = [
+    { value: 'every', label: 'Every week' },
+    { value: '1st', label: '1st week only' },
+    { value: '2nd', label: '2nd week only' },
+    { value: '3rd', label: '3rd week only' },
+    { value: '4th', label: '4th week only' },
+    { value: '1st_and_3rd', label: '1st & 3rd weeks' },
+    { value: '2nd_and_4th', label: '2nd & 4th weeks' },
+  ];
+
+  return (
+    <div className="mt-2">
+      {schedules.length > 0 && (
+        <div className="space-y-1 mb-2">
+          {schedules.map((_, i) => (
+            <div key={i} className="flex justify-end">
+              <button
+                onClick={() => handleDelete(i)}
+                disabled={deleting === i}
+                className="text-[10px] text-red-400 hover:text-red-600"
+              >
+                {deleting === i ? 'Removing...' : 'Remove'}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!showAdd && (
+        <button
+          onClick={() => setShowAdd(true)}
+          className={`flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed px-3 py-2 text-xs transition ${
+            dark ? 'border-gray-600 text-gray-400 hover:border-blue-500 hover:text-blue-400' : 'border-gray-200 text-gray-400 hover:border-blue-400 hover:text-blue-600'
+          }`}
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
+          {schedules.length > 0 ? 'Add another street cleaning schedule' : 'Add street cleaning schedule'}
+        </button>
+      )}
+
+      {showAdd && !scannedResults && !manualForm && (
+        <div className={`mt-2 rounded-lg border p-3 space-y-2 ${dark ? 'border-gray-700 bg-gray-800/50' : 'border-blue-200 bg-blue-50/50'}`}>
+          <div className="flex items-center justify-between">
+            <p className={`text-xs font-semibold ${dark ? 'text-gray-300' : 'text-gray-600'}`}>Add Street Cleaning Schedule</p>
+            <button onClick={() => setShowAdd(false)} className="text-xs text-gray-400 hover:text-gray-600">Cancel</button>
+          </div>
+          <div className="flex gap-2">
+            <label className={`flex-1 flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed px-3 py-3 text-sm font-medium transition active:scale-[0.98] ${
+              dark ? 'border-blue-500/30 text-blue-400 hover:bg-blue-500/10' : 'border-blue-300 text-blue-600 hover:bg-blue-50'
+            }`}>
+              {scanning ? (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+              ) : (
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" /><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" /></svg>
+              )}
+              {scanning ? 'Reading sign...' : 'Scan Sign Photo'}
+              <input type="file" accept="image/*" capture="environment" onChange={handleScanPhoto} className="hidden" disabled={scanning} />
+            </label>
+            <button
+              onClick={() => setManualForm({ side: '', dayOfWeek: '', weekPattern: 'every', startTime: '08:00', endTime: '12:00', seasonStart: '', seasonEnd: '' })}
+              className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 border-dashed px-3 py-3 text-sm font-medium transition active:scale-[0.98] ${
+                dark ? 'border-gray-600 text-gray-400 hover:bg-gray-700/50' : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
+              Enter Manually
+            </button>
+          </div>
+        </div>
+      )}
+
+      {scannedResults && (
+        <div className={`mt-2 rounded-lg border p-3 space-y-3 ${dark ? 'border-green-500/30 bg-green-900/10' : 'border-green-200 bg-green-50/50'}`}>
+          <div className="flex items-center justify-between">
+            <p className={`text-xs font-semibold ${dark ? 'text-green-400' : 'text-green-700'}`}>Sign detected — confirm details</p>
+            <button onClick={() => { setScannedResults(null); setShowAdd(false); }} className="text-xs text-gray-400 hover:text-gray-600">Cancel</button>
+          </div>
+          {scannedResults.schedules.map((entry, i) => (
+            <ScannedEntryCard key={i} entry={{ ...entry, signPhotoUrl: scannedResults.photoUrl }} dark={dark} saving={saving} onConfirm={confirmScanned} />
+          ))}
+        </div>
+      )}
+
+      {manualForm && (
+        <div className={`mt-2 rounded-lg border p-3 space-y-3 ${dark ? 'border-gray-700 bg-gray-800/50' : 'border-gray-200 bg-gray-50/50'}`}>
+          <div className="flex items-center justify-between">
+            <p className={`text-xs font-semibold ${dark ? 'text-gray-300' : 'text-gray-600'}`}>Enter Schedule</p>
+            <button onClick={() => { setManualForm(null); setShowAdd(false); }} className="text-xs text-gray-400 hover:text-gray-600">Cancel</button>
+          </div>
+          <div>
+            <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Side of street</label>
+            <input type="text" placeholder='e.g. "Even side" or "North side"' value={manualForm.side} onChange={(e) => setManualForm({ ...manualForm, side: e.target.value })} className={inputCls} />
+          </div>
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Day</label>
+              <select value={manualForm.dayOfWeek} onChange={(e) => setManualForm({ ...manualForm, dayOfWeek: e.target.value })} className={inputCls}>
+                <option value="">Select</option>
+                {['Monday','Tuesday','Wednesday','Thursday','Friday'].map((d) => <option key={d} value={d}>{d}</option>)}
+              </select>
+            </div>
+            <div className="flex-1">
+              <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Frequency</label>
+              <select value={manualForm.weekPattern} onChange={(e) => setManualForm({ ...manualForm, weekPattern: e.target.value })} className={inputCls}>
+                {WEEK_PATTERNS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Start time</label>
+              <input type="time" value={manualForm.startTime} onChange={(e) => setManualForm({ ...manualForm, startTime: e.target.value })} className={inputCls} />
+            </div>
+            <div className="flex-1">
+              <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>End time</label>
+              <input type="time" value={manualForm.endTime} onChange={(e) => setManualForm({ ...manualForm, endTime: e.target.value })} className={inputCls} />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Season start (optional)</label>
+              <input type="text" placeholder="MM-DD (e.g. 04-01)" value={manualForm.seasonStart} onChange={(e) => setManualForm({ ...manualForm, seasonStart: e.target.value })} className={inputCls} />
+            </div>
+            <div className="flex-1">
+              <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Season end (optional)</label>
+              <input type="text" placeholder="MM-DD (e.g. 11-30)" value={manualForm.seasonEnd} onChange={(e) => setManualForm({ ...manualForm, seasonEnd: e.target.value })} className={inputCls} />
+            </div>
+          </div>
+          <button onClick={saveManual} disabled={saving} className="w-full rounded-lg bg-brand-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
+            {saving ? 'Saving...' : 'Save Schedule'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ScannedEntryCard({ entry, dark, saving, onConfirm }) {
+  const [form, setForm] = useState({ ...entry });
+  const PATTERN_LABELS = { every: 'Every week', '1st': '1st week', '2nd': '2nd week', '3rd': '3rd week', '4th': '4th week', '1st_and_3rd': '1st & 3rd weeks', '2nd_and_4th': '2nd & 4th weeks' };
+  const inputCls = dark
+    ? 'w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none'
+    : 'w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none';
+
+  return (
+    <div className={`rounded-lg p-3 space-y-2 ${dark ? 'bg-gray-800/50' : 'bg-white'}`}>
+      {form.rawSignText && (
+        <p className={`text-xs italic ${dark ? 'text-gray-500' : 'text-gray-400'}`}>
+          Read from sign: &quot;{form.rawSignText}&quot;
+        </p>
+      )}
+      <div className="flex gap-2">
+        <div className="flex-1">
+          <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Day</label>
+          <select value={form.dayOfWeek || ''} onChange={(e) => setForm({ ...form, dayOfWeek: e.target.value })} className={inputCls}>
+            <option value="">Select</option>
+            {['Monday','Tuesday','Wednesday','Thursday','Friday'].map((d) => <option key={d} value={d}>{d}</option>)}
+          </select>
+        </div>
+        <div className="flex-1">
+          <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Frequency</label>
+          <select value={form.weekPattern || 'every'} onChange={(e) => setForm({ ...form, weekPattern: e.target.value })} className={inputCls}>
+            {Object.entries(PATTERN_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </select>
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <div className="flex-1">
+          <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Start</label>
+          <input type="time" value={form.startTime || ''} onChange={(e) => setForm({ ...form, startTime: e.target.value })} className={inputCls} />
+        </div>
+        <div className="flex-1">
+          <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>End</label>
+          <input type="time" value={form.endTime || ''} onChange={(e) => setForm({ ...form, endTime: e.target.value })} className={inputCls} />
+        </div>
+      </div>
+      <div>
+        <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Side of street</label>
+        <input type="text" value={form.side || ''} onChange={(e) => setForm({ ...form, side: e.target.value })} placeholder="e.g. Even side" className={inputCls} />
+      </div>
+      <div className="flex gap-2">
+        <div className="flex-1">
+          <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Season start</label>
+          <input type="text" placeholder="MM-DD" value={form.seasonStart || ''} onChange={(e) => setForm({ ...form, seasonStart: e.target.value })} className={inputCls} />
+        </div>
+        <div className="flex-1">
+          <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Season end</label>
+          <input type="text" placeholder="MM-DD" value={form.seasonEnd || ''} onChange={(e) => setForm({ ...form, seasonEnd: e.target.value })} className={inputCls} />
+        </div>
+      </div>
+      <button onClick={() => onConfirm(form)} disabled={saving} className="w-full rounded-lg bg-green-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
+        {saving ? 'Saving...' : 'Confirm & Save'}
+      </button>
     </div>
   );
 }

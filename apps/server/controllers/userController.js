@@ -11,7 +11,7 @@ async function getProfile(req, res, next) {
 
 async function updateProfile(req, res, next) {
   try {
-    const allowed = ['firstName', 'lastName', 'phone', 'defaultAddressId', 'notificationPreferences', 'trashDayReminder'];
+    const allowed = ['firstName', 'lastName', 'phone', 'defaultAddressId', 'notificationPreferences', 'trashDayReminder', 'streetCleaningReminder'];
     const updates = {};
     for (const key of allowed) {
       if (req.body[key] !== undefined) updates[key] = req.body[key];

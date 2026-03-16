@@ -81,6 +81,7 @@ app.use('/api/v1/admin', require('./apps/server/routes/admin'));
 app.use('/api/v1/servicer', require('./apps/server/routes/servicer'));
 app.use('/api/v1/notifications', require('./apps/server/routes/notifications'));
 app.use('/api/v1/push', require('./apps/server/routes/push'));
+app.use('/api/v1/street-cleaning', require('./apps/server/routes/streetCleaning'));
 
 // --- 404 handler ---
 app.use((req, res) => {
@@ -199,19 +200,24 @@ function startExpiryScheduler(io) {
 
 function startReminderScheduler() {
   const THIRTY_MINUTES = 30 * 60 * 1000;
-  const { sendTrashDayReminders } = require('./apps/server/services/reminderService');
+  const { sendTrashDayReminders, sendStreetCleaningReminders } = require('./apps/server/services/reminderService');
 
   async function runReminders() {
     try {
       await sendTrashDayReminders();
     } catch (err) {
-      console.error('[Reminder] Scheduler failed:', err.message);
+      console.error('[Reminder] Trash day scheduler failed:', err.message);
+    }
+    try {
+      await sendStreetCleaningReminders();
+    } catch (err) {
+      console.error('[Reminder] Street cleaning scheduler failed:', err.message);
     }
   }
 
   runReminders();
   setInterval(runReminders, THIRTY_MINUTES);
-  console.log('[Scheduler] Trash day reminder checker running (every 30m)');
+  console.log('[Scheduler] Trash day + street cleaning reminder checker running (every 30m)');
 }
 
 start();

@@ -71,7 +71,7 @@ async function checkZone(lat, lng) {
 }
 
 async function update(userId, addressId, data) {
-  const allowed = ['street', 'unit', 'city', 'state', 'zip', 'formatted', 'barrelCount', 'barrelLocation', 'barrelPhotoUrl', 'barrelNotes', 'barrelPlacementInstructions', 'barrelReturnInstructions', 'trashDay', 'isDefault', 'photos'];
+  const allowed = ['street', 'unit', 'city', 'state', 'zip', 'formatted', 'barrelCount', 'barrelLocation', 'barrelPhotoUrl', 'barrelNotes', 'barrelPlacementInstructions', 'barrelReturnInstructions', 'trashDay', 'isDefault', 'photos', 'streetCleaning'];
   const updates = {};
   for (const key of allowed) {
     if (data[key] !== undefined) updates[key] = data[key];

@@ -221,12 +221,148 @@ async function sendTrashDayReminders() {
   return sent;
 }
 
+// --- Street cleaning helpers ---
+
+function weekOccurrence(date) {
+  return Math.ceil(date.getDate() / 7);
+}
+
+function matchesWeekPattern(pattern, date) {
+  const n = weekOccurrence(date);
+  switch (pattern) {
+    case 'every': return true;
+    case '1st': return n === 1;
+    case '2nd': return n === 2;
+    case '3rd': return n === 3;
+    case '4th': return n === 4;
+    case '1st_and_3rd': return n === 1 || n === 3;
+    case '2nd_and_4th': return n === 2 || n === 4;
+    default: return true;
+  }
+}
+
+function isInSeason(date, seasonStart, seasonEnd) {
+  if (!seasonStart || !seasonEnd) return true;
+  const [sm, sd] = seasonStart.split('-').map(Number);
+  const [em, ed] = seasonEnd.split('-').map(Number);
+  const m = date.getMonth() + 1;
+  const d = date.getDate();
+  const current = m * 100 + d;
+  const start = sm * 100 + sd;
+  const end = em * 100 + ed;
+  if (start <= end) return current >= start && current <= end;
+  return current >= start || current <= end;
+}
+
+function formatTimeRange(startTime, endTime) {
+  function fmt(t) {
+    if (!t) return '';
+    const [h, m] = t.split(':').map(Number);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return m > 0 ? `${h12}:${String(m).padStart(2, '0')}${ampm}` : `${h12}${ampm}`;
+  }
+  if (startTime && endTime) return `${fmt(startTime)}–${fmt(endTime)}`;
+  if (startTime) return `starting ${fmt(startTime)}`;
+  return '';
+}
+
+async function sendStreetCleaningReminders() {
+  const now = getEasternNow();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+  const users = await User.find({
+    role: 'customer',
+    isActive: true,
+    'streetCleaningReminder.enabled': true,
+  }).select('_id firstName streetCleaningReminder').lean();
+
+  console.log(`[StreetClean] Check at ${timeStr} ET — ${users.length} user(s) with reminders enabled`);
+  if (users.length === 0) return 0;
+
+  const dueUsers = users.filter((u) => {
+    const userMinutes = minutesSinceMidnight(u.streetCleaningReminder.time || '18:00');
+    const diff = currentMinutes - userMinutes;
+    return diff >= 0 && diff < 30;
+  });
+
+  if (dueUsers.length === 0) {
+    console.log('[StreetClean] No users due in this window');
+    return 0;
+  }
+
+  const userIds = dueUsers.map((u) => u._id);
+
+  const addresses = await Address.find({
+    userId: { $in: userIds },
+    'streetCleaning.0': { $exists: true },
+  }).select('userId street streetCleaning').lean();
+
+  const userAddrs = {};
+  for (const a of addresses) {
+    const uid = a.userId.toString();
+    if (!userAddrs[uid]) userAddrs[uid] = [];
+    userAddrs[uid].push(a);
+  }
+
+  let sent = 0;
+
+  for (const user of dueUsers) {
+    const uid = user._id.toString();
+    const addrs = userAddrs[uid];
+    if (!addrs) continue;
+
+    const userTime = minutesSinceMidnight(user.streetCleaningReminder.time || '18:00');
+    const isEvening = userTime >= 720;
+    const checkDate = getEasternDate(isEvening ? 1 : 0);
+    const checkDayName = DAYS[checkDate.getDay()];
+
+    for (const addr of addrs) {
+      for (const sc of addr.streetCleaning) {
+        if (sc.dayOfWeek !== checkDayName) continue;
+        if (!matchesWeekPattern(sc.weekPattern, checkDate)) continue;
+        if (!isInSeason(checkDate, sc.seasonStart, sc.seasonEnd)) continue;
+
+        const timeRange = formatTimeRange(sc.startTime, sc.endTime);
+        const sideNote = sc.side ? ` (${sc.side})` : '';
+        const streetName = addr.street || 'your street';
+
+        let title, body;
+        if (isEvening) {
+          title = '🚗 Street cleaning tomorrow!';
+          body = `Hey ${user.firstName}, street cleaning on ${streetName}${sideNote} is tomorrow${timeRange ? ` ${timeRange}` : ''}. Move your car tonight!`;
+        } else {
+          title = '🚗 Street cleaning today!';
+          body = `Good morning ${user.firstName}! Street cleaning on ${streetName}${sideNote} is today${timeRange ? ` ${timeRange}` : ''}. Make sure your car is moved!`;
+        }
+
+        try {
+          await notificationService.create({ userId: user._id, type: 'street:reminder', title, body });
+          sent++;
+          console.log(`[StreetClean] Sent to ${user.firstName} (${uid}) for ${streetName} ${checkDayName}${sideNote}`);
+        } catch (err) {
+          console.error(`[StreetClean] Failed for user ${uid}:`, err.message);
+        }
+      }
+    }
+  }
+
+  console.log(`[StreetClean] Done — sent ${sent} reminder(s)`);
+  return sent;
+}
+
 module.exports = {
   sendTrashDayReminders,
+  sendStreetCleaningReminders,
   getHolidaysForYear,
   getHolidayOn,
   isHoliday,
   getEffectivePickupDate,
   observedDate,
   buildHolidayMap,
+  weekOccurrence,
+  matchesWeekPattern,
+  isInSeason,
+  formatTimeRange,
 };
