@@ -1,7 +1,10 @@
 import './globals.css';
+import { GoogleAnalytics } from '@next/third-parties/google';
 import NotificationProvider from '../components/NotificationProvider';
 import GpsBroadcaster from '../components/GpsBroadcaster';
 import InstallProvider from '../components/InstallContext';
+
+const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
 export const metadata = {
   title: 'atyors — At Your Service',
@@ -42,6 +45,7 @@ export default function RootLayout({ children }) {
           </NotificationProvider>
         </InstallProvider>
       </body>
+      {GA_ID && <GoogleAnalytics gaId={GA_ID} />}
     </html>
   );
 }
