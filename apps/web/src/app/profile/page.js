@@ -8,6 +8,7 @@ import { api } from '../../services/api';
 import { useInstall } from '../../components/InstallContext';
 import AppStoreBadge from '../../components/AppStoreBadge';
 import PhotoViewer from '../../components/PhotoViewer';
+import { reverseGeocode } from '../../lib/reverseGeocode';
 
 export default function ProfilePage() {
   const { user, logout, updateUser } = useAuthStore();
@@ -970,7 +971,34 @@ function AddAddressForm({ dark, onAdded, onCancel }) {
   const [photos, setPhotos] = useState([]);
   const [photoPreviews, setPhotoPreviews] = useState([]);
   const [uploading, setUploading] = useState(false);
-  const update = (f) => (e) => setForm({ ...form, [f]: e.target.value });
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationError, setLocationError] = useState('');
+  const update = (f) => (e) => { setForm({ ...form, [f]: e.target.value }); setLocationError(''); };
+
+  async function handleUseLocation() {
+    if (!navigator?.geolocation) { setLocationError('Location is not supported.'); return; }
+    setLocationError('');
+    setLocationLoading(true);
+    try {
+      const position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 });
+      });
+      const addr = await reverseGeocode(position.coords.lat, position.coords.lng);
+      setForm((prev) => ({
+        ...prev,
+        street: addr.street || prev.street,
+        city: addr.city || prev.city,
+        state: addr.state || prev.state,
+        zip: addr.zip || prev.zip,
+      }));
+    } catch (err) {
+      if (err?.code === 1) setLocationError('Location permission denied.');
+      else if (err?.code === 2) setLocationError('Location unavailable.');
+      else setLocationError(err?.message || 'Could not get address.');
+    } finally {
+      setLocationLoading(false);
+    }
+  }
 
   const baseCls = dark
     ? 'rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white placeholder-gray-400 focus:border-brand-500 focus:outline-none'
@@ -1037,6 +1065,20 @@ function AddAddressForm({ dark, onAdded, onCancel }) {
   return (
     <div className={`mt-3 space-y-3 rounded-lg border p-4 ${dark ? 'border-brand-500/30 bg-gray-900/50' : 'border-brand-200 bg-brand-50/30'}`}>
       <p className={`text-xs font-semibold uppercase ${dark ? 'text-gray-400' : 'text-gray-500'}`}>New Address</p>
+      <button
+        type="button"
+        onClick={handleUseLocation}
+        disabled={locationLoading}
+        aria-label="Use my current location to fill in address"
+        className={`flex w-full items-center justify-center gap-2 rounded-lg border border-dashed py-2.5 text-sm font-medium transition ${dark ? 'border-brand-500/50 text-brand-400 hover:bg-brand-500/10' : 'border-brand-300 text-brand-600 hover:bg-brand-50'}`}
+      >
+        {locationLoading ? (
+          <><span className="h-4 w-4 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" /> Getting address…</>
+        ) : (
+          <><svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg> Use my location</>
+        )}
+      </button>
+      {locationError && <p className={`text-xs ${dark ? 'text-amber-400' : 'text-amber-600'}`} role="alert">{locationError}</p>}
       <input type="text" placeholder="Street address" value={form.street} onChange={update('street')} className={`w-full ${baseCls}`} />
       <div className="flex gap-2">
         <input type="text" placeholder="Apt / Unit" value={form.unit} onChange={update('unit')} className={`w-24 shrink-0 ${baseCls}`} />

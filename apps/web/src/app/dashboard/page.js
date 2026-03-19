@@ -33,6 +33,7 @@ import ReviewModal from '../../components/ReviewModal';
 import ConfirmModal from '../../components/ConfirmModal';
 import { useAuthStore } from '../../stores/authStore';
 import { api } from '../../services/api';
+import QuickAddAddress from '../../components/QuickAddAddress';
 import { useNotifications } from '../../components/NotificationProvider';
 import { useInstall } from '../../components/InstallContext';
 import AppStoreBadge from '../../components/AppStoreBadge';
@@ -392,6 +393,33 @@ export default function DashboardPage() {
   const [reviewedMap, setReviewedMap] = useState({});
   const [unreadNotifs, setUnreadNotifs] = useState(0);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [showAddressFailedBanner, setShowAddressFailedBanner] = useState(false);
+  const [addresses, setAddresses] = useState([]);
+  const [hideAddAddressCard, setHideAddAddressCard] = useState(false);
+  const [addAddressNotInZone, setAddAddressNotInZone] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (sessionStorage.getItem('atyors_address_save_failed')) {
+      sessionStorage.removeItem('atyors_address_save_failed');
+      setShowAddressFailedBanner(true);
+    }
+    if (sessionStorage.getItem('atyors_hide_add_address')) setHideAddAddressCard(true);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onFocus = () => loadAddresses();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, []);
+
+  async function loadAddresses() {
+    try {
+      const res = await api.get('/addresses');
+      setAddresses(res.data.addresses || []);
+    } catch { }
+  }
 
   async function loadBookings() {
     try {
@@ -477,6 +505,7 @@ export default function DashboardPage() {
     loadBookings();
     loadMyReviews();
     loadUnreadCount();
+    loadAddresses();
   }, []);
 
   useEffect(() => {
@@ -558,6 +587,51 @@ export default function DashboardPage() {
             </Link>
           </div>
         </header>
+
+        {showAddressFailedBanner && (
+          <div className="mx-4 mt-3 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
+            <p className="flex-1 text-sm text-amber-800">
+              We couldn’t save your address at signup. Add it below or in Profile.
+            </p>
+            <Link href="/profile" className="shrink-0 text-sm font-semibold text-amber-800 underline">Profile</Link>
+            <button type="button" onClick={() => setShowAddressFailedBanner(false)} className="shrink-0 rounded p-1 text-amber-600 hover:bg-amber-100" aria-label="Dismiss">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+        )}
+
+        {addresses.length === 0 && !hideAddAddressCard && (
+          <div className="mx-4 mt-4 space-y-3">
+            <QuickAddAddress
+              title="Add your home address"
+              subtitle="One tap with “Use my location” or type it in. You can add barrel details later in Profile."
+              variant="card"
+              onAdded={(addr, result) => {
+                setAddresses((prev) => [...prev, addr]);
+                setShowAddressFailedBanner(false);
+                if (result && result.inServiceZone === false) setAddAddressNotInZone(true);
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window !== 'undefined') sessionStorage.setItem('atyors_hide_add_address', '1');
+                setHideAddAddressCard(true);
+              }}
+              className="w-full text-center text-sm text-gray-500 underline hover:text-gray-700"
+            >
+              I&apos;ll add it later
+            </button>
+          </div>
+        )}
+
+        {addAddressNotInZone && (
+          <div className="mx-4 mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <p className="text-sm font-medium text-amber-800">We&apos;re not in your area yet.</p>
+            <p className="mt-0.5 text-xs text-amber-700">We&apos;ll notify you when we expand. You can still add barrel details in Profile.</p>
+            <button type="button" onClick={() => setAddAddressNotInZone(false)} className="mt-2 text-xs font-medium text-amber-800 underline hover:no-underline">Dismiss</button>
+          </div>
+        )}
 
         {!isStandalone && isIos && hasAppStore && (
           <div className="mx-4 mt-3 flex justify-center">

@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AuthGuard from '../../components/AuthGuard';
 import BottomNav from '../../components/BottomNav';
+import QuickAddAddress from '../../components/QuickAddAddress';
 import { api } from '../../services/api';
 import PhotoViewer from '../../components/PhotoViewer';
 
@@ -379,7 +380,15 @@ function BookContent() {
                   ))}
                 </div>
               ) : (
-                <AddAddressForm onAdded={(addr) => { setAddresses([addr]); selectAddress(addr); }} />
+                <div className="mt-4">
+                  <QuickAddAddress
+                    title="Add your address to continue"
+                    subtitle="Use my location to fill it in one tap, or enter it below."
+                    variant="card"
+                    compact={false}
+                    onAdded={(addr, result) => { setAddresses([addr]); selectAddress(addr); if (result && result.inServiceZone === false) setZipNotServed(true); }}
+                  />
+                </div>
               )}
 
               {addresses.length > 0 && (

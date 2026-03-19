@@ -5,9 +5,24 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '../../stores/authStore';
 import Logo from '../../components/Logo';
+import { api } from '../../services/api';
+
+const INITIAL_FORM = {
+  firstName: '',
+  lastName: '',
+  email: '',
+  phone: '',
+  password: '',
+  confirmPassword: '',
+  street: '',
+  unit: '',
+  city: '',
+  state: '',
+  zip: '',
+};
 
 export default function SignupPage() {
-  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', password: '', confirmPassword: '' });
+  const [form, setForm] = useState(INITIAL_FORM);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -16,12 +31,19 @@ export default function SignupPage() {
 
   const update = (field) => (e) => setForm({ ...form, [field]: e.target.value });
 
+  const hasAnyAddress = [form.street, form.city, form.state, form.zip].some(Boolean);
+  const hasFullAddress = form.street?.trim() && form.city?.trim() && form.state?.trim() && form.zip?.trim();
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
     if (!agreedToTerms) { setError('You must agree to the Terms of Service to create an account.'); return; }
     if (form.password !== form.confirmPassword) { setError('Passwords do not match'); return; }
     if (form.password.length < 8) { setError('Password must be at least 8 characters'); return; }
+    if (hasAnyAddress && !hasFullAddress) {
+      setError('Please enter a complete address (street, city, state, and ZIP).');
+      return;
+    }
     setSubmitting(true);
     try {
       const data = await register({ firstName: form.firstName, lastName: form.lastName, email: form.email, phone: form.phone, password: form.password });
@@ -29,6 +51,22 @@ export default function SignupPage() {
         const qs = new URLSearchParams({ userId: data.userId, email: data.email });
         router.push(`/verify?${qs.toString()}`);
         return;
+      }
+      if (hasFullAddress) {
+        try {
+          await api.post('/addresses', {
+            street: form.street.trim(),
+            unit: form.unit?.trim() || undefined,
+            city: form.city.trim(),
+            state: form.state.trim(),
+            zip: form.zip.trim(),
+            isDefault: true,
+          });
+        } catch (addrErr) {
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('atyors_address_save_failed', '1');
+          }
+        }
       }
       const role = data.user?.role;
       if (['admin', 'superadmin'].includes(role)) router.push('/admin/dashboard');
@@ -59,6 +97,18 @@ export default function SignupPage() {
           </div>
           <input type="email" placeholder="Email address" value={form.email} onChange={update('email')} required className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
           <input type="tel" placeholder="Phone number (optional)" value={form.phone} onChange={update('phone')} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
+
+          <div className="space-y-3 pt-2">
+            <p className="text-sm font-medium text-gray-700">Home address <span className="font-normal text-gray-500">(optional — we need it to schedule service)</span></p>
+            <input type="text" placeholder="Street address" value={form.street} onChange={update('street')} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
+            <input type="text" placeholder="Unit, apt, etc. (optional)" value={form.unit} onChange={update('unit')} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
+            <div className="grid grid-cols-3 gap-2">
+              <input type="text" placeholder="City" value={form.city} onChange={update('city')} className="col-span-1 rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
+              <input type="text" placeholder="State" value={form.state} onChange={update('state')} className="rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
+              <input type="text" placeholder="ZIP" value={form.zip} onChange={update('zip')} className="rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
+            </div>
+          </div>
+
           <input type="password" placeholder="Password" value={form.password} onChange={update('password')} required className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
           <input type="password" placeholder="Confirm password" value={form.confirmPassword} onChange={update('confirmPassword')} required className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
           <label className="flex items-start gap-3 cursor-pointer">
