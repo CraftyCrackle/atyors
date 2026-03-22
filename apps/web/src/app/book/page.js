@@ -54,8 +54,10 @@ function BookContent() {
   const [curbItemPreviews, setCurbItemPreviews] = useState([]);
   const [dateFullyBooked, setDateFullyBooked] = useState(false);
   const [zipNotServed, setZipNotServed] = useState(false);
+  const [zipWarnings, setZipWarnings] = useState({});
   const [activeSubs, setActiveSubs] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [selectedAddresses, setSelectedAddresses] = useState([]);
 
   useEffect(() => {
     async function load() {
@@ -89,10 +91,11 @@ function BookContent() {
     if (selected.bringInTime && isTimeWindowPast(selected.bringInTime, true)) updates.bringInTime = '';
     if (Object.keys(updates).length) setSelected((prev) => ({ ...prev, ...updates }));
     setDateFullyBooked(false);
-    api.get(`/bookings/capacity?date=${selected.date}`)
+    const count = selectedAddresses.length || 1;
+    api.get(`/bookings/capacity?date=${selected.date}&count=${count}`)
       .then((res) => { if (!res.data.available) setDateFullyBooked(true); })
       .catch(() => {});
-  }, [selected.date]);
+  }, [selected.date, selectedAddresses.length]);
 
   useEffect(() => {
     if (needsPutOut() && !selected.putOutTime) {
@@ -180,26 +183,74 @@ function BookContent() {
     return new Date() > base;
   }
 
-  function selectAddress(addr) {
+  function toggleAddress(addr) {
     setShowAddForm(false);
-    const addrHasSub = activeSubs.some((s) => {
-      const id = s.addressId?._id || s.addressId;
-      return id === addr._id || String(id) === String(addr._id);
-    });
-    setSelected((prev) => ({
-      ...prev,
-      addressId: addr._id,
-      barrelCount: addr.barrelCount || prev.barrelCount || 1,
-      trashDay: addr.trashDay || prev.trashDay || 'Monday',
-      bookingType: addrHasSub ? 'one-time' : prev.bookingType,
-    }));
-    setZipNotServed(false);
+    const isSubscriptionMode = selected.bookingType === 'subscription';
+
+    // In subscription mode, only single address allowed
+    if (isSubscriptionMode) {
+      const addrHasSub = activeSubs.some((s) => {
+        const id = s.addressId?._id || s.addressId;
+        return id === addr._id || String(id) === String(addr._id);
+      });
+      setSelectedAddresses([addr]);
+      setSelected((prev) => ({
+        ...prev,
+        addressId: addr._id,
+        barrelCount: addr.barrelCount || prev.barrelCount || 1,
+        trashDay: addr.trashDay || prev.trashDay || 'Monday',
+        bookingType: addrHasSub ? 'one-time' : prev.bookingType,
+      }));
+      setZipNotServed(false);
+      checkZip(addr);
+      return;
+    }
+
+    const alreadySelected = selectedAddresses.some((a) => a._id === addr._id);
+    let next;
+    if (alreadySelected) {
+      next = selectedAddresses.filter((a) => a._id !== addr._id);
+    } else {
+      // Enforce same trash day as first selected
+      const primary = selectedAddresses[0];
+      if (primary && primary.trashDay && addr.trashDay && addr.trashDay !== primary.trashDay) return;
+      next = [...selectedAddresses, addr];
+    }
+
+    setSelectedAddresses(next);
+    const primary = next[0];
+    if (primary) {
+      const addrHasSub = activeSubs.some((s) => {
+        const id = s.addressId?._id || s.addressId;
+        return id === primary._id || String(id) === String(primary._id);
+      });
+      setSelected((prev) => ({
+        ...prev,
+        addressId: primary._id,
+        barrelCount: primary.barrelCount || prev.barrelCount || 1,
+        trashDay: primary.trashDay || prev.trashDay || 'Monday',
+        bookingType: addrHasSub && next.length === 1 ? 'one-time' : prev.bookingType,
+      }));
+      setZipNotServed(false);
+      checkZip(primary);
+    } else {
+      setSelected((prev) => ({ ...prev, addressId: '', trashDay: '' }));
+    }
+  }
+
+  function checkZip(addr) {
     if (addr.zip) {
       api.get(`/services/check-zipcode?zip=${addr.zip}`)
-        .then((res) => { if (!res.data.served) setZipNotServed(true); })
+        .then((res) => {
+          setZipWarnings((prev) => ({ ...prev, [addr._id]: !res.data.served }));
+          if (selectedAddresses.length <= 1) setZipNotServed(!res.data.served);
+        })
         .catch(() => {});
     }
   }
+
+  // Keep legacy for single-address compat
+  function selectAddress(addr) { toggleAddress(addr); }
 
   async function handleConfirm() {
     setSubmitting(true);
@@ -253,15 +304,30 @@ function BookContent() {
           }
         }
       } else {
-        await api.post('/bookings', {
-          addressId: selected.addressId,
-          serviceTypeId: selected.serviceType._id,
-          scheduledDate: selected.date,
-          barrelCount: selected.barrelCount,
-          putOutTime: selected.putOutTime,
-          bringInTime: selected.bringInTime,
-          amount: oneTimePrice(),
-        });
+        const isBatch = selectedAddresses.length > 1;
+        if (isBatch) {
+          const barrelCounts = {};
+          selectedAddresses.forEach((a) => { barrelCounts[a._id] = a.barrelCount || selected.barrelCount; });
+          await api.post('/bookings/batch', {
+            addresses: selectedAddresses.map((a) => a._id),
+            serviceTypeId: selected.serviceType._id,
+            scheduledDate: selected.date,
+            bookingType: selected.bookingType,
+            barrelCounts,
+            putOutTime: selected.putOutTime,
+            bringInTime: selected.bringInTime,
+          });
+        } else {
+          await api.post('/bookings', {
+            addressId: selected.addressId,
+            serviceTypeId: selected.serviceType._id,
+            scheduledDate: selected.date,
+            barrelCount: selected.barrelCount,
+            putOutTime: selected.putOutTime,
+            bringInTime: selected.bringInTime,
+            amount: oneTimePrice(),
+          });
+        }
       }
 
       setBookingConfirmed(true);
@@ -278,6 +344,8 @@ function BookContent() {
     const subAddrId = s.addressId?._id || s.addressId;
     return subAddrId === selected.addressId || String(subAddrId) === String(selected.addressId);
   });
+  const isBatchMode = selectedAddresses.length > 1;
+  const anyZipNotServed = selectedAddresses.some((a) => zipWarnings[a._id]);
 
   if (loading) {
     return (
@@ -369,28 +437,65 @@ function BookContent() {
           {step === 1 && (
             <div>
               <h2 className="text-lg font-bold">Service Address</h2>
-              <p className="mt-1 text-sm text-gray-500">Where should we provide service? Your barrel details will be loaded automatically.</p>
+              <p className="mt-1 text-sm text-gray-500">
+                {addresses.length > 1
+                  ? 'Select one or more properties with the same trash day to schedule them together.'
+                  : 'Where should we provide service? Your barrel details will be loaded automatically.'}
+              </p>
+
+              {selectedAddresses.length > 1 && (
+                <div className="mt-3 flex items-center gap-2 rounded-xl bg-brand-50 border border-brand-200 px-4 py-2.5">
+                  <svg className="h-4 w-4 shrink-0 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+                  <p className="text-sm font-semibold text-brand-700">{selectedAddresses.length} properties selected</p>
+                  <button className="ml-auto text-xs text-brand-500 underline" onClick={() => { setSelectedAddresses([]); setSelected((prev) => ({ ...prev, addressId: '', trashDay: '' })); }}>Clear</button>
+                </div>
+              )}
 
               {addresses.length > 0 ? (
                 <div className="mt-4 space-y-2">
-                  {addresses.map((addr) => (
-                    <button key={addr._id} onClick={() => selectAddress(addr)}
-                      className={`w-full rounded-xl border-2 px-4 py-3 text-left transition ${selected.addressId === addr._id ? 'border-brand-600 bg-brand-50' : 'border-gray-100'}`}>
-                      <p className="font-medium">{addr.street}{addr.unit ? `, ${addr.unit}` : ''}</p>
-                      <p className="text-sm text-gray-500">{addr.city}, {addr.state} {addr.zip}</p>
-                      <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-400">
-                        {addr.barrelCount > 0 && <span>{addr.barrelCount} barrel{addr.barrelCount > 1 ? 's' : ''}</span>}
-                        {addr.trashDay && <span>Trash day: {addr.trashDay}</span>}
-                        {addr.barrelLocation && <span>Location: {addr.barrelLocation}</span>}
-                      </div>
-                      {(addr.barrelPhotoUrl || addr.photos?.length > 0) && (
-                        <div className="mt-2 flex gap-1.5 overflow-x-auto">
-                          {addr.barrelPhotoUrl && <PhotoViewer src={addr.barrelPhotoUrl} alt="Barrel" className="h-16 w-20 shrink-0 rounded-lg object-cover" />}
-                          {addr.photos?.map((url, i) => <PhotoViewer key={i} src={url} alt={`Photo ${i + 1}`} className="h-16 w-20 shrink-0 rounded-lg object-cover" />)}
+                  {addresses.map((addr) => {
+                    const isSelected = selectedAddresses.some((a) => a._id === addr._id);
+                    const primaryAddr = selectedAddresses[0];
+                    const differentDay = primaryAddr && primaryAddr._id !== addr._id && primaryAddr.trashDay && addr.trashDay && addr.trashDay !== primaryAddr.trashDay;
+                    const addrHasSub = selected.bookingType === 'subscription' && activeSubs.some((s) => {
+                      const id = s.addressId?._id || s.addressId;
+                      return id === addr._id || String(id) === String(addr._id);
+                    });
+                    return (
+                      <button key={addr._id} disabled={differentDay} onClick={() => toggleAddress(addr)}
+                        className={`w-full rounded-xl border-2 px-4 py-3 text-left transition ${differentDay ? 'opacity-40 cursor-not-allowed' : 'active:scale-[0.99]'} ${isSelected ? 'border-brand-600 bg-brand-50' : 'border-gray-100 hover:border-gray-200'}`}>
+                        <div className="flex items-start gap-3">
+                          <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition ${isSelected ? 'border-brand-600 bg-brand-600' : 'border-gray-300'}`}>
+                            {isSelected && <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium">{addr.street}{addr.unit ? `, ${addr.unit}` : ''}</p>
+                            <p className="text-sm text-gray-500">{addr.city}, {addr.state} {addr.zip}</p>
+                            <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-400">
+                              {addr.barrelCount > 0 && <span>{addr.barrelCount} barrel{addr.barrelCount > 1 ? 's' : ''}</span>}
+                              {addr.trashDay && <span>Trash day: {addr.trashDay}</span>}
+                              {addr.barrelLocation && <span>Location: {addr.barrelLocation}</span>}
+                            </div>
+                            {zipWarnings[addr._id] && (
+                              <p className="mt-1 text-xs font-medium text-amber-600">⚠ This zip code isn't in our service area yet</p>
+                            )}
+                            {addrHasSub && (
+                              <p className="mt-1 text-xs font-medium text-amber-600">Already has an active monthly subscription</p>
+                            )}
+                            {differentDay && (
+                              <p className="mt-1 text-xs text-gray-400">Different trash day — select separately</p>
+                            )}
+                          </div>
                         </div>
-                      )}
-                    </button>
-                  ))}
+                        {(addr.barrelPhotoUrl || addr.photos?.length > 0) && (
+                          <div className="mt-2 flex gap-1.5 overflow-x-auto pl-8">
+                            {addr.barrelPhotoUrl && <PhotoViewer src={addr.barrelPhotoUrl} alt="Barrel" className="h-16 w-20 shrink-0 rounded-lg object-cover" />}
+                            {addr.photos?.map((url, i) => <PhotoViewer key={i} src={url} alt={`Photo ${i + 1}`} className="h-16 w-20 shrink-0 rounded-lg object-cover" />)}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="mt-4">
@@ -399,7 +504,7 @@ function BookContent() {
                     subtitle="Use my location to fill it in one tap, or enter it below."
                     variant="card"
                     compact={false}
-                    onAdded={(addr, result) => { setAddresses([addr]); selectAddress(addr); if (result && result.inServiceZone === false) setZipNotServed(true); }}
+                    onAdded={(addr, result) => { setAddresses([addr]); selectAddress(addr); if (result && result.inServiceZone === false) setZipWarnings((prev) => ({ ...prev, [addr._id]: true })); }}
                   />
                 </div>
               )}
@@ -414,23 +519,14 @@ function BookContent() {
                 </div>
               )}
 
-              {selected.addressId && zipNotServed && (
-                <div className="mt-6 rounded-xl border border-brand-200 bg-brand-50 px-5 py-5 text-center">
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-brand-100">
-                    <svg className="h-6 w-6 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-                    </svg>
-                  </div>
-                  <h3 className="mt-3 text-base font-bold text-gray-900">We're not in your area yet</h3>
-                  <p className="mt-2 text-sm text-gray-600 leading-relaxed">
-                    Thanks for your interest! We don't serve this zipcode right now, but knowing you're here helps us decide where to expand next.
-                  </p>
-                  <p className="mt-3 text-xs text-brand-600 font-medium">We'll notify you when we launch in your area.</p>
+              {anyZipNotServed && (
+                <div className="mt-4 rounded-xl border border-brand-200 bg-brand-50 px-5 py-4 text-center">
+                  <h3 className="text-sm font-bold text-gray-900">One or more addresses aren't in our service area yet</h3>
+                  <p className="mt-1 text-xs text-gray-600">Please deselect those addresses to continue.</p>
                 </div>
               )}
 
-              {selected.addressId && !zipNotServed && (
+              {selected.addressId && !anyZipNotServed && (
                 <CascadingDatePicker
                   key={selected.addressId}
                   trashDay={selected.trashDay}
@@ -439,17 +535,17 @@ function BookContent() {
                 />
               )}
 
-              {selected.addressId && !zipNotServed && selected.date && dateFullyBooked && (
+              {selected.addressId && !anyZipNotServed && selected.date && dateFullyBooked && (
                 <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
                   <p className="text-sm font-semibold text-red-700">This date is fully booked.</p>
                   <p className="mt-0.5 text-xs text-red-500">Please pick another day to continue.</p>
                 </div>
               )}
 
-              {selected.addressId && !zipNotServed && selected.date && !dateFullyBooked && (
+              {selected.addressId && !anyZipNotServed && selected.date && !dateFullyBooked && (
                 <button onClick={next}
                   className="mt-6 w-full rounded-xl bg-brand-600 py-3.5 font-semibold text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700 active:scale-[0.98]">
-                  Continue
+                  {isBatchMode ? `Continue with ${selectedAddresses.length} properties` : 'Continue'}
                 </button>
               )}
             </div>
@@ -902,6 +998,27 @@ function BookContent() {
               <h2 className="text-lg font-bold">Confirm Booking</h2>
               <p className="mt-1 text-sm text-gray-500">Review your service details</p>
 
+              {isBatchMode && (
+                <div className="mt-4 rounded-xl border border-brand-200 bg-brand-50 p-4">
+                  <p className="text-sm font-semibold text-brand-800">Scheduling {selectedAddresses.length} properties on the same day</p>
+                  <div className="mt-2 space-y-2">
+                    {selectedAddresses.map((addr) => (
+                      <div key={addr._id} className="flex items-center justify-between rounded-lg bg-white px-3 py-2">
+                        <div>
+                          <p className="text-xs font-semibold text-gray-800">{addr.street}{addr.unit ? `, ${addr.unit}` : ''}</p>
+                          <p className="text-xs text-gray-400">{addr.city}, {addr.state}</p>
+                        </div>
+                        <span className="text-xs font-bold text-brand-600">${oneTimePrice().toFixed(2)}</span>
+                      </div>
+                    ))}
+                    <div className="flex items-center justify-between border-t border-brand-200 pt-2">
+                      <span className="text-sm font-semibold text-gray-700">Total</span>
+                      <span className="text-base font-bold text-brand-600">${(oneTimePrice() * selectedAddresses.length).toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {selected.bookingType === 'subscription' ? (
                 <div className="mt-4 space-y-2">
                   <div className="rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-800">
@@ -917,77 +1034,108 @@ function BookContent() {
                     <ScheduledServicesPreview startDate={selected.date} />
                   )}
                 </div>
-              ) : isBoth() ? (
+              ) : !isBatchMode && isBoth() ? (
                 <div className="mt-4 rounded-xl border border-brand-200 bg-brand-50 p-3 text-sm text-brand-700">
                   <strong>Note:</strong> This creates 2 separate jobs, one for put out and one for bring in. Each can be handled by any servicer.
                 </div>
               ) : null}
 
-              <div className="mt-4 space-y-3 rounded-xl bg-gray-50 p-4">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Service</span>
-                  <span className="text-sm font-medium">{selected.serviceType?.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Address</span>
-                  <span className="text-sm font-medium text-right">{selectedAddr?.street}{selectedAddr?.unit ? `, ${selectedAddr.unit}` : ''}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Plan</span>
-                  <span className="text-sm font-medium">{selected.bookingType === 'subscription' ? 'Monthly Subscription' : 'One-Time'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Barrels</span>
-                  <span className="text-sm font-medium">{selected.barrelCount}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Trash Day</span>
-                  <span className="text-sm font-medium">{selected.trashDay}</span>
-                </div>
-                {selected.putOutTime && (
+              {!isBatchMode && (
+                <div className="mt-4 space-y-3 rounded-xl bg-gray-50 p-4">
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Put Out</span>
-                    <span className="text-sm font-medium">Night before, 5–9 PM</span>
+                    <span className="text-sm text-gray-500">Service</span>
+                    <span className="text-sm font-medium">{selected.serviceType?.name}</span>
                   </div>
-                )}
-                {selected.bringInTime && (
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Bring In</span>
-                    <span className="text-sm font-medium">{BRING_IN_OPTIONS.find(o => o.value === selected.bringInTime)?.label || selected.bringInTime}</span>
+                    <span className="text-sm text-gray-500">Address</span>
+                    <span className="text-sm font-medium text-right">{selectedAddr?.street}{selectedAddr?.unit ? `, ${selectedAddr.unit}` : ''}</span>
                   </div>
-                )}
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Date</span>
-                  <span className="text-sm font-medium">{new Date(selected.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
-                </div>
-                {(selectedAddr?.barrelPhotoUrl || selectedAddr?.photos?.length > 0) && (
-                  <div>
-                    <p className="text-xs text-gray-400 mb-1">Photos (visible to servicer)</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {selectedAddr.barrelPhotoUrl && (
-                        <PhotoViewer src={selectedAddr.barrelPhotoUrl} alt="Barrel" className="h-20 w-full rounded-lg object-cover" />
-                      )}
-                      {selectedAddr.photos?.map((url, i) => (
-                        <PhotoViewer key={i} src={url} alt={`Photo ${i + 1}`} className="h-20 w-full rounded-lg object-cover" />
-                      ))}
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-500">Plan</span>
+                    <span className="text-sm font-medium">{selected.bookingType === 'subscription' ? 'Monthly Subscription' : 'One-Time'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-500">Barrels</span>
+                    <span className="text-sm font-medium">{selected.barrelCount}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-500">Trash Day</span>
+                    <span className="text-sm font-medium">{selected.trashDay}</span>
+                  </div>
+                  {selected.putOutTime && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-500">Put Out</span>
+                      <span className="text-sm font-medium">Night before, 5–9 PM</span>
                     </div>
+                  )}
+                  {selected.bringInTime && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-500">Bring In</span>
+                      <span className="text-sm font-medium">{BRING_IN_OPTIONS.find(o => o.value === selected.bringInTime)?.label || selected.bringInTime}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-500">Date</span>
+                    <span className="text-sm font-medium">{new Date(selected.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
                   </div>
-                )}
-                <hr className="border-gray-200" />
-                <div className="flex justify-between">
-                  <span className="font-semibold">Total</span>
-                  <span className="font-bold text-brand-600">
-                    ${currentPrice().toFixed(2)}{selected.bookingType === 'subscription' ? '/mo' : ''}
-                  </span>
+                  {(selectedAddr?.barrelPhotoUrl || selectedAddr?.photos?.length > 0) && (
+                    <div>
+                      <p className="text-xs text-gray-400 mb-1">Photos (visible to servicer)</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {selectedAddr.barrelPhotoUrl && (
+                          <PhotoViewer src={selectedAddr.barrelPhotoUrl} alt="Barrel" className="h-20 w-full rounded-lg object-cover" />
+                        )}
+                        {selectedAddr.photos?.map((url, i) => (
+                          <PhotoViewer key={i} src={url} alt={`Photo ${i + 1}`} className="h-20 w-full rounded-lg object-cover" />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <hr className="border-gray-200" />
+                  <div className="flex justify-between">
+                    <span className="font-semibold">Total</span>
+                    <span className="font-bold text-brand-600">
+                      ${currentPrice().toFixed(2)}{selected.bookingType === 'subscription' ? '/mo' : ''}
+                    </span>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {isBatchMode && (
+                <div className="mt-4 space-y-2 rounded-xl bg-gray-50 p-4 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Service</span>
+                    <span className="font-medium">{selected.serviceType?.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Trash Day</span>
+                    <span className="font-medium">{selected.trashDay}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Date</span>
+                    <span className="font-medium">{new Date(selected.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                  </div>
+                  {selected.putOutTime && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Put Out</span>
+                      <span className="font-medium">Night before, 5–9 PM</span>
+                    </div>
+                  )}
+                  {selected.bringInTime && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Bring In</span>
+                      <span className="font-medium">{BRING_IN_OPTIONS.find(o => o.value === selected.bringInTime)?.label || selected.bringInTime}</span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {selected.bookingType !== 'subscription' && (
                 <div className="mt-4 flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-3 text-sm text-blue-700">
                   <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
                   </svg>
-                  <span>Your card on file will be charged <strong>${currentPrice().toFixed(2)}</strong> after service completion.</span>
+                  <span>Your card on file will be charged <strong>${isBatchMode ? (oneTimePrice() * selectedAddresses.length).toFixed(2) : currentPrice().toFixed(2)}</strong> after service completion.</span>
                 </div>
               )}
 
@@ -1012,7 +1160,9 @@ function BookContent() {
                   <p className="mt-2 text-sm text-gray-500">
                     {selected.bookingType === 'subscription'
                       ? `Your subscription ($${monthlyPrice().toFixed(2)}/mo) is active.`
-                      : `Your service ($${oneTimePrice().toFixed(2)}) has been scheduled.`}
+                      : isBatchMode
+                        ? `${selectedAddresses.length} properties scheduled for ${new Date(selected.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}.`
+                        : `Your service ($${oneTimePrice().toFixed(2)}) has been scheduled.`}
                   </p>
                   <p className="mt-1 text-xs text-gray-400">Redirecting to your dashboard...</p>
                   <div className="mt-4 h-1 w-32 overflow-hidden rounded-full bg-gray-200">
@@ -1022,7 +1172,7 @@ function BookContent() {
               ) : (
                 <button onClick={handleConfirm} disabled={submitting}
                   className="mt-6 w-full rounded-xl bg-brand-600 py-3.5 font-semibold text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700 active:scale-[0.98] disabled:opacity-50">
-                  {submitting ? 'Processing...' : selected.bookingType === 'subscription' ? 'Start Subscription' : 'Confirm Booking'}
+                  {submitting ? 'Processing...' : selected.bookingType === 'subscription' ? 'Start Subscription' : isBatchMode ? `Confirm ${selectedAddresses.length} Bookings` : 'Confirm Booking'}
                 </button>
               )}
             </div>

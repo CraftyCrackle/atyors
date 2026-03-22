@@ -46,7 +46,12 @@ function JobCard({ booking, onAccept, accepting, onRate, alreadyRated }) {
     <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
       <div className="flex items-start justify-between">
         <div>
-          <p className="font-semibold text-white">{svc?.name || 'Service'}</p>
+          <div className="flex items-center gap-2">
+            <p className="font-semibold text-white">{svc?.name || 'Service'}</p>
+            {booking.isGuaranteed && (
+              <span className="rounded-full bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 text-[10px] font-bold text-amber-300 uppercase tracking-wide">Guaranteed</span>
+            )}
+          </div>
           <p className="mt-0.5 text-sm text-gray-400">
             {date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
             {svc?.slug === 'curb-items'

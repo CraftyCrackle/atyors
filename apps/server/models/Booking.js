@@ -46,6 +46,8 @@ const bookingSchema = new mongoose.Schema({
   itemCount: { type: Number, min: 1, max: 10 },
   curbItemPhotos: [{ type: String }],
   curbItemNotes: { type: String, trim: true },
+  batchId: { type: String, index: true },
+  isGuaranteed: { type: Boolean, default: false },
   notes: { type: String, trim: true },
   completionPhotoUrl: { type: String },
   placementConfirmed: { type: Boolean, default: false },

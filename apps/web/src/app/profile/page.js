@@ -135,7 +135,7 @@ export default function ProfilePage() {
           <ChangePasswordSection dark={dark} cardCls={cardCls} />
 
           <TrashDayReminderSection dark={dark} cardCls={cardCls} user={user} updateUser={updateUser} />
-          <StreetCleaningReminderSection dark={dark} cardCls={cardCls} user={user} updateUser={updateUser} />
+          <StreetCleaningReminderSection dark={dark} cardCls={cardCls} user={user} updateUser={updateUser} addresses={addresses} onAddressUpdated={(updated) => setAddresses(addresses.map((a) => a._id === updated._id ? updated : a))} />
 
           <div className={`mt-5 ${cardCls}`}>
             <div className="flex items-center justify-between">
@@ -335,7 +335,7 @@ function TrashDayReminderSection({ dark, cardCls, user, updateUser }) {
   );
 }
 
-function StreetCleaningReminderSection({ dark, cardCls, user, updateUser }) {
+function StreetCleaningReminderSection({ dark, cardCls, user, updateUser, addresses = [], onAddressUpdated }) {
   const reminder = user?.streetCleaningReminder || { enabled: false, time: '18:00' };
   const [saving, setSaving] = useState(false);
 
@@ -411,9 +411,23 @@ function StreetCleaningReminderSection({ dark, cardCls, user, updateUser }) {
               ? `You'll get a reminder at ${displayTime} the night before street cleaning`
               : `You'll get a reminder at ${displayTime} the morning of street cleaning`}
           </p>
-          <p className={`text-sm ${dark ? 'text-gray-500' : 'text-gray-400'}`}>
-            Set up your schedule in each address below (scan a sign or enter manually)
-          </p>
+          {addresses.length === 0 ? (
+            <p className={`text-sm ${dark ? 'text-gray-500' : 'text-gray-400'}`}>Add an address below to set up your street cleaning schedule.</p>
+          ) : (
+            <div className="mt-4 space-y-4">
+              <p className={`text-xs font-semibold uppercase ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Your street cleaning schedules</p>
+              {addresses.map((addr) => (
+                <div key={addr._id} className={`rounded-xl border p-4 ${dark ? 'border-gray-700 bg-gray-800/50' : 'border-gray-200 bg-gray-50'}`}>
+                  <p className={`text-sm font-semibold ${dark ? 'text-gray-200' : 'text-gray-800'}`}>{addr.street}{addr.unit ? `, ${addr.unit}` : ''}</p>
+                  <p className="text-xs text-gray-400">{addr.city}, {addr.state} {addr.zip}</p>
+                  {addr.streetCleaning?.length > 0 && (
+                    <StreetCleaningDisplay schedules={addr.streetCleaning} dark={dark} />
+                  )}
+                  <StreetCleaningManager addressId={addr._id} schedules={addr.streetCleaning || []} dark={dark} onUpdated={onAddressUpdated} />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -672,10 +686,6 @@ function AddressCard({ address, dark, onUpdated, onDelete }) {
           {address.barrelReturnInstructions && <span>Return: {address.barrelReturnInstructions}</span>}
         </div>
       )}
-      {address.streetCleaning?.length > 0 && (
-        <StreetCleaningDisplay schedules={address.streetCleaning} dark={dark} />
-      )}
-      <StreetCleaningManager addressId={address._id} schedules={address.streetCleaning || []} dark={dark} onUpdated={onUpdated} />
     </div>
   );
 }
@@ -1201,6 +1211,20 @@ function SubscriptionSection() {
     setConfirmCancel(null);
   }
 
+  async function handleBatchCancel(batchId) {
+    setCancelling(`batch:${batchId}`);
+    try {
+      const res = await api.post('/subscriptions/batch/cancel', { batchId });
+      const cancelledIds = new Set((res.data.cancelled || []).map((s) => s._id));
+      setSubs((prev) => prev.map((s) => cancelledIds.has(s._id) ? { ...s, status: 'cancelled', cancelledAt: new Date().toISOString() } : s));
+      if ((res.data.errors || []).length > 0) {
+        alert(`${cancelledIds.size} cancelled. ${res.data.errors.length} failed to cancel.`);
+      }
+    } catch (err) { alert(err.message || 'Failed to cancel batch'); }
+    setCancelling(null);
+    setConfirmCancel(null);
+  }
+
   const active = subs.filter((s) => s.status !== 'cancelled');
   const cancelled = subs.filter((s) => s.status === 'cancelled');
 
@@ -1229,18 +1253,25 @@ function SubscriptionSection() {
         </div>
       ) : (
         <div className="mt-3 space-y-3">
-          {active.map((sub) => (
-            <SubscriptionCard key={sub._id} sub={sub} toggling={toggling} onToggle={handleToggleAutoRenew}
-              confirmCancel={confirmCancel} setConfirmCancel={setConfirmCancel}
-              cancelling={cancelling} onCancel={handleCancel} />
-          ))}
+          {active.map((sub) => {
+            const batchSiblingCount = sub.batchId
+              ? active.filter((s) => s.batchId === sub.batchId).length
+              : 0;
+            return (
+              <SubscriptionCard key={sub._id} sub={sub} toggling={toggling} onToggle={handleToggleAutoRenew}
+                confirmCancel={confirmCancel} setConfirmCancel={setConfirmCancel}
+                cancelling={cancelling} onCancel={handleCancel}
+                batchSiblingCount={batchSiblingCount} onBatchCancel={handleBatchCancel} />
+            );
+          })}
           {cancelled.length > 0 && (
             <div className="pt-2">
               <p className="mb-2 text-xs font-medium text-gray-400 uppercase">Past</p>
               {cancelled.map((sub) => (
                 <SubscriptionCard key={sub._id} sub={sub} toggling={toggling} onToggle={handleToggleAutoRenew}
                   confirmCancel={confirmCancel} setConfirmCancel={setConfirmCancel}
-                  cancelling={cancelling} onCancel={handleCancel} />
+                  cancelling={cancelling} onCancel={handleCancel}
+                  batchSiblingCount={0} onBatchCancel={handleBatchCancel} />
               ))}
             </div>
           )}
@@ -1250,7 +1281,7 @@ function SubscriptionSection() {
   );
 }
 
-function SubscriptionCard({ sub, toggling, onToggle, confirmCancel, setConfirmCancel, cancelling, onCancel }) {
+function SubscriptionCard({ sub, toggling, onToggle, confirmCancel, setConfirmCancel, cancelling, onCancel, batchSiblingCount, onBatchCancel }) {
   const svc = sub.serviceTypeId;
   const addr = sub.addressId;
   const isCancelled = sub.status === 'cancelled';
@@ -1340,6 +1371,12 @@ function SubscriptionCard({ sub, toggling, onToggle, confirmCancel, setConfirmCa
                   {cancelling === sub._id ? 'Cancelling...' : 'Yes, Cancel'}
                 </button>
               </div>
+              {batchSiblingCount > 1 && sub.batchId && (
+                <button onClick={() => onBatchCancel(sub.batchId)} disabled={!!cancelling}
+                  className="w-full rounded-lg border border-red-300 bg-red-100 py-2 text-xs font-semibold text-red-700 hover:bg-red-200 disabled:opacity-50">
+                  {cancelling === `batch:${sub.batchId}` ? 'Cancelling all...' : `Cancel all ${batchSiblingCount} in this batch`}
+                </button>
+              )}
             </div>
           ) : (
             <button onClick={() => setConfirmCancel(sub._id)}

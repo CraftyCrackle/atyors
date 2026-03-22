@@ -11,9 +11,10 @@ async function getAvailableJobs({ page = 1, limit = 20 } = {}) {
     assignedTo: null,
     createdAt: { $lte: graceThreshold },
   };
+  // Guaranteed (subscription) bookings float to the top, then by date
   const bookings = await Booking.find(filter)
     .populate('addressId serviceTypeId userId')
-    .sort({ scheduledDate: 1 })
+    .sort({ isGuaranteed: -1, scheduledDate: 1 })
     .skip((page - 1) * limit)
     .limit(limit);
 

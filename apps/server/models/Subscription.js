@@ -20,6 +20,7 @@ const subscriptionSchema = new mongoose.Schema({
   currentPeriodEnd: { type: Date },
   cancelledAt: { type: Date },
   cancelAtPeriodEnd: { type: Boolean, default: false },
+  batchId: { type: String, index: true },
 }, {
   timestamps: true,
 });

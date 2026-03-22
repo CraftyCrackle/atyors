@@ -60,6 +60,7 @@ async function create(userId, data) {
     stripePriceId,
     currentPeriodStart: new Date(),
     currentPeriodEnd: new Date(Date.now() + 30 * 86400000),
+    batchId: data.batchId,
   });
 
   if (config.stripe.skip) {
@@ -216,8 +217,31 @@ async function cancel(subscriptionId, userId) {
   return sub;
 }
 
+async function cancelBatch(batchId, userId) {
+  const subs = await Subscription.find({ batchId, userId, status: { $nin: ['cancelled'] } });
+  if (subs.length === 0) {
+    const err = new Error('No active subscriptions found for this batch.');
+    err.status = 404;
+    throw err;
+  }
+
+  const results = [];
+  const errors = [];
+
+  for (const sub of subs) {
+    try {
+      const cancelled = await cancel(sub._id, userId);
+      results.push(cancelled);
+    } catch (err) {
+      errors.push({ subscriptionId: sub._id, error: err.message });
+    }
+  }
+
+  return { cancelled: results, errors };
+}
+
 async function getByUser(userId) {
   return Subscription.find({ userId }).populate('addressId serviceTypeId').sort({ createdAt: -1 });
 }
 
-module.exports = { create, cancel, toggleAutoRenew, getByUser, generateUpcomingBookings };
+module.exports = { create, cancel, cancelBatch, toggleAutoRenew, getByUser, generateUpcomingBookings };

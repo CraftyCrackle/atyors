@@ -26,6 +26,7 @@ const upload = multer({
 });
 
 router.post('/', authenticate, bookingController.create);
+router.post('/batch', authenticate, bookingController.createBatch);
 router.get('/', authenticate, bookingController.list);
 router.get('/capacity', authenticate, bookingController.checkCapacity);
 router.get('/messages/unread', authenticate, messageController.unreadCount);

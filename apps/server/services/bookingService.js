@@ -102,6 +102,7 @@ async function create(userId, data) {
     ? calculateOneTimePriceBothLeg(barrelCount)
     : calculateOneTimePrice(barrelCount);
   const isSubscription = !!data.subscriptionId;
+  const isGuaranteed = isSubscription || !!data.isGuaranteed;
   const clientAmount = isSubscription ? 0 : perBarrelAmount;
   const paymentStatus = isSubscription ? 'paid' : 'pending_payment';
 
@@ -112,12 +113,14 @@ async function create(userId, data) {
   dayEnd.setDate(dayEnd.getDate() + 1);
   const dayFilter = { scheduledDate: { $gte: dayStart, $lt: dayEnd }, status: { $in: ['pending', 'active', 'en-route', 'arrived', 'completed'] } };
 
-  const dailyCount = await Booking.countDocuments(dayFilter);
-  if (dailyCount >= settings.dailyBookingCap) {
-    const err = new Error('This date is fully booked. Please select another day.');
-    err.status = 400;
-    err.code = 'DAY_FULL';
-    throw err;
+  if (!isGuaranteed) {
+    const dailyCount = await Booking.countDocuments(dayFilter);
+    if (dailyCount >= settings.dailyBookingCap) {
+      const err = new Error('This date is fully booked. Please select another day.');
+      err.status = 400;
+      err.code = 'DAY_FULL';
+      throw err;
+    }
   }
 
   if (isBoth) {
@@ -137,6 +140,8 @@ async function create(userId, data) {
       serviceValue: perBarrelAmount,
       paymentStatus,
       subscriptionId: data.subscriptionId,
+      batchId: data.batchId,
+      isGuaranteed,
       statusHistory: [{ status: 'pending', changedAt: new Date() }],
     });
 
@@ -152,6 +157,8 @@ async function create(userId, data) {
       paymentStatus,
       linkedBookingId: putOutBooking._id,
       subscriptionId: data.subscriptionId,
+      batchId: data.batchId,
+      isGuaranteed,
       statusHistory: [{ status: 'pending', changedAt: new Date() }],
     });
 
@@ -175,6 +182,8 @@ async function create(userId, data) {
     serviceValue: perBarrelAmount,
     paymentStatus,
     subscriptionId: data.subscriptionId,
+    batchId: data.batchId,
+    isGuaranteed,
     statusHistory: [{ status: 'pending', changedAt: new Date() }],
   });
   return booking.populate(['addressId', 'serviceTypeId']);
@@ -522,7 +531,8 @@ async function expireOverdueBookings(io) {
   if (expired > 0) console.log(`[Expiry] Expired ${expired} overdue booking(s)`);
 }
 
-async function getCapacity(dateStr) {
+async function getCapacity(dateStr, { count = 1, isSubscriber = false } = {}) {
+  if (isSubscriber) return { date: dateStr, booked: 0, cap: 0, available: true, guaranteed: true };
   const settings = await AppSettings.get();
   const cap = settings.dailyBookingCap;
   const dayStart = new Date(dateStr + 'T00:00:00');
@@ -532,7 +542,43 @@ async function getCapacity(dateStr) {
     scheduledDate: { $gte: dayStart, $lt: dayEnd },
     status: { $in: ['pending', 'active', 'en-route', 'arrived', 'completed'] },
   });
-  return { date: dateStr, booked, cap, available: booked < cap };
+  return { date: dateStr, booked, cap, available: (booked + count) <= cap };
 }
 
-module.exports = { create, listByUser, getById, updateStatus, cancel, reschedule, chargeBookingOnCompletion, expireOverdueBookings, getCapacity };
+async function createBatch(userId, { addresses, serviceTypeId, scheduledDate, bookingType, barrelCounts = {}, putOutTime, bringInTime, itemCount, curbItemNotes, curbItemPhotos }) {
+  const { v4: uuidv4 } = require('uuid');
+  const batchId = uuidv4();
+  const created = [];
+
+  for (const addressId of addresses) {
+    try {
+      const barrelCount = barrelCounts[addressId] || 1;
+      const result = await create(userId, {
+        addressId,
+        serviceTypeId,
+        scheduledDate,
+        bookingType,
+        barrelCount,
+        putOutTime,
+        bringInTime,
+        itemCount,
+        curbItemNotes,
+        curbItemPhotos,
+        batchId,
+      });
+      const list = Array.isArray(result) ? result : [result];
+      created.push(...list);
+    } catch (err) {
+      // rollback all created bookings and rethrow
+      if (created.length > 0) {
+        const ids = created.map(b => b._id);
+        await Booking.deleteMany({ _id: { $in: ids } });
+      }
+      err.message = `Batch booking failed at address ${addressId}: ${err.message}`;
+      throw err;
+    }
+  }
+  return { bookings: created, batchId };
+}
+
+module.exports = { create, createBatch, listByUser, getById, updateStatus, cancel, reschedule, chargeBookingOnCompletion, expireOverdueBookings, getCapacity };

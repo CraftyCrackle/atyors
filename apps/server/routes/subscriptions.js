@@ -16,6 +16,15 @@ router.get('/', authenticate, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+router.post('/batch/cancel', authenticate, async (req, res, next) => {
+  try {
+    const { batchId } = req.body;
+    if (!batchId) return res.status(400).json({ success: false, error: { code: 'MISSING_BATCH_ID', message: 'batchId required' } });
+    const result = await subscriptionService.cancelBatch(batchId, req.user._id);
+    res.json({ success: true, data: result });
+  } catch (err) { next(err); }
+});
+
 router.patch('/:id/auto-renew', authenticate, async (req, res, next) => {
   try {
     const { autoRenew } = req.body;

@@ -182,13 +182,59 @@ async function uploadCurbItemPhotos(req, res, next) {
 
 async function checkCapacity(req, res, next) {
   try {
-    const { date } = req.query;
+    const { date, count, subscriber } = req.query;
     if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return res.status(400).json({ success: false, error: { code: 'INVALID_DATE', message: 'date query param required (YYYY-MM-DD)' } });
     }
-    const data = await bookingService.getCapacity(date);
+    const data = await bookingService.getCapacity(date, {
+      count: parseInt(count) || 1,
+      isSubscriber: subscriber === 'true',
+    });
     res.json({ success: true, data });
   } catch (err) { next(err); }
 }
 
-module.exports = { create, confirmPayment, list, getById, cancel, reschedule, getQueuePosition, uploadCurbItemPhotos, checkCapacity };
+async function createBatch(req, res, next) {
+  try {
+    const isSubscription = !!req.body.subscriptionId;
+    if (!isSubscription && !config.stripe.skip) {
+      const hasCard = await stripeService.hasDefaultPaymentMethod(req.user);
+      if (!hasCard) {
+        const err = new Error('Please add a payment method in your Profile before booking.');
+        err.status = 400;
+        err.code = 'NO_PAYMENT_METHOD';
+        return next(err);
+      }
+    }
+
+    const { addresses } = req.body;
+    if (!addresses || !Array.isArray(addresses) || addresses.length < 1) {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_INPUT', message: 'addresses array required' } });
+    }
+
+    const result = await bookingService.createBatch(req.user._id, req.body);
+    const io = req.app.locals.io;
+
+    setTimeout(async () => {
+      try {
+        if (result.bookings.length === 0) return;
+        const firstId = result.bookings[0]._id;
+        const fresh = await Booking.findById(firstId).lean();
+        if (!fresh || fresh.status === 'cancelled') return;
+        const notificationService = require('../services/notificationService');
+        await notificationService.notifyServicers({
+          title: 'New jobs available',
+          body: `${addresses.length} new job${addresses.length > 1 ? 's are' : ' is'} available for pickup.`,
+          bookingId: firstId,
+          io,
+        });
+      } catch (err) {
+        console.error('[Notify] batch notifyServicers error:', err.message);
+      }
+    }, 2 * 60 * 1000);
+
+    res.status(201).json({ success: true, data: result });
+  } catch (err) { next(err); }
+}
+
+module.exports = { create, confirmPayment, list, getById, cancel, reschedule, getQueuePosition, uploadCurbItemPhotos, checkCapacity, createBatch };
