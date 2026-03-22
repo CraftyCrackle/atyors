@@ -161,16 +161,16 @@ export default function QuickAddAddress({ onAdded, title = 'Add your address', s
           onChange={update('unit')}
           className={inputCls}
         />
-        <div className="grid grid-cols-[1fr_1fr_80px] gap-2">
-          <input
-            type="text"
-            placeholder="City"
-            value={form.city}
-            onChange={update('city')}
-            required
-            className={inputCls}
-            aria-required="true"
-          />
+        <input
+          type="text"
+          placeholder="City"
+          value={form.city}
+          onChange={update('city')}
+          required
+          className={inputCls}
+          aria-required="true"
+        />
+        <div className="grid grid-cols-2 gap-2">
           <input
             type="text"
             placeholder="State"

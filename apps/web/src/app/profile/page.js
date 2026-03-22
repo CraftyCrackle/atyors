@@ -541,10 +541,8 @@ function AddressCard({ address, dark, onUpdated, onDelete }) {
         </div>
 
         <input type="text" placeholder="Street address" value={form.street} onChange={update('street')} required className={inputCls} />
-        <div className="flex gap-2">
-          <input type="text" placeholder="Apt / Unit" value={form.unit} onChange={update('unit')} className={`w-24 ${inputCls}`} />
-          <input type="text" placeholder="City" value={form.city} onChange={update('city')} required className={`flex-1 ${inputCls}`} />
-        </div>
+        <input type="text" placeholder="Apt / Unit (optional)" value={form.unit} onChange={update('unit')} className={inputCls} />
+        <input type="text" placeholder="City" value={form.city} onChange={update('city')} required className={inputCls} />
         <div className="flex gap-2">
           <input type="text" placeholder="State" value={form.state} onChange={update('state')} required className={`w-16 ${inputCls}`} />
           <input type="text" placeholder="ZIP" value={form.zip} onChange={update('zip')} required className={`w-20 ${inputCls}`} />
@@ -1122,10 +1120,8 @@ function AddAddressForm({ dark, onAdded, onCancel }) {
       </button>
       {locationError && <p className={`text-xs ${dark ? 'text-amber-400' : 'text-amber-600'}`} role="alert">{locationError}</p>}
       <input type="text" placeholder="Street address" value={form.street} onChange={update('street')} className={`w-full ${baseCls}`} />
-      <div className="flex gap-2">
-        <input type="text" placeholder="Apt / Unit" value={form.unit} onChange={update('unit')} className={`w-24 shrink-0 ${baseCls}`} />
-        <input type="text" placeholder="City" value={form.city} onChange={update('city')} className={`min-w-0 flex-1 ${baseCls}`} />
-      </div>
+      <input type="text" placeholder="Apt / Unit (optional)" value={form.unit} onChange={update('unit')} className={`w-full ${baseCls}`} />
+      <input type="text" placeholder="City" value={form.city} onChange={update('city')} className={`w-full ${baseCls}`} />
       <div className="flex gap-2">
         <input type="text" placeholder="State" value={form.state} onChange={update('state')} className={`w-20 shrink-0 ${baseCls}`} />
         <input type="text" placeholder="ZIP" value={form.zip} onChange={update('zip')} className={`min-w-0 flex-1 ${baseCls}`} />
