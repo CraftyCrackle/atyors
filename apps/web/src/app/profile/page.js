@@ -680,6 +680,18 @@ function AddressCard({ address, dark, onUpdated, onDelete }) {
           <span className="shrink-0 text-xs font-medium text-amber-700">Set now →</span>
         </button>
       )}
+      {address._locationWarning && (
+        <button onClick={startEditing} className="mt-3 flex w-full items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-left transition hover:bg-amber-100">
+          <svg className="h-4 w-4 shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+          </svg>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-amber-800">Address couldn't be verified</p>
+            <p className="text-[11px] text-amber-600">We couldn't find this address — please double-check the street, city, and zip code</p>
+          </div>
+          <span className="shrink-0 text-xs font-medium text-amber-700">Edit →</span>
+        </button>
+      )}
       {(address.barrelPlacementInstructions || address.barrelReturnInstructions) && (
         <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-gray-400">
           {address.barrelPlacementInstructions && <span>Curb: {address.barrelPlacementInstructions}</span>}
@@ -1058,6 +1070,10 @@ function AddAddressForm({ dark, onAdded, onCancel }) {
         formatted: `${form.street}, ${form.city}, ${form.state} ${form.zip}`,
       });
       let addr = res.data.address;
+      const locationResolved = res.data.locationResolved !== false;
+      if (!locationResolved) {
+        addr._locationWarning = true;
+      }
 
       if (photos.length > 0) {
         setUploading(true);

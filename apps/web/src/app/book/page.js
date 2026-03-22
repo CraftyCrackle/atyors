@@ -55,6 +55,7 @@ function BookContent() {
   const [dateFullyBooked, setDateFullyBooked] = useState(false);
   const [zipNotServed, setZipNotServed] = useState(false);
   const [zipWarnings, setZipWarnings] = useState({});
+  const [locationWarnings, setLocationWarnings] = useState({});
   const [activeSubs, setActiveSubs] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedAddresses, setSelectedAddresses] = useState([]);
@@ -479,6 +480,9 @@ function BookContent() {
                             {zipWarnings[addr._id] && (
                               <p className="mt-1 text-xs font-medium text-amber-600">⚠ This zip code isn't in our service area yet</p>
                             )}
+                            {locationWarnings[addr._id] && (
+                              <p className="mt-1 text-xs font-medium text-amber-600">⚠ We couldn't verify this address — please double-check the street, city, and zip</p>
+                            )}
                             {addrHasSub && (
                               <p className="mt-1 text-xs font-medium text-amber-600">Already has an active monthly subscription</p>
                             )}
@@ -504,7 +508,12 @@ function BookContent() {
                     subtitle="Use my location to fill it in one tap, or enter it below."
                     variant="card"
                     compact={false}
-                    onAdded={(addr, result) => { setAddresses([addr]); selectAddress(addr); if (result && result.inServiceZone === false) setZipWarnings((prev) => ({ ...prev, [addr._id]: true })); }}
+                    onAdded={(addr, result) => {
+                      setAddresses([addr]);
+                      selectAddress(addr);
+                      if (result && result.inServiceZone === false) setZipWarnings((prev) => ({ ...prev, [addr._id]: true }));
+                      if (result && result.locationResolved === false) setLocationWarnings((prev) => ({ ...prev, [addr._id]: true }));
+                    }}
                   />
                 </div>
               )}
@@ -514,7 +523,11 @@ function BookContent() {
                   <AddAddressForm
                     show={showAddForm}
                     onShowChange={setShowAddForm}
-                    onAdded={(addr) => { setAddresses([...addresses, addr]); selectAddress(addr); }}
+                    onAdded={(addr) => {
+                      if (addr._locationWarning) setLocationWarnings((prev) => ({ ...prev, [addr._id]: true }));
+                      setAddresses([...addresses, addr]);
+                      selectAddress(addr);
+                    }}
                   />
                 </div>
               )}
@@ -1445,6 +1458,10 @@ function AddAddressForm({ onAdded, show, onShowChange }) {
         isDefault: true,
       });
       const addr = res.data.address;
+      const locationResolved = res.data.locationResolved !== false;
+      if (!locationResolved) {
+        addr._locationWarning = true;
+      }
 
       if (photos.length > 0) {
         const token = localStorage.getItem('accessToken');

@@ -48,7 +48,7 @@ async function create(userId, data) {
     await User.findByIdAndUpdate(userId, { defaultAddressId: address._id });
   }
 
-  return { address, inServiceZone: !!zone, zone: zone?.name };
+  return { address, inServiceZone: !!zone, zone: zone?.name, locationResolved: hasCoords };
 }
 
 async function list(userId) {
