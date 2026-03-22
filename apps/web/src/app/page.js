@@ -13,28 +13,28 @@ import { useInstall } from '../components/InstallContext';
 const FEATURES = [
   {
     icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
-    title: 'Pick a Day',
-    desc: 'Just choose which day you need help. We\'ll take care of the rest.',
+    title: 'You Pick the Day',
+    desc: 'Just tell us which day your trash goes out. We show up, move your barrels, and you never have to think about it.',
     color: 'bg-brand-100 text-brand-600',
   },
   {
     icon: 'M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7',
-    title: 'Watch Us Come to You',
-    desc: 'See exactly where your servicer is on a live map, just like tracking a delivery.',
+    title: 'Watch on a Live Map',
+    desc: 'You can see your person\'s location on a map in real time — just like tracking a pizza delivery.',
     color: 'bg-accent-100 text-accent-600',
   },
   {
     icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
-    title: 'Pay Only for What You Need',
-    desc: 'Pay per barrel each time, or save with a monthly plan. No tricks, no surprises.',
+    title: 'Pay Only When You Use It',
+    desc: 'No subscription required. Pay per visit, or sign up for a monthly plan and save. Cancel anytime.',
     color: 'bg-yellow-100 text-yellow-600',
   },
 ];
 
 const STEPS = [
-  { num: '1', label: 'Sign Up', desc: 'Create an account. It only takes a minute.' },
-  { num: '2', label: 'Book', desc: 'Tell us how many barrels and pick a day.' },
-  { num: '3', label: 'We Handle It', desc: 'Someone comes to your house and takes care of your barrels.' },
+  { num: '1', label: 'Create a Free Account', desc: 'Takes about 60 seconds. No credit card needed to sign up.' },
+  { num: '2', label: 'Book a Visit', desc: 'Enter your address, pick a date, and tell us how many trash barrels you have.' },
+  { num: '3', label: 'We Do the Work', desc: 'Someone comes to your home, rolls your barrels to the curb, and brings them back in after pickup.' },
 ];
 
 function NativeAppLanding() {
@@ -109,16 +109,17 @@ function WebLanding() {
         <div className="relative mx-auto max-w-lg text-center">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-accent-50 px-4 py-1.5 text-sm font-medium text-accent-700">
             <span className="h-1.5 w-1.5 rounded-full bg-accent-500 animate-pulse" />
-            Now accepting service requests
+            Now taking bookings in your area
           </div>
 
           <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-gray-900 sm:text-5xl">
-            We take your<br />trash barrels<br />
-            <span className="bg-gradient-to-r from-brand-600 to-accent-500 bg-clip-text text-transparent">to the curb &amp; back.</span>
+            We move your<br />trash barrels<br />
+            <span className="bg-gradient-to-r from-brand-600 to-accent-500 bg-clip-text text-transparent">so you don&apos;t have to.</span>
           </h1>
 
           <p className="mx-auto mt-4 max-w-md text-lg text-gray-500">
-            Hate dragging your trash barrels out? We do it for you. Just tell us what day, and someone will come put them out and bring them back in.
+            Tired of dragging heavy trash barrels to the curb every week?
+            We send someone to your home to do it for you — and bring them back in after pickup.
           </p>
 
           <div className="mt-8 flex flex-col items-center gap-3">
@@ -162,7 +163,7 @@ function WebLanding() {
       <section className="bg-gray-50 px-6 py-16">
         <div className="mx-auto max-w-lg">
           <h2 className="text-center text-sm font-semibold uppercase tracking-widest text-brand-600">How It Works</h2>
-          <p className="mt-2 text-center text-2xl font-bold text-gray-900">It&apos;s really this easy.</p>
+          <p className="mt-2 text-center text-2xl font-bold text-gray-900">3 simple steps. That&apos;s it.</p>
 
           <div className="mt-10 space-y-6">
             {STEPS.map((step, i) => (
@@ -183,7 +184,7 @@ function WebLanding() {
       <section className="px-6 py-16">
         <div className="mx-auto max-w-lg">
           <h2 className="text-center text-sm font-semibold uppercase tracking-widest text-accent-600">Why People Love Us</h2>
-          <p className="mt-2 text-center text-2xl font-bold text-gray-900">Because barrel day shouldn&apos;t be a chore</p>
+          <p className="mt-2 text-center text-2xl font-bold text-gray-900">Trash day made completely hands-free</p>
 
           <div className="mt-10 space-y-4">
             {FEATURES.map((f, i) => (
@@ -207,8 +208,8 @@ function WebLanding() {
 
       <section className="bg-brand-600 px-6 py-16">
         <div className="mx-auto max-w-lg text-center">
-          <h2 className="text-2xl font-bold text-white">Never drag a barrel again.</h2>
-          <p className="mt-2 text-brand-100">Sign up, book your first service, and let us do the heavy lifting.</p>
+          <h2 className="text-2xl font-bold text-white">Stop moving your barrels. Let us do it.</h2>
+          <p className="mt-2 text-brand-100">Sign up free, book your first visit, and never worry about trash day again.</p>
           <div className="mt-6 flex flex-col items-center gap-4">
             <Link href="/signup" className="inline-flex items-center gap-2 rounded-xl bg-white px-8 py-4 font-semibold text-brand-600 shadow-lg transition hover:bg-brand-50 active:scale-[0.98]">
               Get Started
