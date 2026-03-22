@@ -4,7 +4,7 @@ const ServiceType = require('../models/ServiceType');
 const User = require('../models/User');
 const stripeService = require('./stripeService');
 const config = require('../config');
-const { calculateMonthlyPrice, calculateMonthlyPriceBoth, calculateOneTimePrice } = require('./pricingService');
+const { calculateMonthlyPrice, calculateMonthlyPriceBoth, calculateOneTimePrice, calculateOneTimePriceBothLeg } = require('./pricingService');
 
 async function create(userId, data) {
   const existing = await Subscription.findOne({
@@ -77,10 +77,10 @@ async function generateUpcomingBookings(subscription, weeksAhead = 4) {
   const bookings = [];
   const now = new Date();
   const barrelCount = Math.min(50, Math.max(1, subscription.barrelCount || 1));
-  const perVisit = calculateOneTimePrice(barrelCount);
 
   const svcType = await ServiceType.findById(subscription.serviceTypeId);
   const isBoth = svcType && (svcType.slug === 'both' || (svcType.name || '').toLowerCase().includes('both'));
+  const perVisit = isBoth ? calculateOneTimePriceBothLeg(barrelCount) : calculateOneTimePrice(barrelCount);
 
   let putOutType, bringInType;
   if (isBoth) {

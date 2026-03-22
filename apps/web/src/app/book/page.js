@@ -93,12 +93,14 @@ function BookContent() {
   function next() { setStep((s) => Math.min(s + 1, STEPS.length - 1)); }
   function back() { step === 0 ? router.back() : setStep((s) => s - 1); }
 
-  const perBarrel = pricing?.perBarrel ?? 1.50;
-  const monthlyBase = pricing?.monthlyBase ?? 24;
-  const monthlyBaseBoth = pricing?.monthlyBaseBoth ?? 24;
+  const perBarrel = pricing?.perBarrel ?? 2.5;
+  const perBarrelBoth = pricing?.perBarrelBoth ?? 4.0;
+  const perBarrelBothLeg = pricing?.perBarrelBothLeg ?? 2.0;
+  const monthlyBase = pricing?.monthlyBase ?? 30;
+  const monthlyBaseBoth = pricing?.monthlyBaseBoth ?? 30;
   const monthlyIncluded = pricing?.monthlyIncludedBarrels ?? 3;
-  const extraBarrelMonthly = pricing?.extraBarrelMonthly ?? 2;
-  const curbItemPrice = pricing?.curbItemPrice ?? 0.80;
+  const extraBarrelMonthly = pricing?.extraBarrelMonthly ?? 3;
+  const curbItemPrice = pricing?.curbItemPrice ?? 2.0;
 
   function isBothSvc(svc) {
     return svc?.slug === 'both';
@@ -131,7 +133,7 @@ function BookContent() {
   }
 
   function oneTimePrice() {
-    return isBoth() ? perBarrel * 2 * selected.barrelCount : perBarrel * selected.barrelCount;
+    return isBoth() ? perBarrelBoth * selected.barrelCount : perBarrel * selected.barrelCount;
   }
 
   function monthlyPrice() {
@@ -336,11 +338,11 @@ function BookContent() {
                         {isCurbItemsSvc(svc) ? (
                           <>
                             <p className="font-bold text-brand-600">${curbItemPrice.toFixed(2)}</p>
-                            <p className="text-xs text-gray-400">per item, up to 10</p>
+                            <p className="text-xs text-gray-400">per item (up to 25 lbs), up to 10</p>
                           </>
                         ) : (
                           <>
-                            <p className="font-bold text-brand-600">${isBothSvc(svc) ? (perBarrel * 2).toFixed(2) : perBarrel.toFixed(2)}/barrel</p>
+                            <p className="font-bold text-brand-600">${isBothSvc(svc) ? perBarrelBoth.toFixed(2) : perBarrel.toFixed(2)}/barrel</p>
                             <p className="text-xs text-gray-400">{isBothSvc(svc) ? '2 jobs created' : 'per service'}</p>
                           </>
                         )}
@@ -527,7 +529,7 @@ function BookContent() {
                   <span className="font-semibold text-gray-700">Total</span>
                   <span className="text-xl font-bold text-brand-600">${(curbItemPrice * selected.itemCount).toFixed(2)}</span>
                 </div>
-                <p className="mt-1 text-xs text-gray-500">${curbItemPrice.toFixed(2)} &times; {selected.itemCount} item{selected.itemCount > 1 ? 's' : ''}, each under 25 lbs</p>
+                <p className="mt-1 text-xs text-gray-500">${curbItemPrice.toFixed(2)} &times; {selected.itemCount} item{selected.itemCount > 1 ? 's' : ''}, each up to 25 lbs, from storage to curb</p>
               </div>
 
               <div className="mt-4 rounded-xl bg-gray-50 border border-gray-200 p-4">
@@ -543,7 +545,7 @@ function BookContent() {
                 </svg>
                 <div className="text-xs text-amber-800 leading-relaxed">
                   <p><strong>This service is not for barrel rollout.</strong> Use &ldquo;Put Out&rdquo; or &ldquo;Bring In&rdquo; for barrel services.</p>
-                  <p className="mt-1">Each item must be under 25 lbs and legally allowed at the curb. Your servicer may deny the request if items are unreasonable (too heavy, hazardous, etc.). You will not be charged if denied.</p>
+                  <p className="mt-1">Each item must be up to 25 lbs and legally allowed at the curb. Your servicer may deny the request if items are unreasonable (too heavy, hazardous, etc.). You will not be charged if denied.</p>
                 </div>
               </div>
 
@@ -625,12 +627,12 @@ function BookContent() {
                     {isBoth() ? (
                       <>
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Put out: {selected.barrelCount} barrel{selected.barrelCount > 1 ? 's' : ''} × ${perBarrel.toFixed(2)}</span>
-                          <span className="font-medium">${(perBarrel * selected.barrelCount).toFixed(2)}</span>
+                          <span className="text-gray-600">Put out: {selected.barrelCount} barrel{selected.barrelCount > 1 ? 's' : ''} × ${perBarrelBothLeg.toFixed(2)}</span>
+                          <span className="font-medium">${(perBarrelBothLeg * selected.barrelCount).toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Bring in: {selected.barrelCount} barrel{selected.barrelCount > 1 ? 's' : ''} × ${perBarrel.toFixed(2)}</span>
-                          <span className="font-medium">${(perBarrel * selected.barrelCount).toFixed(2)}</span>
+                          <span className="text-gray-600">Bring in: {selected.barrelCount} barrel{selected.barrelCount > 1 ? 's' : ''} × ${perBarrelBothLeg.toFixed(2)}</span>
+                          <span className="font-medium">${(perBarrelBothLeg * selected.barrelCount).toFixed(2)}</span>
                         </div>
                         <hr className="border-brand-200" />
                       </>

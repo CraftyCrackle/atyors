@@ -126,3 +126,27 @@ describe('GET /services/check-zipcode', () => {
     expect(res.status).toBe(400);
   });
 });
+
+describe('GET /services/pricing', () => {
+  const express = require('express');
+  const request = require('supertest');
+  const serviceRoutes = require('../routes/services');
+  const app = express();
+  app.use(express.json());
+  app.use('/services', serviceRoutes);
+
+  test('returns public pricing constants', async () => {
+    const res = await request(app).get('/services/pricing');
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    const d = res.body.data;
+    expect(d.perBarrel).toBe(2.5);
+    expect(d.perBarrelBoth).toBe(4.0);
+    expect(d.perBarrelBothLeg).toBe(2.0);
+    expect(d.monthlyBase).toBe(30);
+    expect(d.monthlyBaseBoth).toBe(30);
+    expect(d.monthlyIncludedBarrels).toBe(3);
+    expect(d.extraBarrelMonthly).toBe(3);
+    expect(d.curbItemPrice).toBe(2.0);
+  });
+});

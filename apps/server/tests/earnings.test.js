@@ -50,7 +50,7 @@ describe('earningsService', () => {
     expect(result.dailyBreakdown).toEqual([]);
   });
 
-  test('lastPayPeriod date range covers previous Sunday to Saturday', async () => {
+  test('lastPayPeriod date range is seven local-calendar days (DST-safe)', async () => {
     Booking.aggregate
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
@@ -65,6 +65,8 @@ describe('earningsService', () => {
     const end = new Date(result.lastPayPeriod.endDate);
     expect(end.getDay()).toBe(0);
     expect(start.getDay()).toBe(0);
-    expect(end.getTime() - start.getTime()).toBe(7 * 24 * 60 * 60 * 1000);
+    const ms = end.getTime() - start.getTime();
+    const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+    expect(Math.abs(ms - sevenDaysMs)).toBeLessThanOrEqual(2 * 60 * 60 * 1000);
   });
 });

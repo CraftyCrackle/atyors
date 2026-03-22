@@ -1,5 +1,6 @@
 module.exports = {
   testEnvironment: 'node',
+  modulePathIgnorePatterns: ['<rootDir>/apps/web/.next/'],
   testMatch: ['**/apps/server/tests/**/*.test.js'],
   coverageDirectory: 'coverage',
   coverageThreshold: {

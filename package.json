@@ -37,6 +37,7 @@
     "xss-clean": "^0.1.4"
   },
   "devDependencies": {
+    "eslint": "^8.57.1",
     "jest": "^29.7.0",
     "supertest": "^7.0.0"
   }

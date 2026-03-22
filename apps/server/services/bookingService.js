@@ -2,7 +2,7 @@ const Booking = require('../models/Booking');
 const Address = require('../models/Address');
 const ServiceType = require('../models/ServiceType');
 const AppSettings = require('../models/AppSettings');
-const { calculateOneTimePrice, calculateCurbItemPrice } = require('./pricingService');
+const { calculateOneTimePrice, calculateOneTimePriceBothLeg, calculateCurbItemPrice } = require('./pricingService');
 const stripeService = require('./stripeService');
 const config = require('../config');
 const MAX_BARRELS = 50;
@@ -98,7 +98,9 @@ async function create(userId, data) {
   }
 
   const barrelCount = Math.min(MAX_BARRELS, Math.max(1, parseInt(data.barrelCount) || 1));
-  const perBarrelAmount = calculateOneTimePrice(barrelCount);
+  const perBarrelAmount = isBoth
+    ? calculateOneTimePriceBothLeg(barrelCount)
+    : calculateOneTimePrice(barrelCount);
   const isSubscription = !!data.subscriptionId;
   const clientAmount = isSubscription ? 0 : perBarrelAmount;
   const paymentStatus = isSubscription ? 'paid' : 'pending_payment';

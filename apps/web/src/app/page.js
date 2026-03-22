@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '../stores/authStore';
 import Logo from '../components/Logo';
+import LandingPricingSection from '../components/LandingPricingSection';
 import AppStoreBadge from '../components/AppStoreBadge';
 import { useInstall } from '../components/InstallContext';
 
@@ -70,7 +71,8 @@ function NativeAppLanding() {
       </div>
 
       <footer className="px-6 pb-safe pb-6">
-        <div className="flex justify-center gap-4 text-xs text-gray-400">
+        <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-gray-400">
+          <Link href="/pricing" className="hover:text-gray-600">Pricing</Link>
           <Link href="/privacy" className="hover:text-gray-600">Privacy</Link>
           <Link href="/terms" className="hover:text-gray-600">Terms</Link>
           <Link href="/support" className="hover:text-gray-600">Support</Link>
@@ -88,11 +90,14 @@ function WebLanding() {
 
   return (
     <main className="min-h-screen-safe bg-white">
-      <nav className="flex items-center justify-between px-6 pb-4 pt-sticky-safe">
-        <Logo size="sm" variant="wordmark" />
-        <div className="flex items-center gap-3">
+      <nav className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 bg-white/95 px-4 pb-3 pt-sticky-safe backdrop-blur-sm sm:px-6 sm:pb-4">
+        <Link href="/" className="shrink-0" aria-label="atyors home">
+          <Logo size="sm" variant="wordmark" />
+        </Link>
+        <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2 sm:gap-x-4">
+          <Link href="/pricing" className="text-sm font-semibold text-brand-600 hover:text-brand-800">Pricing</Link>
           <Link href="/login" className="text-sm font-medium text-gray-600 hover:text-gray-900">Sign In</Link>
-          <Link href="/signup" className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700">Get Started</Link>
+          <Link href="/signup" className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 sm:px-4">Get Started</Link>
         </div>
       </nav>
 
@@ -115,14 +120,26 @@ function WebLanding() {
             Hate dragging your trash barrels out? We do it for you. Just tell us what day, and someone will come put them out and bring them back in.
           </p>
 
-          <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-            <Link href="/signup" className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-8 py-4 font-semibold text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700 active:scale-[0.98] sm:w-auto">
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
-              Get Started
-            </Link>
-            <Link href="/login" className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 px-8 py-4 font-semibold text-gray-700 transition hover:bg-gray-50 active:scale-[0.98] sm:w-auto">
-              I already have an account
-            </Link>
+          <div className="mt-8 flex flex-col items-center gap-3">
+            <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:justify-center sm:items-center">
+              <Link href="/signup" className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-8 py-4 font-semibold text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700 active:scale-[0.98] sm:w-auto">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+                Get Started
+              </Link>
+              <Link href="/login" className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 px-8 py-4 font-semibold text-gray-700 transition hover:bg-gray-50 active:scale-[0.98] sm:w-auto">
+                I already have an account
+              </Link>
+            </div>
+            <div className="flex flex-col items-center gap-2 sm:flex-row sm:gap-4">
+              <a href="#pricing" className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-600 underline decoration-brand-200 underline-offset-4 transition hover:text-brand-800 hover:decoration-brand-400">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                See pricing below
+              </a>
+              <span className="hidden text-gray-300 sm:inline" aria-hidden>|</span>
+              <Link href="/pricing" className="text-sm font-semibold text-gray-600 transition hover:text-gray-900">
+                Pricing page
+              </Link>
+            </div>
           </div>
 
           {!isStandalone && (
@@ -183,58 +200,7 @@ function WebLanding() {
         </div>
       </section>
 
-      <section className="px-6 py-16 bg-gray-50">
-        <div className="mx-auto max-w-lg">
-          <div className="mx-auto mb-4 flex items-center justify-center">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-100 px-4 py-1.5 text-sm font-semibold text-brand-800">
-              Simple &amp; affordable
-            </span>
-          </div>
-          <p className="text-center text-2xl font-bold text-gray-900">What does it cost?</p>
-          <p className="mt-2 text-center text-gray-500">Simple, transparent pricing. Pay per visit or subscribe monthly and never think about it again.</p>
-
-          <div className="mt-8 space-y-3">
-            <div className="flex items-center justify-between rounded-xl bg-white px-5 py-4 border border-gray-200">
-              <div>
-                <p className="font-semibold text-gray-900">Take barrels out</p>
-                <p className="text-sm text-gray-500">We bring them to the curb for you</p>
-              </div>
-              <p className="text-xl font-bold text-brand-600">$1.50<span className="text-sm font-normal text-gray-400">/barrel</span></p>
-            </div>
-
-            <div className="flex items-center justify-between rounded-xl bg-white px-5 py-4 border border-gray-200">
-              <div>
-                <p className="font-semibold text-gray-900">Bring barrels back</p>
-                <p className="text-sm text-gray-500">We put them back where they belong</p>
-              </div>
-              <p className="text-xl font-bold text-brand-600">$1.50<span className="text-sm font-normal text-gray-400">/barrel</span></p>
-            </div>
-
-            <div className="flex items-center justify-between rounded-xl bg-white px-5 py-4 border border-gray-200">
-              <div>
-                <p className="font-semibold text-gray-900">Both (out &amp; back) <span className="text-xs font-medium text-brand-600">Most popular</span></p>
-                <p className="text-sm text-gray-500">The whole thing, start to finish</p>
-              </div>
-              <p className="text-xl font-bold text-brand-600">$3.00<span className="text-sm font-normal text-gray-400">/barrel</span></p>
-            </div>
-
-            <div className="flex items-center justify-between rounded-xl bg-white px-5 py-4 border border-gray-200">
-              <div>
-                <p className="font-semibold text-gray-900">Curb items</p>
-                <p className="text-sm text-gray-500">Got stuff to put out? Up to 10 items</p>
-              </div>
-              <p className="text-xl font-bold text-brand-600">$0.80<span className="text-sm font-normal text-gray-400">/item</span></p>
-            </div>
-          </div>
-
-          <div className="mt-8 text-center">
-            <Link href="/signup" className="inline-block rounded-xl bg-brand-600 px-10 py-3.5 font-semibold text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700 active:scale-[0.98]">
-              Sign Up Free
-            </Link>
-            <p className="mt-3 text-xs text-gray-400">No card needed to sign up. Cancel anytime.</p>
-          </div>
-        </div>
-      </section>
+      <LandingPricingSection id="pricing" />
 
       <section className="bg-brand-600 px-6 py-16">
         <div className="mx-auto max-w-lg text-center">
@@ -267,7 +233,8 @@ function WebLanding() {
       <footer className="border-t border-gray-100 bg-white px-6 py-8">
         <div className="mx-auto flex max-w-lg flex-col items-center gap-4">
           <Logo size="sm" variant="wordmark" />
-          <div className="flex gap-4 text-xs text-gray-400">
+          <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-gray-400">
+            <Link href="/pricing" className="hover:text-gray-600">Pricing</Link>
             <Link href="/privacy" className="hover:text-gray-600">Privacy</Link>
             <Link href="/terms" className="hover:text-gray-600">Terms</Link>
             <Link href="/support" className="hover:text-gray-600">Support</Link>

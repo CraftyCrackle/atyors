@@ -25,6 +25,8 @@ router.get('/pricing', (req, res) => {
     success: true,
     data: {
       perBarrel: pricingService.PRICE_PER_BARREL,
+      perBarrelBoth: pricingService.PRICE_PER_BARREL_BOTH_TOTAL,
+      perBarrelBothLeg: pricingService.PRICE_PER_BARREL_BOTH_LEG,
       monthlyBase: pricingService.MONTHLY_BASE,
       monthlyBaseBoth: pricingService.MONTHLY_BASE_BOTH,
       monthlyIncludedBarrels: pricingService.MONTHLY_INCLUDED_BARRELS,
