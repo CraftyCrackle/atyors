@@ -654,6 +654,18 @@ function AddressCard({ address, dark, onUpdated, onDelete }) {
           {address.barrelLocation && <span>Location: {address.barrelLocation}</span>}
         </div>
       )}
+      {!address.trashDay && (
+        <button onClick={startEditing} className="mt-3 flex w-full items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-left transition hover:bg-amber-100">
+          <svg className="h-4 w-4 shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+          </svg>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-amber-800">Set your trash pickup day</p>
+            <p className="text-[11px] text-amber-600">Required before you can book a service at this address</p>
+          </div>
+          <span className="shrink-0 text-xs font-medium text-amber-700">Set now →</span>
+        </button>
+      )}
       {(address.barrelPlacementInstructions || address.barrelReturnInstructions) && (
         <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-gray-400">
           {address.barrelPlacementInstructions && <span>Curb: {address.barrelPlacementInstructions}</span>}
@@ -1024,6 +1036,10 @@ function AddAddressForm({ dark, onAdded, onCancel }) {
       alert('Please fill in all required address fields.');
       return;
     }
+    if (!form.trashDay) {
+      alert('Please select your trash pickup day — it helps us schedule your service correctly.');
+      return;
+    }
     setSaving(true);
     try {
       const res = await api.post('/addresses', {
@@ -1094,11 +1110,15 @@ function AddAddressForm({ dark, onAdded, onCancel }) {
           <input type="number" min="1" value={form.barrelCount} onChange={(e) => setForm({ ...form, barrelCount: e.target.value })} className={`w-full ${baseCls}`} />
         </div>
         <div className="flex-1 min-w-0">
-          <label className={`text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>Trash day</label>
-          <select value={form.trashDay} onChange={update('trashDay')} className={`w-full ${baseCls}`}>
-            <option value="">Select</option>
+          <label className={`text-xs font-semibold ${dark ? 'text-gray-300' : 'text-gray-700'}`}>
+            Trash day <span className="text-red-500">*</span>
+          </label>
+          <select value={form.trashDay} onChange={update('trashDay')}
+            className={`w-full ${baseCls} ${!form.trashDay ? (dark ? 'border-amber-500/60' : 'border-amber-400') : ''}`}>
+            <option value="">Select day</option>
             {DAYS_OF_WEEK.map((d) => <option key={d} value={d}>{d}</option>)}
           </select>
+          {!form.trashDay && <p className="mt-0.5 text-[11px] text-amber-500">Required to book service</p>}
         </div>
       </div>
       <input type="text" placeholder='Barrel location (e.g. "Left side of garage")' value={form.barrelLocation} onChange={update('barrelLocation')} className={`w-full ${baseCls}`} />

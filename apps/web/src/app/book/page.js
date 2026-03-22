@@ -10,8 +10,11 @@ import PhotoViewer from '../../components/PhotoViewer';
 
 const STEPS = ['service', 'address', 'details', 'confirm'];
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const PUT_OUT_OPTIONS = ['4–9 PM (Evening)', '5–7 AM (Early Morning)'];
-const BRING_IN_OPTIONS = ['12–4 PM (Afternoon)', '4–9 PM (Evening)'];
+const PUT_OUT_TIME = '5–9 PM';
+const BRING_IN_OPTIONS = [
+  { value: 'Afternoon (12–4 PM)', label: 'Afternoon', time: '12–4 PM', hint: 'Best choice — trash is usually collected by morning' },
+  { value: 'Evening (4–8 PM)', label: 'Evening', time: '4–8 PM', hint: 'For areas where pickup runs later in the day' },
+];
 
 export default function BookPage() {
   return (
@@ -52,6 +55,7 @@ function BookContent() {
   const [dateFullyBooked, setDateFullyBooked] = useState(false);
   const [zipNotServed, setZipNotServed] = useState(false);
   const [activeSubs, setActiveSubs] = useState([]);
+  const [showAddForm, setShowAddForm] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -89,6 +93,12 @@ function BookContent() {
       .then((res) => { if (!res.data.available) setDateFullyBooked(true); })
       .catch(() => {});
   }, [selected.date]);
+
+  useEffect(() => {
+    if (needsPutOut() && !selected.putOutTime) {
+      setSelected((prev) => ({ ...prev, putOutTime: PUT_OUT_TIME }));
+    }
+  }, [selected.serviceType]);
 
   function next() { setStep((s) => Math.min(s + 1, STEPS.length - 1)); }
   function back() { step === 0 ? router.back() : setStep((s) => s - 1); }
@@ -161,7 +171,7 @@ function BookContent() {
     if (!selected.date) return false;
     const base = new Date(selected.date + 'T12:00:00');
     if (isBringIn) base.setDate(base.getDate() + 1);
-    const endHours = { '4–9 PM': 21, '5–7 AM': 7, '12–4 PM': 16, '5–7 PM': 19, '7–9 PM': 21, '9–11 PM': 23 };
+    const endHours = { '4–9 PM': 21, '5–7 AM': 7, '12–4 PM': 16, '5–7 PM': 19, '7–9 PM': 21, '9–11 PM': 23, '5–9 PM': 21, 'Afternoon': 16, 'Evening': 20 };
     let hour = 23;
     for (const [key, h] of Object.entries(endHours)) {
       if (opt.includes(key)) { hour = h; break; }
@@ -171,6 +181,7 @@ function BookContent() {
   }
 
   function selectAddress(addr) {
+    setShowAddForm(false);
     const addrHasSub = activeSubs.some((s) => {
       const id = s.addressId?._id || s.addressId;
       return id === addr._id || String(id) === String(addr._id);
@@ -179,7 +190,7 @@ function BookContent() {
       ...prev,
       addressId: addr._id,
       barrelCount: addr.barrelCount || prev.barrelCount || 1,
-      trashDay: addr.trashDay || prev.trashDay || '',
+      trashDay: addr.trashDay || prev.trashDay || 'Monday',
       bookingType: addrHasSub ? 'one-time' : prev.bookingType,
     }));
     setZipNotServed(false);
@@ -395,7 +406,11 @@ function BookContent() {
 
               {addresses.length > 0 && (
                 <div className="mt-4">
-                  <AddAddressForm onAdded={(addr) => { setAddresses([...addresses, addr]); selectAddress(addr); }} />
+                  <AddAddressForm
+                    show={showAddForm}
+                    onShowChange={setShowAddForm}
+                    onAdded={(addr) => { setAddresses([...addresses, addr]); selectAddress(addr); }}
+                  />
                 </div>
               )}
 
@@ -706,59 +721,89 @@ function BookContent() {
               </div>
 
               {/* Put out / Bring in times */}
-              {needsPutOut() && (() => {
-                const allPast = PUT_OUT_OPTIONS.every((o) => isTimeWindowPast(o, false));
-                return (
-                  <div className="mt-5">
-                    <label className="text-sm font-medium text-gray-700">When should barrels be placed on the curb?</label>
-                    <div className="mt-2 grid grid-cols-2 gap-2">
-                      {PUT_OUT_OPTIONS.map((opt) => {
-                        const past = isTimeWindowPast(opt, false);
-                        return (
-                          <button key={opt} disabled={past} onClick={() => !past && setSelected({ ...selected, putOutTime: opt })}
-                            className={`rounded-lg border-2 px-3 py-2.5 text-sm transition ${past ? 'border-gray-100 text-gray-300 line-through cursor-not-allowed' : selected.putOutTime === opt ? 'border-brand-600 bg-brand-50 text-brand-700 font-medium' : 'border-gray-100 text-gray-500'}`}>
-                            {opt}
-                          </button>
-                        );
-                      })}
+              {/* Put out time — fixed window, shown as confirmation */}
+              {needsPutOut() && (
+                <div className="mt-5">
+                  <label className="text-sm font-semibold text-gray-900">When will we put your barrels out?</label>
+                  <p className="mt-1 text-sm text-gray-500">
+                    We put barrels out the <strong>evening before</strong> your trash day so they're ready when the truck comes in the morning.
+                  </p>
+                  <div className="mt-3 flex items-center gap-3 rounded-xl border-2 border-brand-200 bg-brand-50 px-4 py-3.5">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-100">
+                      <svg className="h-5 w-5 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+                      </svg>
                     </div>
-                    {allPast && <p className="mt-2 text-xs text-red-500">All time windows for this date have passed. Please pick a later date.</p>}
-                    {!allPast && PUT_OUT_OPTIONS.some((o) => isTimeWindowPast(o, false)) && (
-                      <p className="mt-2 text-xs text-gray-400">Greyed out times have already passed for today.</p>
-                    )}
+                    <div>
+                      <p className="font-semibold text-brand-800">5–9 PM the night before</p>
+                      <p className="text-xs text-brand-600">
+                        {selected.date
+                          ? (() => {
+                              const d = new Date(selected.date + 'T12:00:00');
+                              d.setDate(d.getDate() - 1);
+                              return `Evening of ${d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}`;
+                            })()
+                          : 'Evening before your trash day'}
+                      </p>
+                    </div>
+                    <svg className="ml-auto h-5 w-5 shrink-0 text-brand-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+                    </svg>
                   </div>
-                );
-              })()}
+                </div>
+              )}
 
+              {/* Bring in time */}
               {needsBringIn() && (() => {
-                const allPast = BRING_IN_OPTIONS.every((o) => isTimeWindowPast(o, true));
                 return (
                   <div className="mt-5">
-                    <label className="text-sm font-medium text-gray-700">When should barrels be brought back in?</label>
+                    <label className="text-sm font-semibold text-gray-900">When should we bring your barrels back inside?</label>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Pick a time window on your trash day. We'll bring your barrels back in after the truck has come through your street.
+                    </p>
                     {selected.date && (
                       <p className="mt-1 text-sm font-semibold text-brand-700">
-                        Next Day [{(() => {
-                          const d = new Date(selected.date + 'T12:00:00');
-                          d.setDate(d.getDate() + 1);
-                          return d.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-                        })()}]
+                        On pickup day —{' '}
+                        {new Date(selected.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
                       </p>
                     )}
-                    <div className="mt-2 grid grid-cols-2 gap-2">
+                    <div className="mt-3 space-y-2">
                       {BRING_IN_OPTIONS.map((opt) => {
-                        const past = isTimeWindowPast(opt, true);
+                        const past = isTimeWindowPast(opt.value, false);
+                        const isSelected = selected.bringInTime === opt.value;
                         return (
-                          <button key={opt} disabled={past} onClick={() => !past && setSelected({ ...selected, bringInTime: opt })}
-                            className={`rounded-lg border-2 px-3 py-2.5 text-sm transition ${past ? 'border-gray-100 text-gray-300 line-through cursor-not-allowed' : selected.bringInTime === opt ? 'border-brand-600 bg-brand-50 text-brand-700 font-medium' : 'border-gray-100 text-gray-500'}`}>
-                            {opt}
+                          <button
+                            key={opt.value}
+                            disabled={past}
+                            onClick={() => !past && setSelected({ ...selected, bringInTime: opt.value })}
+                            className={`w-full rounded-xl border-2 px-4 py-3.5 text-left transition active:scale-[0.98] ${
+                              past
+                                ? 'border-gray-100 opacity-40 cursor-not-allowed'
+                                : isSelected
+                                  ? 'border-brand-600 bg-brand-50'
+                                  : 'border-gray-100 hover:border-gray-200'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className={`font-semibold ${isSelected ? 'text-brand-800' : 'text-gray-800'}`}>
+                                  {opt.label} <span className="font-normal text-gray-500">({opt.time})</span>
+                                </p>
+                                <p className={`mt-0.5 text-xs ${isSelected ? 'text-brand-600' : 'text-gray-400'}`}>{opt.hint}</p>
+                              </div>
+                              {isSelected && (
+                                <svg className="h-5 w-5 shrink-0 text-brand-600" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+                                </svg>
+                              )}
+                            </div>
                           </button>
                         );
                       })}
                     </div>
-                    {allPast && <p className="mt-2 text-xs text-red-500">All time windows for this date have passed. Please pick a later date.</p>}
-                    {!allPast && BRING_IN_OPTIONS.some((o) => isTimeWindowPast(o, true)) && (
-                      <p className="mt-2 text-xs text-gray-400">Greyed out times have already passed.</p>
-                    )}
+                    <p className="mt-2 text-xs text-gray-400">
+                      Not sure? Choose <strong>Afternoon</strong> — that works for most neighborhoods.
+                    </p>
                   </div>
                 );
               })()}
@@ -769,7 +814,7 @@ function BookContent() {
                 </div>
               )}
 
-              <button onClick={next} disabled={!selected.trashDay}
+              <button onClick={next} disabled={!selected.trashDay || (needsBringIn() && !selected.bringInTime)}
                 className="mt-6 w-full rounded-xl bg-brand-600 py-3.5 font-semibold text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700 active:scale-[0.98] disabled:opacity-40">
                 Continue
               </button>
@@ -902,13 +947,13 @@ function BookContent() {
                 {selected.putOutTime && (
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-500">Put Out</span>
-                    <span className="text-sm font-medium">{selected.putOutTime}</span>
+                    <span className="text-sm font-medium">Night before, 5–9 PM</span>
                   </div>
                 )}
                 {selected.bringInTime && (
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-500">Bring In</span>
-                    <span className="text-sm font-medium">{selected.bringInTime}</span>
+                    <span className="text-sm font-medium">{BRING_IN_OPTIONS.find(o => o.value === selected.bringInTime)?.label || selected.bringInTime}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
@@ -1007,7 +1052,7 @@ function CascadingDatePicker({ trashDay: initialTrashDay, selectedDate, onChange
   const isSunday = today.getDay() === 0;
 
   const [mode, setMode] = useState('future');
-  const [activeDay, setActiveDay] = useState(initialTrashDay);
+  const [activeDay, setActiveDay] = useState(initialTrashDay || 'Monday');
 
   const dayMap = { Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6, Sunday: 0 };
   const targetDow = dayMap[activeDay];
@@ -1214,7 +1259,7 @@ function ScheduledServicesPreview({ startDate }) {
   );
 }
 
-function AddAddressForm({ onAdded }) {
+function AddAddressForm({ onAdded, show, onShowChange }) {
   const [form, setForm] = useState({
     street: '', unit: '', city: '', state: '', zip: '',
     barrelCount: 1, barrelLocation: '', barrelNotes: '',
@@ -1223,7 +1268,6 @@ function AddAddressForm({ onAdded }) {
   const [photos, setPhotos] = useState([]);
   const [photoPreviews, setPhotoPreviews] = useState([]);
   const [submitting, setSubmitting] = useState(false);
-  const [show, setShow] = useState(false);
   const update = (f) => (e) => setForm({ ...form, [f]: e.target.value });
 
   function handlePhotos(e) {
@@ -1280,7 +1324,7 @@ function AddAddressForm({ onAdded }) {
 
   if (!show) {
     return (
-      <button onClick={() => setShow(true)} className="w-full rounded-xl border-2 border-dashed border-gray-200 py-3 text-sm font-medium text-gray-500 hover:border-brand-300 hover:text-brand-600">
+      <button onClick={() => onShowChange(true)} className="w-full rounded-xl border-2 border-dashed border-gray-200 py-3 text-sm font-medium text-gray-500 hover:border-brand-300 hover:text-brand-600">
         + Add New Address
       </button>
     );
