@@ -12,10 +12,12 @@ async function create(userId, data) {
     if (geo) { lat = geo.lat; lng = geo.lng; }
   }
 
-  const zone = await ServiceZone.findOne({
+  const hasCoords = lat != null && lng != null && !isNaN(lat) && !isNaN(lng);
+
+  const zone = hasCoords ? await ServiceZone.findOne({
     polygon: { $geoIntersects: { $geometry: { type: 'Point', coordinates: [lng, lat] } } },
     isActive: true,
-  });
+  }) : null;
 
   const address = await Address.create({
     userId,
@@ -25,7 +27,9 @@ async function create(userId, data) {
     state: data.state,
     zip: data.zip,
     formatted: data.formatted,
-    location: { type: 'Point', coordinates: [lng, lat] },
+    ...(lat != null && lng != null && !isNaN(lat) && !isNaN(lng)
+      ? { location: { type: 'Point', coordinates: [lng, lat] } }
+      : {}),
     barrelCount: data.barrelCount || 1,
     barrelLocation: data.barrelLocation,
     barrelPhotoUrl: data.barrelPhotoUrl,
