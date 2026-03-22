@@ -10,6 +10,61 @@ import AppStoreBadge from '../../components/AppStoreBadge';
 import PhotoViewer from '../../components/PhotoViewer';
 import { reverseGeocode } from '../../lib/reverseGeocode';
 
+function SectionShell({ isOpen, onToggle, icon, title, subtitle, badge, headerRight, dark, children, disclaimer }) {
+  return (
+    <div className={`mt-4 overflow-hidden rounded-xl ${dark ? 'border border-gray-700 bg-gray-800' : 'bg-white shadow-sm'}`}>
+      <button
+        type="button"
+        onClick={onToggle}
+        className={`flex w-full items-center gap-3 px-5 py-4 text-left transition ${dark ? 'hover:bg-gray-700/40 active:bg-gray-700/60' : 'hover:bg-gray-50 active:bg-gray-100'}`}
+      >
+        {icon && (
+          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${dark ? 'bg-gray-700' : 'bg-brand-50'}`}>
+            {icon}
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`text-sm font-semibold ${dark ? 'text-white' : 'text-gray-900'}`}>{title}</span>
+            {badge}
+          </div>
+          {subtitle && (
+            <p className={`mt-0.5 truncate text-xs ${dark ? 'text-gray-400' : 'text-gray-500'}`}>{subtitle}</p>
+          )}
+        </div>
+        {headerRight && (
+          <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+            {headerRight}
+          </div>
+        )}
+        <svg
+          className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''} ${dark ? 'text-gray-500' : 'text-gray-400'}`}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {isOpen && (
+        <div className={`border-t ${dark ? 'border-gray-700' : 'border-gray-100'}`}>
+          {disclaimer && (
+            <div className="px-5 pt-4">
+              <div className={`flex items-start gap-2 rounded-lg px-3 py-2.5 text-xs leading-relaxed ${dark ? 'bg-blue-900/20 text-blue-300' : 'bg-sky-50 text-sky-700'}`}>
+                <svg className="mt-0.5 h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>{disclaimer}</span>
+              </div>
+            </div>
+          )}
+          <div className="px-5 py-4">
+            {children}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   const { user, logout, updateUser } = useAuthStore();
   const { canInstall, isStandalone, isIos, hasAppStore, triggerInstall } = useInstall();
@@ -19,6 +74,8 @@ export default function ProfilePage() {
   const [form, setForm] = useState({ firstName: '', lastName: '', phone: '' });
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [openSection, setOpenSection] = useState('personal');
+  function toggleSection(key) { setOpenSection((prev) => (prev === key ? null : key)); }
   const isCustomer = user?.role === 'customer';
 
   useEffect(() => {
@@ -106,16 +163,27 @@ export default function ProfilePage() {
           </div>
         </header>
 
-        <div className="mt-4 px-4">
-          <div className={cardCls}>
-            <div className="flex items-center justify-between">
-              <h2 className={`text-base font-semibold ${dark ? 'text-white' : ''}`}>Personal Info</h2>
-              <button onClick={() => setEditing(!editing)} className="text-sm font-medium text-brand-600 py-1">
+        <div className="mt-4 px-4 sm:px-6">
+          <div className="mx-auto max-w-2xl">
+          <SectionShell
+            isOpen={openSection === 'personal'}
+            onToggle={() => toggleSection('personal')}
+            dark={dark}
+            icon={
+              <svg className={`h-5 w-5 ${dark ? 'text-brand-400' : 'text-brand-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            }
+            title="Personal Info"
+            subtitle={`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Name, email & phone'}
+            headerRight={openSection === 'personal' ? (
+              <button onClick={() => setEditing(!editing)} className="text-sm font-medium text-brand-600 py-1 px-2">
                 {editing ? 'Cancel' : 'Edit'}
               </button>
-            </div>
+            ) : null}
+          >
             {editing ? (
-              <div className="mt-4 space-y-4">
+              <div className="space-y-4">
                 <input type="text" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} placeholder="First name" className={inputCls} />
                 <input type="text" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} placeholder="Last name" className={inputCls} />
                 <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Phone" className={inputCls} />
@@ -124,46 +192,56 @@ export default function ProfilePage() {
                 </button>
               </div>
             ) : (
-              <div className={`mt-4 space-y-3 text-sm ${dark ? 'text-gray-300' : ''}`}>
+              <div className={`space-y-3 text-sm ${dark ? 'text-gray-300' : ''}`}>
                 <div className="flex justify-between py-1"><span className="text-gray-500">Name</span><span>{user?.fullName}</span></div>
                 <div className="flex justify-between py-1"><span className="text-gray-500">Email</span><span>{user?.email}</span></div>
                 <div className="flex justify-between py-1"><span className="text-gray-500">Phone</span><span>{user?.phone || '—'}</span></div>
               </div>
             )}
-          </div>
+          </SectionShell>
 
-          <ChangePasswordSection dark={dark} cardCls={cardCls} />
+          <ChangePasswordSection dark={dark} isOpen={openSection === 'password'} onToggle={() => toggleSection('password')} />
 
-          <TrashDayReminderSection dark={dark} cardCls={cardCls} user={user} updateUser={updateUser} />
-          <StreetCleaningReminderSection dark={dark} cardCls={cardCls} user={user} updateUser={updateUser} addresses={addresses} onAddressUpdated={(updated) => setAddresses(addresses.map((a) => a._id === updated._id ? updated : a))} />
+          <TrashDayReminderSection dark={dark} user={user} updateUser={updateUser} isOpen={openSection === 'trashday'} onToggle={() => toggleSection('trashday')} />
+          <StreetCleaningReminderSection dark={dark} user={user} updateUser={updateUser} addresses={addresses} onAddressUpdated={(updated) => setAddresses(addresses.map((a) => a._id === updated._id ? updated : a))} isOpen={openSection === 'streetcleaning'} onToggle={() => toggleSection('streetcleaning')} />
 
-          <div className={`mt-5 ${cardCls}`}>
-            <div className="flex items-center justify-between">
-              <h2 className={`text-base font-semibold ${dark ? 'text-white' : ''}`}>Addresses</h2>
-              <button onClick={() => setAddingAddress(!addingAddress)} className="text-sm font-medium text-brand-600 py-1">
+          <SectionShell
+            isOpen={openSection === 'addresses'}
+            onToggle={() => toggleSection('addresses')}
+            dark={dark}
+            icon={
+              <svg className={`h-5 w-5 ${dark ? 'text-brand-400' : 'text-brand-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><path strokeLinecap="round" strokeLinejoin="round" d="M9 22V12h6v10" />
+              </svg>
+            }
+            title="My Addresses"
+            subtitle={addresses.length > 0 ? `${addresses.length} address${addresses.length !== 1 ? 'es' : ''} saved` : 'Where we pick up your barrels'}
+            headerRight={openSection === 'addresses' ? (
+              <button onClick={() => setAddingAddress(!addingAddress)} className="text-sm font-medium text-brand-600 py-1 px-2">
                 {addingAddress ? 'Cancel' : '+ Add'}
               </button>
-            </div>
+            ) : null}
+            disclaimer="Tap an address to edit barrel details, placement instructions, or your trash pickup day. A correct trash day is required to schedule service."
+          >
             {addingAddress && (
               <AddAddressForm dark={dark} onAdded={(addr) => { setAddresses((prev) => [...prev, addr]); setAddingAddress(false); }} onCancel={() => setAddingAddress(false)} />
             )}
             {addresses.length === 0 ? (
-              <p className="mt-3 text-sm text-gray-400">No addresses saved</p>
+              <p className="text-sm text-gray-400">No addresses saved yet. Tap &quot;+ Add&quot; to get started.</p>
             ) : (
-              <div className="mt-4 space-y-4">
+              <div className="space-y-4">
                 {addresses.map((addr) => (
                   <AddressCard key={addr._id} address={addr} dark={dark} onUpdated={(updated) => setAddresses(addresses.map((a) => a._id === updated._id ? updated : a))} onDelete={() => deleteAddress(addr._id)} />
                 ))}
               </div>
             )}
-          </div>
+          </SectionShell>
 
+          {isCustomer && <SubscriptionSection isOpen={openSection === 'subscriptions'} onToggle={() => toggleSection('subscriptions')} />}
 
-          {isCustomer && <SubscriptionSection />}
+          {isCustomer && <PaymentMethodsSection user={user} isOpen={openSection === 'payments'} onToggle={() => toggleSection('payments')} />}
 
-          {isCustomer && <PaymentMethodsSection user={user} />}
-
-          {isCustomer && <InvoiceSection />}
+          {isCustomer && <InvoiceSection isOpen={openSection === 'billing'} onToggle={() => toggleSection('billing')} />}
 
           {!isStandalone && isIos && hasAppStore && (
             <div className="mt-4 flex justify-center">
@@ -187,6 +265,7 @@ export default function ProfilePage() {
           </button>
 
           {isCustomer && <DeleteAccountSection onDeleted={logout} />}
+          </div>
         </div>
 
         {isCustomer && <BottomNav />}
@@ -195,7 +274,7 @@ export default function ProfilePage() {
   );
 }
 
-function ChangePasswordSection({ dark, cardCls }) {
+function ChangePasswordSection({ dark, isOpen, onToggle }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [saving, setSaving] = useState(false);
@@ -223,18 +302,29 @@ function ChangePasswordSection({ dark, cardCls }) {
   }
 
   return (
-    <div className={`mt-5 ${cardCls}`}>
-      <div className="flex items-center justify-between">
-        <h2 className={`text-base font-semibold ${dark ? 'text-white' : ''}`}>Password</h2>
-        <button onClick={() => { setOpen(!open); setError(''); setSuccess(false); }} className="text-sm font-medium text-brand-600 py-1">
+    <SectionShell
+      isOpen={isOpen}
+      onToggle={onToggle}
+      dark={dark}
+      icon={
+        <svg className={`h-5 w-5 ${dark ? 'text-brand-400' : 'text-brand-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+      }
+      title="Password"
+      subtitle="Keep your account secure"
+      headerRight={isOpen ? (
+        <button onClick={() => { setOpen(!open); setError(''); setSuccess(false); }} className="text-sm font-medium text-brand-600 py-1 px-2">
           {open ? 'Cancel' : 'Change'}
         </button>
-      </div>
+      ) : null}
+      disclaimer="Use a strong password with at least 8 characters, including an uppercase letter, a lowercase letter, and a number."
+    >
       {!open && (
-        <p className={`mt-2 text-sm ${dark ? 'text-gray-400' : 'text-gray-500'}`}>••••••••</p>
+        <p className={`text-sm ${dark ? 'text-gray-400' : 'text-gray-500'}`}>••••••••</p>
       )}
       {open && (
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <input type="password" placeholder="Current password" value={form.currentPassword}
             onChange={(e) => setForm({ ...form, currentPassword: e.target.value })} className={baseCls} required autoComplete="current-password" />
           <input type="password" placeholder="New password (min 8 chars)" value={form.newPassword}
@@ -249,11 +339,11 @@ function ChangePasswordSection({ dark, cardCls }) {
           </button>
         </form>
       )}
-    </div>
+    </SectionShell>
   );
 }
 
-function TrashDayReminderSection({ dark, cardCls, user, updateUser }) {
+function TrashDayReminderSection({ dark, user, updateUser, isOpen, onToggle }) {
   const reminder = user?.trashDayReminder || { enabled: false, time: '18:00' };
   const [saving, setSaving] = useState(false);
 
@@ -284,14 +374,18 @@ function TrashDayReminderSection({ dark, cardCls, user, updateUser }) {
   const displayTime = TIME_OPTIONS.find((o) => o.value === timeVal)?.label || timeVal;
 
   return (
-    <div className={`mt-5 ${cardCls}`}>
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex-1">
-          <h2 className={`text-base font-semibold ${dark ? 'text-white' : ''}`}>Trash Day Reminders</h2>
-          <p className={`mt-1 text-sm ${dark ? 'text-gray-400' : 'text-gray-500'}`}>
-            Never forget to put your barrels out
-          </p>
-        </div>
+    <SectionShell
+      isOpen={isOpen}
+      onToggle={onToggle}
+      dark={dark}
+      icon={
+        <svg className={`h-5 w-5 ${dark ? 'text-brand-400' : 'text-brand-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+        </svg>
+      }
+      title="Trash Day Reminders"
+      subtitle={reminder.enabled ? `Reminder at ${displayTime} · ${isEvening ? 'night before' : 'morning of'}` : 'Get notified before your trash day'}
+      headerRight={
         <button
           disabled={saving}
           onClick={() => update('enabled', !reminder.enabled)}
@@ -299,9 +393,10 @@ function TrashDayReminderSection({ dark, cardCls, user, updateUser }) {
         >
           <span className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition-transform ${reminder.enabled ? 'translate-x-5' : 'translate-x-0'}`} />
         </button>
-      </div>
-      {reminder.enabled && (
-        <div className="mt-5 space-y-3">
+      }
+    >
+      {reminder.enabled ? (
+        <div className="space-y-3">
           <label className={`text-sm font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>
             What time should we remind you?
           </label>
@@ -330,12 +425,16 @@ function TrashDayReminderSection({ dark, cardCls, user, updateUser }) {
               : `You'll get a reminder at ${displayTime} the morning of your trash day`}
           </p>
         </div>
+      ) : (
+        <p className={`text-sm ${dark ? 'text-gray-400' : 'text-gray-500'}`}>
+          Toggle on above to set a reminder time for your trash day.
+        </p>
       )}
-    </div>
+    </SectionShell>
   );
 }
 
-function StreetCleaningReminderSection({ dark, cardCls, user, updateUser, addresses = [], onAddressUpdated }) {
+function StreetCleaningReminderSection({ dark, user, updateUser, addresses = [], onAddressUpdated, isOpen, onToggle }) {
   const reminder = user?.streetCleaningReminder || { enabled: false, time: '18:00' };
   const [saving, setSaving] = useState(false);
 
@@ -366,14 +465,18 @@ function StreetCleaningReminderSection({ dark, cardCls, user, updateUser, addres
   const displayTime = TIME_OPTIONS.find((o) => o.value === timeVal)?.label || timeVal;
 
   return (
-    <div className={`mt-5 ${cardCls}`}>
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex-1">
-          <h2 className={`text-base font-semibold ${dark ? 'text-white' : ''}`}>Street Cleaning Reminders</h2>
-          <p className={`mt-1 text-sm ${dark ? 'text-gray-400' : 'text-gray-500'}`}>
-            Never forget to move your car
-          </p>
-        </div>
+    <SectionShell
+      isOpen={isOpen}
+      onToggle={onToggle}
+      dark={dark}
+      icon={
+        <svg className={`h-5 w-5 ${dark ? 'text-brand-400' : 'text-brand-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+        </svg>
+      }
+      title="Street Cleaning Reminders"
+      subtitle={reminder.enabled ? `Reminder at ${displayTime}` : 'Get notified before street cleaning days'}
+      headerRight={
         <button
           disabled={saving}
           onClick={() => update('enabled', !reminder.enabled)}
@@ -381,9 +484,10 @@ function StreetCleaningReminderSection({ dark, cardCls, user, updateUser, addres
         >
           <span className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition-transform ${reminder.enabled ? 'translate-x-5' : 'translate-x-0'}`} />
         </button>
-      </div>
-      {reminder.enabled && (
-        <div className="mt-5 space-y-4">
+      }
+    >
+      {reminder.enabled ? (
+        <div className="space-y-4">
           <label className={`text-sm font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>
             What time should we remind you?
           </label>
@@ -429,8 +533,12 @@ function StreetCleaningReminderSection({ dark, cardCls, user, updateUser, addres
             </div>
           )}
         </div>
+      ) : (
+        <p className={`text-sm ${dark ? 'text-gray-400' : 'text-gray-500'}`}>
+          Toggle on above to receive reminders before street cleaning days. You can also add your cleaning schedule to each address.
+        </p>
       )}
-    </div>
+    </SectionShell>
   );
 }
 
@@ -1186,7 +1294,7 @@ function AddAddressForm({ dark, onAdded, onCancel }) {
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-function SubscriptionSection() {
+function SubscriptionSection({ isOpen, onToggle }) {
   const [subs, setSubs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState(null);
@@ -1241,13 +1349,22 @@ function SubscriptionSection() {
   const cancelled = subs.filter((s) => s.status === 'cancelled');
 
   return (
-    <div className="mt-4 rounded-xl bg-white p-4 shadow-sm">
-      <div className="flex items-center justify-between">
-        <h2 className="font-semibold">My Subscriptions</h2>
-        {active.length > 0 && (
-          <span className="rounded-full bg-brand-100 px-2.5 py-0.5 text-[10px] font-semibold text-brand-700">{active.length} active</span>
-        )}
-      </div>
+    <SectionShell
+      isOpen={isOpen}
+      onToggle={onToggle}
+      dark={false}
+      icon={
+        <svg className="h-5 w-5 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+      }
+      title="My Subscriptions"
+      subtitle="Your recurring service plans"
+      badge={active.length > 0 ? (
+        <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[10px] font-semibold text-brand-700">{active.length} active</span>
+      ) : null}
+      disclaimer="Monthly subscribers are guaranteed service each trash day. Cancellations take effect at the end of the current billing period."
+    >
 
       {loading ? (
         <div className="mt-4 flex justify-center py-4">
@@ -1289,7 +1406,7 @@ function SubscriptionSection() {
           )}
         </div>
       )}
-    </div>
+    </SectionShell>
   );
 }
 
@@ -1423,7 +1540,7 @@ function CardIcon({ brand }) {
   );
 }
 
-function PaymentMethodsSection({ user }) {
+function PaymentMethodsSection({ user, isOpen, onToggle }) {
   const [methods, setMethods] = useState([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -1495,38 +1612,40 @@ function PaymentMethodsSection({ user }) {
   }
 
   return (
-    <div className="mt-4 rounded-xl bg-white p-4 shadow-sm">
-      <div className="flex items-center justify-between">
-        <h2 className="font-semibold">Payment Methods</h2>
-        <button
-          onClick={handleAddCard}
-          disabled={adding}
-          className="text-sm font-medium text-brand-600 hover:text-brand-700 disabled:opacity-50"
-        >
+    <SectionShell
+      isOpen={isOpen}
+      onToggle={onToggle}
+      dark={false}
+      icon={
+        <svg className="h-5 w-5 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+        </svg>
+      }
+      title="Payment Methods"
+      subtitle={methods.length > 0 ? `${methods.length} card${methods.length !== 1 ? 's' : ''} on file` : 'No payment methods saved'}
+      headerRight={isOpen ? (
+        <button onClick={handleAddCard} disabled={adding} className="text-sm font-medium text-brand-600 disabled:opacity-50 py-1 px-2">
           {adding ? 'Adding...' : '+ Add Card'}
         </button>
-      </div>
-
+      ) : null}
+      disclaimer="Your card details are securely stored by Stripe. We never store your full card number. Your default card is charged automatically for bookings."
+    >
       {loading ? (
-        <div className="mt-4 flex justify-center py-4">
+        <div className="flex justify-center py-4">
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
         </div>
       ) : methods.length === 0 ? (
-        <div className="mt-3 rounded-lg border-2 border-dashed border-gray-200 py-6 text-center">
+        <div className="rounded-lg border-2 border-dashed border-gray-200 py-6 text-center">
           <svg className="mx-auto h-8 w-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
           </svg>
           <p className="mt-2 text-sm text-gray-400">No payment methods saved</p>
-          <button
-            onClick={handleAddCard}
-            disabled={adding}
-            className="mt-3 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
-          >
+          <button onClick={handleAddCard} disabled={adding} className="mt-3 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50">
             {adding ? 'Adding...' : 'Add a Card'}
           </button>
         </div>
       ) : (
-        <div className="mt-3 space-y-2">
+        <div className="space-y-2">
           {methods.map((m) => (
             <div key={m.id} className={`flex items-center gap-3 rounded-lg p-3 transition ${m.isDefault ? 'bg-brand-50 border border-brand-200' : 'bg-gray-50'}`}>
               <CardIcon brand={m.brand} />
@@ -1541,19 +1660,11 @@ function PaymentMethodsSection({ user }) {
               </div>
               <div className="flex items-center gap-1 shrink-0">
                 {!m.isDefault && (
-                  <button
-                    onClick={() => handleSetDefault(m.id)}
-                    disabled={settingDefault === m.id}
-                    className="rounded px-2 py-1 text-xs font-medium text-brand-600 hover:bg-brand-50 disabled:opacity-50"
-                  >
+                  <button onClick={() => handleSetDefault(m.id)} disabled={settingDefault === m.id} className="rounded px-2 py-1 text-xs font-medium text-brand-600 hover:bg-brand-50 disabled:opacity-50">
                     {settingDefault === m.id ? '...' : 'Set Default'}
                   </button>
                 )}
-                <button
-                  onClick={() => handleRemove(m.id)}
-                  disabled={removing === m.id}
-                  className="rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50 disabled:opacity-50"
-                >
+                <button onClick={() => handleRemove(m.id)} disabled={removing === m.id} className="rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50 disabled:opacity-50">
                   {removing === m.id ? '...' : 'Remove'}
                 </button>
               </div>
@@ -1561,7 +1672,6 @@ function PaymentMethodsSection({ user }) {
           ))}
         </div>
       )}
-
       {showCardForm && setupSecret && (
         <AddCardModal
           key={setupSecret}
@@ -1577,7 +1687,7 @@ function PaymentMethodsSection({ user }) {
           }}
         />
       )}
-    </div>
+    </SectionShell>
   );
 }
 
@@ -1592,7 +1702,7 @@ function formatChargeDescription(desc, amountCents) {
   return cleaned || 'Service charge';
 }
 
-function InvoiceSection() {
+function InvoiceSection({ isOpen, onToggle }) {
   const [charges, setCharges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(false);
@@ -1610,20 +1720,25 @@ function InvoiceSection() {
   const visible = expanded ? charges : charges.slice(0, 3);
 
   return (
-    <div className="mt-4 rounded-xl bg-white p-4 shadow-sm">
-      <div className="flex items-center justify-between">
-        <h2 className="font-semibold">Payment History</h2>
-        {charges.length > 0 && (
-          <span className="text-xs text-gray-400">{charges.length} transaction{charges.length !== 1 ? 's' : ''}</span>
-        )}
-      </div>
+    <SectionShell
+      isOpen={isOpen}
+      onToggle={onToggle}
+      dark={false}
+      icon={
+        <svg className="h-5 w-5 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+        </svg>
+      }
+      title="Billing History"
+      subtitle={charges.length > 0 ? `${charges.length} transaction${charges.length !== 1 ? 's' : ''}` : 'No transactions yet'}
+    >
 
       {loading ? (
-        <div className="mt-4 flex justify-center py-4">
+        <div className="flex justify-center py-4">
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
         </div>
       ) : charges.length === 0 ? (
-        <div className="mt-3 rounded-lg border-2 border-dashed border-gray-200 py-6 text-center">
+        <div className="rounded-lg border-2 border-dashed border-gray-200 py-6 text-center">
           <svg className="mx-auto h-8 w-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
           </svg>
@@ -1631,7 +1746,7 @@ function InvoiceSection() {
         </div>
       ) : (
         <>
-          <div className="mt-3 space-y-2">
+          <div className="space-y-2">
             {visible.map((c) => {
               const date = new Date(c.created * 1000);
               const succeeded = c.status === 'succeeded';
@@ -1687,7 +1802,7 @@ function InvoiceSection() {
           )}
         </>
       )}
-    </div>
+    </SectionShell>
   );
 }
 
