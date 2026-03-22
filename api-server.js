@@ -82,6 +82,7 @@ app.use('/api/v1/servicer', require('./apps/server/routes/servicer'));
 app.use('/api/v1/notifications', require('./apps/server/routes/notifications'));
 app.use('/api/v1/push', require('./apps/server/routes/push'));
 app.use('/api/v1/street-cleaning', require('./apps/server/routes/streetCleaning'));
+app.use('/api/v1/carousel', require('./apps/server/routes/carousel'));
 
 // --- 404 handler ---
 app.use((req, res) => {

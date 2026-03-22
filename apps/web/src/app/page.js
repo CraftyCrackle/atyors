@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '../stores/authStore';
 import Logo from '../components/Logo';
 import LandingPricingSection from '../components/LandingPricingSection';
+import LandingCarousel from '../components/LandingCarousel';
 import AppStoreBadge from '../components/AppStoreBadge';
 import { useInstall } from '../components/InstallContext';
 
@@ -155,6 +156,8 @@ function WebLanding() {
           )}
         </div>
       </section>
+
+      <LandingCarousel />
 
       <section className="bg-gray-50 px-6 py-16">
         <div className="mx-auto max-w-lg">

@@ -122,6 +122,9 @@ export default function AdminDashboardPage() {
             <Link href="/admin/zipcodes" className="shrink-0 rounded-lg border border-gray-700 px-3.5 py-2 text-sm font-medium text-gray-300 hover:bg-gray-800">
               Zipcodes
             </Link>
+            <Link href="/admin/carousel" className="shrink-0 rounded-lg border border-gray-700 px-3.5 py-2 text-sm font-medium text-gray-300 hover:bg-gray-800">
+              Carousel
+            </Link>
             <a href="#settings" className="shrink-0 rounded-lg border border-gray-700 px-3.5 py-2 text-sm font-medium text-gray-300 hover:bg-gray-800">
               Settings
             </a>
