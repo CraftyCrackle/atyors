@@ -12,14 +12,14 @@ import { reverseGeocode } from '../../lib/reverseGeocode';
 
 function SectionShell({ isOpen, onToggle, icon, title, subtitle, badge, headerRight, dark, children, disclaimer }) {
   return (
-    <div className={`mt-4 overflow-hidden rounded-xl ${dark ? 'border border-gray-700 bg-gray-800' : 'bg-white shadow-sm'}`}>
+    <div className={`mt-4 overflow-hidden rounded-2xl ${dark ? 'border border-gray-700 bg-gray-800' : 'border border-gray-200 bg-white shadow-md'}`}>
       <button
         type="button"
         onClick={onToggle}
-        className={`flex w-full items-center gap-3 px-5 py-4 text-left transition ${dark ? 'hover:bg-gray-700/40 active:bg-gray-700/60' : 'hover:bg-gray-50 active:bg-gray-100'}`}
+        className={`flex w-full items-center gap-3 px-5 py-4 text-left transition ${dark ? 'hover:bg-gray-700/40 active:bg-gray-700/60' : 'hover:bg-brand-50/40 active:bg-brand-50/70'}`}
       >
         {icon && (
-          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${dark ? 'bg-gray-700' : 'bg-brand-50'}`}>
+          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${dark ? 'bg-gray-700' : 'bg-brand-100'}`}>
             {icon}
           </div>
         )}
@@ -45,7 +45,7 @@ function SectionShell({ isOpen, onToggle, icon, title, subtitle, badge, headerRi
         </svg>
       </button>
       {isOpen && (
-        <div className={`border-t ${dark ? 'border-gray-700' : 'border-gray-100'}`}>
+        <div className={`border-t ${dark ? 'border-gray-700' : 'border-gray-200'}`}>
           {disclaimer && (
             <div className="px-5 pt-4">
               <div className={`flex items-start gap-2 rounded-lg px-3 py-2.5 text-xs leading-relaxed ${dark ? 'bg-blue-900/20 text-blue-300' : 'bg-sky-50 text-sky-700'}`}>
@@ -127,8 +127,8 @@ export default function ProfilePage() {
 
   return (
     <AuthGuard>
-      <div className={`min-h-[100dvh] min-h-[100vh] pb-24 ${dark ? 'bg-gray-900 text-white' : 'bg-gray-50'}`}>
-        <header className={`sticky top-0 z-10 px-6 pb-6 pt-header-safe ${dark ? 'border-b border-gray-800 bg-gray-900' : 'bg-white shadow-sm'}`}>
+      <div className={`min-h-[100dvh] min-h-[100vh] pb-24 ${dark ? 'bg-gray-900 text-white' : 'bg-gray-100'}`}>
+        <header className={`sticky top-0 z-10 px-6 pb-6 pt-header-safe ${dark ? 'border-b border-gray-800 bg-gray-900' : 'border-b border-gray-200 bg-white shadow-sm'}`}>
           {dark && (
             <a href="/servicer/dashboard" className="mb-3 inline-flex items-center gap-1 text-sm text-gray-400 hover:text-white">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
