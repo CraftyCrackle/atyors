@@ -16,8 +16,12 @@ async function request(path, options = {}) {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
-      const isServicer = window.location.pathname.startsWith('/servicer');
-      window.location.href = isServicer ? '/servicer/login' : '/login';
+      const p = window.location.pathname;
+      // On the landing page, just clear tokens — let the page render the marketing content.
+      if (p !== '/') {
+        const isServicer = p.startsWith('/servicer');
+        window.location.href = isServicer ? '/servicer/login' : '/login';
+      }
     }
     return {};
   }

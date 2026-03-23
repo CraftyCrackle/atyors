@@ -228,7 +228,7 @@ export default function ServicerJobPage() {
   const customer = booking.userId;
   const flow = STATUS_FLOW[booking.status];
   const isArrived = booking.status === 'arrived';
-  const isActive = ['active', 'en-route', 'arrived'].includes(booking.status);
+  const isActive = ['active', 'en-route', 'arrived', 'in-progress'].includes(booking.status);
 
   return (
     <div className="flex min-h-[100dvh] min-h-[100vh] flex-col bg-gray-900">

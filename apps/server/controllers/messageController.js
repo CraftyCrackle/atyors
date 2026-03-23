@@ -1,19 +1,34 @@
 const messageService = require('../services/messageService');
+const notificationService = require('../services/notificationService');
 
 async function send(req, res, next) {
   try {
     const message = await messageService.send(req.params.id, req.user._id, req.body.body);
+
+    const senderName = message.senderId.firstName
+      ? `${message.senderId.firstName} ${message.senderId.lastName}`.trim()
+      : 'Someone';
+    const preview = message.body.length > 100 ? message.body.slice(0, 100) + '…' : message.body;
 
     const io = req.app.locals.io;
     if (io) {
       io.of('/notifications').to(`user:${message.recipientId}`).emit('message:new', {
         bookingId: message.bookingId,
         senderId: message.senderId._id || message.senderId,
-        senderName: message.senderId.firstName ? `${message.senderId.firstName} ${message.senderId.lastName}` : undefined,
+        senderName,
         body: message.body,
         createdAt: message.createdAt,
       });
     }
+
+    // Persist notification + send web/APNs push as fallback for when the recipient is offline.
+    notificationService.create({
+      userId: message.recipientId,
+      type: 'message:new',
+      title: senderName,
+      body: preview,
+      bookingId: message.bookingId,
+    }).catch(() => {});
 
     res.status(201).json({ success: true, data: { message } });
   } catch (err) { next(err); }

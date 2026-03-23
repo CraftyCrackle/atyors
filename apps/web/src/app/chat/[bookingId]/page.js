@@ -46,12 +46,23 @@ export default function ChatPage() {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
   const messageIdsRef = useRef(new Set());
   const prevCountRef = useRef(0);
 
   useEffect(() => { init(); }, [init]);
+
+  // Paint the body dark while a servicer is on this page so the bg-gray-900
+  // container colour doesn't leave a white gap at bottom on mobile.
+  const isServicerUser = user && ['servicer', 'admin', 'superadmin'].includes(user.role);
+  useEffect(() => {
+    if (!isServicerUser) return;
+    const prev = document.body.style.backgroundColor;
+    document.body.style.backgroundColor = '#111827';
+    return () => { document.body.style.backgroundColor = prev; };
+  }, [isServicerUser]);
 
   useEffect(() => {
     if (bookingId) loadData();
@@ -94,7 +105,9 @@ export default function ChatPage() {
       ]);
       setBooking(bookingRes.data.booking);
       setMessages(msgRes.data.messages || []);
-    } catch { }
+    } catch (err) {
+      setLoadError(err.message || 'Unable to load this conversation.');
+    }
     setLoading(false);
   }
 
@@ -132,8 +145,35 @@ export default function ChatPage() {
   if (loading) {
     return (
       <AuthGuard>
-        <div className={`flex min-h-screen-safe items-center justify-center ${bg}`}>
+        <div className={`fixed inset-0 flex items-center justify-center ${bg}`}>
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
+        </div>
+      </AuthGuard>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <AuthGuard>
+        <div className={`fixed inset-0 flex flex-col ${bg}`}>
+          <header className={`sticky top-0 z-10 flex items-center gap-3 px-4 pb-3 pt-sticky-safe shadow-sm ${isServicer ? 'bg-gray-900 border-b border-gray-800' : 'bg-white border-b border-gray-200'}`}>
+            <button onClick={() => router.back()} className={`rounded-lg p-2 transition ${isServicer ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-600'}`}>
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+            </button>
+            <p className={`text-sm font-semibold ${isServicer ? 'text-white' : 'text-gray-900'}`}>Chat</p>
+          </header>
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
+            <div className={`flex h-16 w-16 items-center justify-center rounded-full ${isServicer ? 'bg-red-900/40' : 'bg-red-50'}`}>
+              <svg className="h-8 w-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+            </div>
+            <p className={`text-sm font-semibold ${isServicer ? 'text-white' : 'text-gray-900'}`}>Could not load conversation</p>
+            <p className={`text-xs ${isServicer ? 'text-gray-400' : 'text-gray-500'}`}>{loadError}</p>
+            <button onClick={() => router.back()} className="mt-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-700">
+              Go back
+            </button>
+          </div>
         </div>
       </AuthGuard>
     );
@@ -143,7 +183,7 @@ export default function ChatPage() {
 
   return (
     <AuthGuard>
-      <div className={`flex h-screen-safe flex-col ${bg}`}>
+      <div className={`fixed inset-0 flex flex-col ${bg}`}>
         {/* Header */}
         <header className={`sticky top-0 z-10 flex items-center gap-3 px-4 pb-3 pt-sticky-safe shadow-sm ${dark ? 'bg-gray-900 border-b border-gray-800' : 'bg-white border-b border-gray-200'}`}>
           <button onClick={() => router.back()} className={`rounded-lg p-2 transition ${dark ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-600'}`}>
@@ -168,7 +208,7 @@ export default function ChatPage() {
         </header>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-4 py-4">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
           {messages.length === 0 && (
             <div className="flex h-full flex-col items-center justify-center gap-3">
               <div className={`flex h-16 w-16 items-center justify-center rounded-full ${dark ? 'bg-gray-800' : 'bg-gray-100'}`}>

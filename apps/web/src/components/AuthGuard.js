@@ -25,7 +25,9 @@ export default function AuthGuard({ children }) {
 
     const onProfile = pathname === '/profile';
 
-    if (role === 'servicer' && !onServicer && !onAdmin && !onProfile) {
+    const onChat = pathname.startsWith('/chat');
+
+    if (role === 'servicer' && !onServicer && !onAdmin && !onProfile && !onChat) {
       router.replace('/servicer/dashboard');
     } else if (['admin', 'superadmin'].includes(role) && !onAdmin) {
       router.replace('/admin/dashboard');

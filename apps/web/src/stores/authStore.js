@@ -10,11 +10,17 @@ export const useAuthStore = create((set, get) => ({
     if (!token) { set({ loading: false }); return; }
     try {
       const res = await api.get('/auth/me');
-      set({ user: res.data.user, loading: false });
+      const user = res?.data?.user;
+      if (user) {
+        set({ user, loading: false });
+      } else {
+        // api.js already handled the 401 (cleared tokens + redirected) — just stop loading.
+        set({ loading: false });
+      }
     } catch {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      set({ user: null, loading: false });
+      // Network / server error — don't blow away a valid session.
+      // api.js is responsible for clearing tokens on auth failures.
+      set({ loading: false });
     }
   },
 

@@ -6,10 +6,13 @@ async function create({ userId, type, title, body, bookingId, meta }) {
   const uid = userId?._id || userId;
   const notification = await Notification.create({ userId: uid, type, title, body, bookingId, meta });
 
-  const activeTypes = ['booking:accepted', 'booking:status', 'job:available', 'booking:en-route', 'booking:arrived'];
-  const pushUrl = bookingId
-    ? (activeTypes.includes(type) ? `/tracking/${bookingId}` : `/booking/${bookingId}`)
-    : '/notifications';
+  const trackingTypes = ['booking:accepted', 'booking:status', 'job:available', 'booking:en-route', 'booking:arrived'];
+  let pushUrl = '/notifications';
+  if (bookingId) {
+    if (type === 'message:new') pushUrl = `/chat/${bookingId}`;
+    else if (trackingTypes.includes(type)) pushUrl = `/tracking/${bookingId}`;
+    else pushUrl = `/booking/${bookingId}`;
+  }
 
   pushService
     .sendToUser(uid, { title, body, data: { type, bookingId: bookingId?.toString(), url: pushUrl } })

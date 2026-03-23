@@ -10,10 +10,11 @@ async function create(userId, data) {
   const existing = await Subscription.findOne({
     userId,
     addressId: data.addressId,
+    serviceTypeId: data.serviceTypeId,
     status: { $in: ['active', 'past_due', 'trialing'] },
   });
   if (existing) {
-    const err = new Error('You already have an active subscription for this address. Cancel it first to start a new one.');
+    const err = new Error('You already have an active subscription for this service at this address. Cancel it first to start a new one.');
     err.status = 409;
     err.code = 'DUPLICATE_SUBSCRIPTION';
     throw err;

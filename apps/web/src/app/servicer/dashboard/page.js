@@ -152,7 +152,7 @@ function JobCard({ booking, onAccept, accepting, onRate, alreadyRated }) {
             {booking.putOutTime === 'Night before' && <span className="block text-[10px] text-amber-400 mt-0.5">Night-before service</span>}
           </div>
         )}
-        {['active', 'en-route', 'arrived'].includes(booking.status) && (
+        {['active', 'en-route', 'arrived', 'in-progress'].includes(booking.status) && (
           <>
             <Link href={`/servicer/job/${booking._id}`} className="flex-1 rounded-lg bg-brand-600 py-2 text-center text-sm font-semibold text-white transition hover:bg-brand-700">
               Manage Job

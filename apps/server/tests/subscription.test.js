@@ -89,6 +89,48 @@ describe('cancel', () => {
   });
 });
 
+describe('create — duplicate subscription check', () => {
+  const ServiceType = require('../models/ServiceType');
+  const addressId = new mongoose.Types.ObjectId();
+  const svcTypeId = new mongoose.Types.ObjectId();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    Subscription.create.mockImplementation((data) => Promise.resolve({ ...data, _id: new mongoose.Types.ObjectId(), save: jest.fn() }));
+    Booking.create.mockResolvedValue({ _id: new mongoose.Types.ObjectId() });
+    Booking.findOne.mockResolvedValue(null);
+    ServiceType.findById.mockResolvedValue({ _id: svcTypeId, slug: 'entrance-cleaning', name: 'Multi-Family Entrance Cleaning' });
+  });
+
+  it('blocks duplicate subscription for same address + service type', async () => {
+    Subscription.findOne.mockResolvedValue(makeFakeSub());
+    await expect(create(userId, {
+      serviceTypeId: svcTypeId.toString(),
+      addressId: addressId.toString(),
+      dayOfWeek: 1,
+      floors: 1,
+    })).rejects.toMatchObject({ code: 'DUPLICATE_SUBSCRIPTION' });
+    expect(Subscription.findOne).toHaveBeenCalledWith(expect.objectContaining({
+      userId,
+      addressId: addressId.toString(),
+      serviceTypeId: svcTypeId.toString(),
+    }));
+  });
+
+  it('allows different service type at same address', async () => {
+    // findOne returns null (no existing sub for this service type)
+    Subscription.findOne.mockResolvedValue(null);
+    const { subscription } = await create(userId, {
+      serviceTypeId: svcTypeId.toString(),
+      addressId: addressId.toString(),
+      dayOfWeek: 1,
+      floors: 2,
+      staircases: 0,
+    });
+    expect(subscription).toBeDefined();
+  });
+});
+
 describe('create — entrance cleaning subscription', () => {
   const ServiceType = require('../models/ServiceType');
 

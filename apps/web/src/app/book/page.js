@@ -248,7 +248,9 @@ function BookContent() {
     if (isSubscriptionMode) {
       const addrHasSub = activeSubs.some((s) => {
         const id = s.addressId?._id || s.addressId;
-        return id === addr._id || String(id) === String(addr._id);
+        const svcId = s.serviceTypeId?._id || s.serviceTypeId;
+        return (id === addr._id || String(id) === String(addr._id))
+          && (svcId === selected.serviceTypeId || String(svcId) === String(selected.serviceTypeId));
       });
       setSelectedAddresses([addr]);
       setSelected((prev) => ({
@@ -279,7 +281,9 @@ function BookContent() {
     if (primary) {
       const addrHasSub = activeSubs.some((s) => {
         const id = s.addressId?._id || s.addressId;
-        return id === primary._id || String(id) === String(primary._id);
+        const svcId = s.serviceTypeId?._id || s.serviceTypeId;
+        return (id === primary._id || String(id) === String(primary._id))
+          && (svcId === selected.serviceTypeId || String(svcId) === String(selected.serviceTypeId));
       });
       setSelected((prev) => ({
         ...prev,
@@ -448,9 +452,11 @@ function BookContent() {
   }
 
   const selectedAddr = addresses.find((a) => a._id === selected.addressId);
-  const hasActiveSubForAddress = selected.addressId && activeSubs.some((s) => {
+  const hasActiveSubForAddress = selected.addressId && selected.serviceTypeId && activeSubs.some((s) => {
     const subAddrId = s.addressId?._id || s.addressId;
-    return subAddrId === selected.addressId || String(subAddrId) === String(selected.addressId);
+    const subSvcId = s.serviceTypeId?._id || s.serviceTypeId;
+    return (subAddrId === selected.addressId || String(subAddrId) === String(selected.addressId))
+      && (subSvcId === selected.serviceTypeId || String(subSvcId) === String(selected.serviceTypeId));
   });
   const isBatchMode = selectedAddresses.length > 1;
   const anyZipNotServed = selectedAddresses.some((a) => zipWarnings[a._id]);
@@ -577,7 +583,9 @@ function BookContent() {
                     const differentDay = primaryAddr && primaryAddr._id !== addr._id && primaryAddr.trashDay && addr.trashDay && addr.trashDay !== primaryAddr.trashDay;
                     const addrHasSub = selected.bookingType === 'subscription' && activeSubs.some((s) => {
                       const id = s.addressId?._id || s.addressId;
-                      return id === addr._id || String(id) === String(addr._id);
+                      const svcId = s.serviceTypeId?._id || s.serviceTypeId;
+                      return (id === addr._id || String(id) === String(addr._id))
+                        && (svcId === selected.serviceTypeId || String(svcId) === String(selected.serviceTypeId));
                     });
                     return (
                       <button key={addr._id} disabled={differentDay} onClick={() => toggleAddress(addr)}
