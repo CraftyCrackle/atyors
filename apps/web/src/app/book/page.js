@@ -432,7 +432,7 @@ function BookContent() {
                 <div>
                   <h3 className="font-semibold text-amber-900">Add a payment method first</h3>
                   <p className="mt-1 text-sm text-amber-700">You need a credit or debit card on file before you can book a service. You won't be charged until the job is done.</p>
-                  <button onClick={() => router.push('/profile')} className="mt-3 rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-700 active:scale-[0.98]">
+                  <button onClick={() => router.push('/profile?section=payments')} className="mt-3 rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-700 active:scale-[0.98]">
                     Go to Profile to Add Card
                   </button>
                 </div>

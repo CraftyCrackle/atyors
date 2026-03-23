@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import AuthGuard from '../../components/AuthGuard';
 import BottomNav from '../../components/BottomNav';
 import { useAuthStore } from '../../stores/authStore';
@@ -65,9 +66,10 @@ function SectionShell({ isOpen, onToggle, icon, title, subtitle, badge, headerRi
   );
 }
 
-export default function ProfilePage() {
+function ProfilePage() {
   const { user, logout, updateUser } = useAuthStore();
   const { canInstall, isStandalone, isIos, hasAppStore, triggerInstall } = useInstall();
+  const searchParams = useSearchParams();
   const [addresses, setAddresses] = useState([]);
   const [editing, setEditing] = useState(false);
   const [addingAddress, setAddingAddress] = useState(false);
@@ -76,6 +78,11 @@ export default function ProfilePage() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [openSection, setOpenSection] = useState('personal');
   function toggleSection(key) { setOpenSection((prev) => (prev === key ? null : key)); }
+
+  useEffect(() => {
+    const section = searchParams.get('section');
+    if (section) setOpenSection(section);
+  }, [searchParams]);
   const isCustomer = user?.role === 'customer';
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -2127,5 +2134,13 @@ function AddCardModal({ clientSecret, user, onSuccess, onClose, onRetry }) {
         )}
       </div>
     </div>
+  );
+}
+
+export default function ProfilePageWrapper() {
+  return (
+    <Suspense>
+      <ProfilePage />
+    </Suspense>
   );
 }
