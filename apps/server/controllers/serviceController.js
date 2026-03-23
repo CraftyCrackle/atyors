@@ -14,6 +14,13 @@ async function getTypes(req, res, next) {
   } catch (err) { next(err); }
 }
 
+async function getAllTypes(req, res, next) {
+  try {
+    const groups = await serviceService.getAllTypes();
+    res.json({ success: true, data: { groups } });
+  } catch (err) { next(err); }
+}
+
 async function seed(req, res, next) {
   try {
     const result = await serviceService.seed();
@@ -21,4 +28,4 @@ async function seed(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { getCategories, getTypes, seed };
+module.exports = { getCategories, getTypes, getAllTypes, seed };

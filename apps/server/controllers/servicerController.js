@@ -234,6 +234,30 @@ async function denyJob(req, res, next) {
   } catch (err) { next(err); }
 }
 
+async function updateTaskProgress(req, res, next) {
+  try {
+    const { taskKey, completed } = req.body;
+    if (!taskKey || typeof taskKey !== 'string') {
+      return res.status(400).json({ success: false, error: { code: 'MISSING_FIELDS', message: 'taskKey is required' } });
+    }
+    const Booking = require('../models/Booking');
+    const booking = await Booking.findOne({ _id: req.params.id, assignedTo: req.user._id }).populate('serviceTypeId');
+    if (!booking) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Booking not found or not assigned to you' } });
+    }
+    if (booking.serviceTypeId?.slug !== 'entrance-cleaning') {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_SERVICE', message: 'Task progress only applies to entrance cleaning bookings' } });
+    }
+    if (completed) {
+      if (!booking.taskProgress.includes(taskKey)) booking.taskProgress.push(taskKey);
+    } else {
+      booking.taskProgress = booking.taskProgress.filter((k) => k !== taskKey);
+    }
+    await booking.save();
+    res.json({ success: true, data: { taskProgress: booking.taskProgress } });
+  } catch (err) { next(err); }
+}
+
 async function getCalendarJobs(req, res, next) {
   try {
     const month = req.query.month;
@@ -245,4 +269,4 @@ async function getCalendarJobs(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { getAvailableJobs, getMyJobs, getJobDetail, acceptJob, updateJobStatus, completeWithPhoto, getEarnings, updateLocation, denyJob, getCalendarJobs };
+module.exports = { getAvailableJobs, getMyJobs, getJobDetail, acceptJob, updateJobStatus, completeWithPhoto, getEarnings, updateLocation, denyJob, getCalendarJobs, updateTaskProgress };

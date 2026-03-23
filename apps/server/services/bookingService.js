@@ -2,7 +2,7 @@ const Booking = require('../models/Booking');
 const Address = require('../models/Address');
 const ServiceType = require('../models/ServiceType');
 const AppSettings = require('../models/AppSettings');
-const { calculateOneTimePrice, calculateOneTimePriceBothLeg, calculateCurbItemPrice } = require('./pricingService');
+const { calculateOneTimePrice, calculateOneTimePriceBothLeg, calculateCurbItemPrice, calculateEntranceCleaningPrice } = require('./pricingService');
 const stripeService = require('./stripeService');
 const config = require('../config');
 const MAX_BARRELS = 50;
@@ -20,13 +20,6 @@ async function create(userId, data) {
   // Put-out service happens the evening BEFORE the trash day.
   const putOutDate = new Date(scheduledDate);
   putOutDate.setDate(putOutDate.getDate() - 1);
-
-  if (scheduledDate.getDay() === 0) {
-    const err = new Error('Service is not available on Sundays. Please select a day Monday through Saturday.');
-    err.status = 400;
-    err.code = 'SUNDAY_BLOCKED';
-    throw err;
-  }
 
   const dateStr = data.scheduledDate;
   const todayStr = todayInEastern();
@@ -62,6 +55,52 @@ async function create(userId, data) {
   const isCurbItems = svcType && svcType.slug === 'curb-items';
   const isBoth = svcType && svcType.slug === 'both';
   const isPutOut = svcType && svcType.slug === 'put-out';
+  const isEntranceCleaning = svcType && svcType.slug === 'entrance-cleaning';
+
+  // Entrance cleaning is not trash-day-bound; no Sunday restriction or putOutDate offset
+  if (!isEntranceCleaning && scheduledDate.getDay() === 0) {
+    const err = new Error('Service is not available on Sundays. Please select a day Monday through Saturday.');
+    err.status = 400;
+    err.code = 'SUNDAY_BLOCKED';
+    throw err;
+  }
+
+  if (isEntranceCleaning) {
+    const floors = parseInt(data.floors);
+    const staircases = parseInt(data.staircases) || 0;
+    if (!floors || floors < 1) {
+      const err = new Error('Number of floors is required and must be at least 1.');
+      err.status = 400;
+      err.code = 'FLOORS_REQUIRED';
+      throw err;
+    }
+    const frontEntrance = !!data.frontEntrance;
+    const backEntrance = !!data.backEntrance;
+    const amount = calculateEntranceCleaningPrice({ floors, staircases, frontEntrance, backEntrance });
+
+    const taskKeys = [];
+    for (let i = 1; i <= floors; i++) taskKeys.push(`floor-${i}`);
+    if (staircases > 0) taskKeys.push('stairs');
+    if (frontEntrance) taskKeys.push('front-entrance');
+    if (backEntrance) taskKeys.push('back-entrance');
+
+    const booking = await Booking.create({
+      userId,
+      addressId: data.addressId,
+      serviceTypeId: data.serviceTypeId,
+      scheduledDate,
+      floors,
+      staircases,
+      frontEntrance,
+      backEntrance,
+      taskProgress: [],
+      amount,
+      serviceValue: amount,
+      paymentStatus: 'pending_payment',
+      statusHistory: [{ status: 'pending', changedAt: new Date() }],
+    });
+    return booking.populate(['addressId', 'serviceTypeId']);
+  }
 
   if (isCurbItems) {
     const itemCount = Math.min(10, Math.max(1, parseInt(data.itemCount) || 1));

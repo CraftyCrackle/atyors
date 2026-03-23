@@ -40,6 +40,8 @@ export default function ServicerJobPage() {
   const [denyReason, setDenyReason] = useState('');
   const [denyError, setDenyError] = useState(null);
   const [denying, setDenying] = useState(false);
+  const [taskProgress, setTaskProgress] = useState([]);
+  const [togglingTask, setTogglingTask] = useState(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraError, setCameraError] = useState(null);
   const videoRef = useRef(null);
@@ -78,8 +80,21 @@ export default function ServicerJobPage() {
     try {
       const res = await api.get(`/servicer/jobs/${id}`);
       setBooking(res.data.booking);
+      if (res.data.booking?.taskProgress) setTaskProgress(res.data.booking.taskProgress);
     } catch { }
     setLoading(false);
+  }
+
+  async function toggleTask(taskKey) {
+    const completed = !taskProgress.includes(taskKey);
+    setTogglingTask(taskKey);
+    try {
+      const res = await api.patch(`/servicer/jobs/${id}/task-progress`, { taskKey, completed });
+      setTaskProgress(res.data.taskProgress);
+    } catch (err) {
+      alert(err.message || 'Failed to update task');
+    }
+    setTogglingTask(null);
   }
 
   async function advanceStatus() {
@@ -392,8 +407,107 @@ export default function ServicerJobPage() {
           </div>
         )}
 
+        {/* Entrance cleaning task checklist */}
+        {svc?.slug === 'entrance-cleaning' && (
+          <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-white">Task Checklist</h3>
+              <span className="text-xs text-gray-400">{taskProgress.length} of {
+                (booking.floors || 0)
+                + (booking.staircases > 0 ? 1 : 0)
+                + (booking.frontEntrance ? 1 : 0)
+                + (booking.backEntrance ? 1 : 0)
+              } completed</span>
+            </div>
+            <div className="space-y-2">
+              {Array.from({ length: booking.floors || 0 }, (_, i) => {
+                const key = `floor-${i + 1}`;
+                const done = taskProgress.includes(key);
+                const busy = togglingTask === key;
+                return (
+                  <button key={key} onClick={() => isArrived && toggleTask(key)} disabled={!isArrived || busy}
+                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition ${done ? 'bg-green-900/40 border border-green-700/50' : 'bg-gray-700/50 border border-gray-600/30'} ${!isArrived ? 'opacity-60 cursor-default' : 'active:scale-[0.99]'}`}>
+                    <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition ${done ? 'border-green-500 bg-green-500' : 'border-gray-500'}`}>
+                      {done && <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                      {busy && <div className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-gray-400 border-t-transparent" />}
+                    </div>
+                    <div className="flex-1">
+                      <p className={`text-sm font-medium ${done ? 'text-green-300' : 'text-white'}`}>Floor {i + 1}</p>
+                      <p className="text-xs text-gray-400">Vacuum + mop entire floor</p>
+                    </div>
+                    {done && <span className="text-xs text-green-400">Done</span>}
+                  </button>
+                );
+              })}
+
+              {(booking.staircases > 0) && (() => {
+                const key = 'stairs';
+                const done = taskProgress.includes(key);
+                const busy = togglingTask === key;
+                return (
+                  <button key={key} onClick={() => isArrived && toggleTask(key)} disabled={!isArrived || busy}
+                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition ${done ? 'bg-green-900/40 border border-green-700/50' : 'bg-gray-700/50 border border-gray-600/30'} ${!isArrived ? 'opacity-60 cursor-default' : 'active:scale-[0.99]'}`}>
+                    <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition ${done ? 'border-green-500 bg-green-500' : 'border-gray-500'}`}>
+                      {done && <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                      {busy && <div className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-gray-400 border-t-transparent" />}
+                    </div>
+                    <div className="flex-1">
+                      <p className={`text-sm font-medium ${done ? 'text-green-300' : 'text-white'}`}>Staircases ({booking.staircases})</p>
+                      <p className="text-xs text-gray-400">Vacuum + mop all staircase flights</p>
+                    </div>
+                    {done && <span className="text-xs text-green-400">Done</span>}
+                  </button>
+                );
+              })()}
+
+              {booking.frontEntrance && (() => {
+                const key = 'front-entrance';
+                const done = taskProgress.includes(key);
+                const busy = togglingTask === key;
+                return (
+                  <button key={key} onClick={() => isArrived && toggleTask(key)} disabled={!isArrived || busy}
+                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition ${done ? 'bg-green-900/40 border border-green-700/50' : 'bg-gray-700/50 border border-gray-600/30'} ${!isArrived ? 'opacity-60 cursor-default' : 'active:scale-[0.99]'}`}>
+                    <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition ${done ? 'border-green-500 bg-green-500' : 'border-gray-500'}`}>
+                      {done && <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                      {busy && <div className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-gray-400 border-t-transparent" />}
+                    </div>
+                    <div className="flex-1">
+                      <p className={`text-sm font-medium ${done ? 'text-green-300' : 'text-white'}`}>Front Entrance</p>
+                      <p className="text-xs text-gray-400">Sweep, mop, wipe down front door area</p>
+                    </div>
+                    {done && <span className="text-xs text-green-400">Done</span>}
+                  </button>
+                );
+              })()}
+
+              {booking.backEntrance && (() => {
+                const key = 'back-entrance';
+                const done = taskProgress.includes(key);
+                const busy = togglingTask === key;
+                return (
+                  <button key={key} onClick={() => isArrived && toggleTask(key)} disabled={!isArrived || busy}
+                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition ${done ? 'bg-green-900/40 border border-green-700/50' : 'bg-gray-700/50 border border-gray-600/30'} ${!isArrived ? 'opacity-60 cursor-default' : 'active:scale-[0.99]'}`}>
+                    <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition ${done ? 'border-green-500 bg-green-500' : 'border-gray-500'}`}>
+                      {done && <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                      {busy && <div className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-gray-400 border-t-transparent" />}
+                    </div>
+                    <div className="flex-1">
+                      <p className={`text-sm font-medium ${done ? 'text-green-300' : 'text-white'}`}>Back Entrance</p>
+                      <p className="text-xs text-gray-400">Sweep, mop, wipe down back door area</p>
+                    </div>
+                    {done && <span className="text-xs text-green-400">Done</span>}
+                  </button>
+                );
+              })()}
+            </div>
+            {!isArrived && booking.status !== 'completed' && (
+              <p className="mt-3 text-center text-xs text-gray-500">Tasks can be checked off after you mark &ldquo;Arrived&rdquo;</p>
+            )}
+          </div>
+        )}
+
         {/* Barrel overflow notice for servicers */}
-        {svc && svc.slug !== 'curb-items' && isActive && (
+        {svc && svc.slug !== 'curb-items' && svc.slug !== 'entrance-cleaning' && isActive && (
           <div className="flex gap-2.5 rounded-xl border border-amber-800/40 bg-amber-900/20 px-4 py-3">
             <svg className="h-5 w-5 shrink-0 text-amber-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />

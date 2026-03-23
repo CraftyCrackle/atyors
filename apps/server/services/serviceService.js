@@ -16,6 +16,16 @@ async function getTypesByCategory(categorySlug) {
   return { category, types };
 }
 
+async function getAllTypes() {
+  const categories = await ServiceCategory.find({ isActive: true }).sort({ sortOrder: 1 });
+  const results = [];
+  for (const cat of categories) {
+    const types = await ServiceType.find({ categoryId: cat._id, isActive: true }).sort({ sortOrder: 1 });
+    results.push({ category: cat, types });
+  }
+  return results;
+}
+
 async function seed() {
   const existing = await ServiceCategory.findOne({ slug: 'trash-recycling' });
   const curbItemsDesc = 'We move items from your trash barrel storage area to the curb for pickup (up to 10 items, up to 25 lbs each)';
@@ -38,25 +48,59 @@ async function seed() {
     } else {
       await ServiceType.updateOne({ slug: 'curb-items' }, { $set: { basePrice: 2.0, description: curbItemsDesc } });
     }
+  } else {
+    const category = await ServiceCategory.create({
+      name: 'Trash & Recycling',
+      slug: 'trash-recycling',
+      description: 'Curbside trash barrel services',
+      icon: 'trash',
+    });
 
-    return { seeded: false, message: 'Names updated' };
+    await ServiceType.insertMany([
+      { categoryId: category._id, name: 'Put Out Only', slug: 'put-out', description: 'We take your barrels to the curb', basePrice: 2.5, sortOrder: 1 },
+      { categoryId: category._id, name: 'Bring In Only', slug: 'bring-in', description: 'We bring your barrels back from the curb', basePrice: 2.5, sortOrder: 2 },
+      { categoryId: category._id, name: 'Both (Put Out and Bring In)', slug: 'both', description: 'We take your barrels to the curb and bring them back', basePrice: 4.0, recurringPrice: 30.0, isDefault: true, sortOrder: 0 },
+      { categoryId: category._id, name: 'Curb Items', slug: 'curb-items', description: curbItemsDesc, basePrice: 2.0, sortOrder: 4 },
+    ]);
   }
 
-  const category = await ServiceCategory.create({
-    name: 'Trash & Recycling',
-    slug: 'trash-recycling',
-    description: 'Curbside trash barrel services',
-    icon: 'trash',
-  });
+  // Building services category
+  const buildingCat = await ServiceCategory.findOne({ slug: 'building-services' });
+  const entranceDesc = 'Light cleaning for shared interior areas: vacuum & mop each floor, all staircases, plus optional front/back entrance cleaning';
 
-  await ServiceType.insertMany([
-    { categoryId: category._id, name: 'Put Out Only', slug: 'put-out', description: 'We take your barrels to the curb', basePrice: 2.5, sortOrder: 1 },
-    { categoryId: category._id, name: 'Bring In Only', slug: 'bring-in', description: 'We bring your barrels back from the curb', basePrice: 2.5, sortOrder: 2 },
-    { categoryId: category._id, name: 'Both (Put Out and Bring In)', slug: 'both', description: 'We take your barrels to the curb and bring them back', basePrice: 4.0, recurringPrice: 30.0, isDefault: true, sortOrder: 0 },
-    { categoryId: category._id, name: 'Curb Items', slug: 'curb-items', description: curbItemsDesc, basePrice: 2.0, sortOrder: 4 },
-  ]);
+  if (!buildingCat) {
+    const newCat = await ServiceCategory.create({
+      name: 'Building Services',
+      slug: 'building-services',
+      description: 'Interior cleaning services for multi-family buildings',
+      icon: 'building',
+      sortOrder: 1,
+    });
+    await ServiceType.create({
+      categoryId: newCat._id,
+      name: 'Multi-Family Entrance Cleaning',
+      slug: 'entrance-cleaning',
+      description: entranceDesc,
+      basePrice: 0,
+      sortOrder: 0,
+    });
+  } else {
+    const ecExists = await ServiceType.findOne({ slug: 'entrance-cleaning' });
+    if (!ecExists) {
+      await ServiceType.create({
+        categoryId: buildingCat._id,
+        name: 'Multi-Family Entrance Cleaning',
+        slug: 'entrance-cleaning',
+        description: entranceDesc,
+        basePrice: 0,
+        sortOrder: 0,
+      });
+    } else {
+      await ServiceType.updateOne({ slug: 'entrance-cleaning' }, { $set: { name: 'Multi-Family Entrance Cleaning', description: entranceDesc } });
+    }
+  }
 
   return { seeded: true, message: 'Seed data created' };
 }
 
-module.exports = { getCategories, getTypesByCategory, seed };
+module.exports = { getCategories, getTypesByCategory, getAllTypes, seed };

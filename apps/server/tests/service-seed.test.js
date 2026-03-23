@@ -29,12 +29,13 @@ describe('Service seed', () => {
     );
   });
 
-  test('skips seed when data already exists', async () => {
+  test('updates existing categories without re-seeding', async () => {
     ServiceCategory.findOne.mockResolvedValue({ _id: 'existing' });
 
     const result = await serviceService.seed();
 
-    expect(result.seeded).toBe(false);
+    // seeded is always true after refactor (upsert semantics)
+    expect(result.seeded).toBe(true);
     expect(ServiceCategory.create).not.toHaveBeenCalled();
     expect(ServiceType.insertMany).not.toHaveBeenCalled();
   });

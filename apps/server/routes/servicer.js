@@ -33,6 +33,7 @@ router.post('/jobs/:id/accept', servicerController.acceptJob);
 router.patch('/jobs/:id/status', servicerController.updateJobStatus);
 router.post('/jobs/:id/complete', upload.single('photo'), validateUpload, servicerController.completeWithPhoto);
 router.patch('/jobs/:id/deny', servicerController.denyJob);
+router.patch('/jobs/:id/task-progress', servicerController.updateTaskProgress);
 
 router.get('/earnings', servicerController.getEarnings);
 router.post('/location', servicerController.updateLocation);

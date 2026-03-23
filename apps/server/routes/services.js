@@ -4,6 +4,7 @@ const pricingService = require('../services/pricingService');
 const { authenticate, requireRole } = require('../middleware/auth');
 
 router.get('/categories', serviceController.getCategories);
+router.get('/all-types', serviceController.getAllTypes);
 router.get('/types/:categorySlug', serviceController.getTypes);
 router.post('/seed', authenticate, requireRole('admin', 'superadmin'), serviceController.seed);
 
@@ -32,6 +33,9 @@ router.get('/pricing', (req, res) => {
       monthlyIncludedBarrels: pricingService.MONTHLY_INCLUDED_BARRELS,
       extraBarrelMonthly: pricingService.EXTRA_BARREL_MONTHLY,
       curbItemPrice: pricingService.CURB_ITEM_PRICE,
+      entranceCleaningPerFloor: pricingService.ENTRANCE_CLEANING_PER_FLOOR,
+      entranceCleaningPerStaircase: pricingService.ENTRANCE_CLEANING_PER_STAIRCASE,
+      entranceCleaningEntranceFee: pricingService.ENTRANCE_CLEANING_ENTRANCE_FEE,
     },
   });
 });

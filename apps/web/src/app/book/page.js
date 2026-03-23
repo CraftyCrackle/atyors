@@ -29,6 +29,7 @@ function BookContent() {
   const searchParams = useSearchParams();
   const [step, setStep] = useState(0);
   const [services, setServices] = useState([]);
+  const [serviceGroups, setServiceGroups] = useState([]);
   const [addresses, setAddresses] = useState([]);
   const [pricing, setPricing] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -49,6 +50,10 @@ function BookContent() {
     addressId: '',
     itemCount: 1,
     curbItemNotes: '',
+    floors: 1,
+    staircases: 0,
+    frontEntrance: false,
+    backEntrance: false,
   });
   const [curbItemPhotos, setCurbItemPhotos] = useState([]);
   const [curbItemPreviews, setCurbItemPreviews] = useState([]);
@@ -64,13 +69,15 @@ function BookContent() {
     async function load() {
       try {
         const [svcRes, addrRes, priceRes, methodsRes, subsRes] = await Promise.all([
-          api.get('/services/types/trash-recycling'),
+          api.get('/services/all-types'),
           api.get('/addresses'),
           api.get('/services/pricing'),
           api.get('/payments/methods').catch(() => ({ data: { methods: [] } })),
           api.get('/subscriptions').catch(() => ({ data: { subscriptions: [] } })),
         ]);
-        setServices(svcRes.data.types);
+        const allTypes = (svcRes.data.groups || []).flatMap((g) => g.types || []);
+        setServices(allTypes);
+        setServiceGroups(svcRes.data.groups || []);
         setAddresses(addrRes.data.addresses);
         setPricing(priceRes.data);
         setHasCard((methodsRes.data.methods || []).length > 0);
@@ -115,6 +122,9 @@ function BookContent() {
   const monthlyIncluded = pricing?.monthlyIncludedBarrels ?? 3;
   const extraBarrelMonthly = pricing?.extraBarrelMonthly ?? 3;
   const curbItemPrice = pricing?.curbItemPrice ?? 2.0;
+  const ecPerFloor = pricing?.entranceCleaningPerFloor ?? 15;
+  const ecPerStair = pricing?.entranceCleaningPerStaircase ?? 8;
+  const ecEntranceFee = pricing?.entranceCleaningEntranceFee ?? 15;
 
   function isBothSvc(svc) {
     return svc?.slug === 'both';
@@ -124,12 +134,27 @@ function BookContent() {
     return svc?.slug === 'curb-items';
   }
 
+  function isEntranceCleaningSvc(svc) {
+    return svc?.slug === 'entrance-cleaning';
+  }
+
   function isBoth() {
     return isBothSvc(selected.serviceType);
   }
 
   function isCurbItems() {
     return isCurbItemsSvc(selected.serviceType);
+  }
+
+  function isEntranceCleaning() {
+    return isEntranceCleaningSvc(selected.serviceType);
+  }
+
+  function entranceCleaningTotal() {
+    return (selected.floors * ecPerFloor)
+      + (selected.staircases * ecPerStair)
+      + (selected.frontEntrance ? ecEntranceFee : 0)
+      + (selected.backEntrance ? ecEntranceFee : 0);
   }
 
   function handleCurbItemPhotos(e) {
@@ -257,7 +282,18 @@ function BookContent() {
     setSubmitting(true);
     setError('');
     try {
-      if (isCurbItems()) {
+      if (isEntranceCleaning()) {
+        await api.post('/bookings', {
+          addressId: selected.addressId,
+          serviceTypeId: selected.serviceType._id,
+          scheduledDate: selected.date,
+          floors: selected.floors,
+          staircases: selected.staircases,
+          frontEntrance: selected.frontEntrance,
+          backEntrance: selected.backEntrance,
+          amount: entranceCleaningTotal(),
+        });
+      } else if (isCurbItems()) {
         const token = localStorage.getItem('accessToken');
         let photoUrls = [];
 
@@ -408,32 +444,42 @@ function BookContent() {
             <div>
               <h2 className="text-lg font-bold">Choose a Service</h2>
               <p className="mt-1 text-sm text-gray-500">What do you need help with?</p>
-              <div className="mt-4 space-y-3">
-                {services.map((svc) => (
-                  <button key={svc._id} disabled={!hasCard} onClick={() => { setSelected({ ...selected, serviceType: svc }); next(); }}
-                    className={`w-full rounded-xl border-2 p-4 text-left transition active:scale-[0.98] ${selected.serviceType?._id === svc._id ? 'border-brand-600 bg-brand-50' : 'border-gray-100 hover:border-gray-200'}`}>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="font-semibold">{svc.name}</p>
-                        <p className="mt-0.5 text-sm text-gray-500">{svc.description}</p>
-                      </div>
-                      <div className="text-right">
-                        {isCurbItemsSvc(svc) ? (
-                          <>
-                            <p className="font-bold text-brand-600">${curbItemPrice.toFixed(2)}</p>
-                            <p className="text-xs text-gray-400">per item (up to 25 lbs), up to 10</p>
-                          </>
-                        ) : (
-                          <>
-                            <p className="font-bold text-brand-600">${isBothSvc(svc) ? perBarrelBoth.toFixed(2) : perBarrel.toFixed(2)}/barrel</p>
-                            <p className="text-xs text-gray-400">{isBothSvc(svc) ? '2 jobs created' : 'per service'}</p>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
+              {serviceGroups.map((group) => (
+                <div key={group.category._id} className="mt-5">
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wider text-gray-400">{group.category.name}</p>
+                  <div className="space-y-3">
+                    {group.types.map((svc) => (
+                      <button key={svc._id} disabled={!hasCard} onClick={() => { setSelected({ ...selected, serviceType: svc }); next(); }}
+                        className={`w-full rounded-xl border-2 p-4 text-left transition active:scale-[0.98] ${selected.serviceType?._id === svc._id ? 'border-brand-600 bg-brand-50' : 'border-gray-100 hover:border-gray-200'}`}>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-semibold">{svc.name}</p>
+                            <p className="mt-0.5 text-sm text-gray-500">{svc.description}</p>
+                          </div>
+                          <div className="shrink-0 text-right">
+                            {isCurbItemsSvc(svc) ? (
+                              <>
+                                <p className="font-bold text-brand-600">${curbItemPrice.toFixed(2)}</p>
+                                <p className="text-xs text-gray-400">per item (≤25 lbs)</p>
+                              </>
+                            ) : isEntranceCleaningSvc(svc) ? (
+                              <>
+                                <p className="font-bold text-brand-600">From ${ecPerFloor}</p>
+                                <p className="text-xs text-gray-400">custom pricing</p>
+                              </>
+                            ) : (
+                              <>
+                                <p className="font-bold text-brand-600">${isBothSvc(svc) ? perBarrelBoth.toFixed(2) : perBarrel.toFixed(2)}/barrel</p>
+                                <p className="text-xs text-gray-400">{isBothSvc(svc) ? '2 jobs created' : 'per service'}</p>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 
@@ -542,13 +588,27 @@ function BookContent() {
                 </div>
               )}
 
-              {selected.addressId && !anyZipNotServed && (
+              {selected.addressId && !anyZipNotServed && !isEntranceCleaning() && (
                 <CascadingDatePicker
                   key={selected.addressId}
                   trashDay={selected.trashDay}
                   selectedDate={selected.date}
                   onChange={(dateStr, dow) => setSelected((prev) => ({ ...prev, date: dateStr, trashDay: dow }))}
                 />
+              )}
+
+              {selected.addressId && !anyZipNotServed && isEntranceCleaning() && (
+                <div className="mt-4">
+                  <label className="text-sm font-semibold text-gray-700">What date would you like service?</label>
+                  <input
+                    type="date"
+                    min={new Date().toISOString().slice(0, 10)}
+                    value={selected.date}
+                    onChange={(e) => setSelected((prev) => ({ ...prev, date: e.target.value }))}
+                    className="mt-2 w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-base font-medium focus:border-brand-600 focus:outline-none"
+                  />
+                  <p className="mt-1.5 text-xs text-gray-400">Any day of the week is available for this service.</p>
+                </div>
               )}
 
               {selected.addressId && !anyZipNotServed && selected.date && dateFullyBooked && (
@@ -564,6 +624,119 @@ function BookContent() {
                   {isBatchMode ? `Continue with ${selectedAddresses.length} properties` : 'Continue'}
                 </button>
               )}
+            </div>
+          )}
+
+          {/* Step 3: Entrance Cleaning Details */}
+          {step === 2 && isEntranceCleaning() && (
+            <div>
+              <h2 className="text-lg font-bold">Building Details</h2>
+              <p className="mt-1 text-sm text-gray-500">Tell us about the building so we can give you an exact price.</p>
+
+              {selectedAddr && (
+                <div className="mt-3 rounded-xl bg-gray-50 p-3">
+                  <div className="flex items-center gap-2">
+                    <svg className="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    </svg>
+                    <p className="text-sm text-gray-600">{selectedAddr.street}{selectedAddr.unit ? `, ${selectedAddr.unit}` : ''}, {selectedAddr.city}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-5 space-y-5">
+                <div>
+                  <label className="text-sm font-semibold text-gray-700">Number of floors to clean <span className="text-red-500">*</span></label>
+                  <p className="mt-0.5 text-xs text-gray-400">Each floor includes vacuuming and mopping. ${ecPerFloor}/floor.</p>
+                  <div className="mt-2 flex items-center gap-4">
+                    <button onClick={() => setSelected((p) => ({ ...p, floors: Math.max(1, p.floors - 1) }))}
+                      className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-gray-200 text-xl font-bold text-gray-600 transition hover:border-brand-400 active:scale-95 disabled:opacity-30"
+                      disabled={selected.floors <= 1}>−</button>
+                    <span className="min-w-[3rem] text-center text-2xl font-bold">{selected.floors}</span>
+                    <button onClick={() => setSelected((p) => ({ ...p, floors: p.floors + 1 }))}
+                      className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-gray-200 text-xl font-bold text-gray-600 transition hover:border-brand-400 active:scale-95">+</button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-semibold text-gray-700">Number of staircases/flights <span className="text-red-500">*</span></label>
+                  <p className="mt-0.5 text-xs text-gray-400">Includes vacuum and mop. ${ecPerStair}/staircase. Enter 0 if none.</p>
+                  <div className="mt-2 flex items-center gap-4">
+                    <button onClick={() => setSelected((p) => ({ ...p, staircases: Math.max(0, p.staircases - 1) }))}
+                      className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-gray-200 text-xl font-bold text-gray-600 transition hover:border-brand-400 active:scale-95 disabled:opacity-30"
+                      disabled={selected.staircases <= 0}>−</button>
+                    <span className="min-w-[3rem] text-center text-2xl font-bold">{selected.staircases}</span>
+                    <button onClick={() => setSelected((p) => ({ ...p, staircases: p.staircases + 1 }))}
+                      className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-gray-200 text-xl font-bold text-gray-600 transition hover:border-brand-400 active:scale-95">+</button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-semibold text-gray-700">Optional add-ons</label>
+                  <p className="mt-0.5 text-xs text-gray-400">${ecEntranceFee} each — sweep, mop, and wipe down the entrance area.</p>
+                  <div className="mt-3 space-y-2.5">
+                    <button onClick={() => setSelected((p) => ({ ...p, frontEntrance: !p.frontEntrance }))}
+                      className={`flex w-full items-center gap-3 rounded-xl border-2 px-4 py-3 text-left transition active:scale-[0.99] ${selected.frontEntrance ? 'border-brand-600 bg-brand-50' : 'border-gray-200'}`}>
+                      <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition ${selected.frontEntrance ? 'border-brand-600 bg-brand-600' : 'border-gray-300'}`}>
+                        {selected.frontEntrance && <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium">Front entrance cleaning</p>
+                        <p className="text-xs text-gray-500">Sweep, mop, and wipe down the front door area</p>
+                      </div>
+                      <span className="shrink-0 text-sm font-bold text-brand-600">+${ecEntranceFee}</span>
+                    </button>
+                    <button onClick={() => setSelected((p) => ({ ...p, backEntrance: !p.backEntrance }))}
+                      className={`flex w-full items-center gap-3 rounded-xl border-2 px-4 py-3 text-left transition active:scale-[0.99] ${selected.backEntrance ? 'border-brand-600 bg-brand-50' : 'border-gray-200'}`}>
+                      <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition ${selected.backEntrance ? 'border-brand-600 bg-brand-600' : 'border-gray-300'}`}>
+                        {selected.backEntrance && <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium">Back entrance cleaning</p>
+                        <p className="text-xs text-gray-500">Sweep, mop, and wipe down the back door area</p>
+                      </div>
+                      <span className="shrink-0 text-sm font-bold text-brand-600">+${ecEntranceFee}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 rounded-xl bg-brand-50 p-4 space-y-1.5">
+                <p className="text-xs font-bold uppercase tracking-wider text-brand-700 mb-2">Price Breakdown</p>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Floors ({selected.floors} × ${ecPerFloor})</span>
+                  <span className="font-semibold">${(selected.floors * ecPerFloor).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Staircases ({selected.staircases} × ${ecPerStair})</span>
+                  <span className="font-semibold">${(selected.staircases * ecPerStair).toFixed(2)}</span>
+                </div>
+                {selected.frontEntrance && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Front entrance</span>
+                    <span className="font-semibold">${ecEntranceFee.toFixed(2)}</span>
+                  </div>
+                )}
+                {selected.backEntrance && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Back entrance</span>
+                    <span className="font-semibold">${ecEntranceFee.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="mt-2 border-t border-brand-200 pt-2 flex justify-between">
+                  <span className="font-bold text-gray-900">Total</span>
+                  <span className="text-xl font-bold text-brand-600">${entranceCleaningTotal().toFixed(2)}</span>
+                </div>
+              </div>
+
+              <p className="mt-3 text-xs text-gray-400 leading-relaxed">
+                You won&apos;t be charged until the job is complete. Your servicer will go floor-by-floor and check off each task as they go.
+              </p>
+
+              <button onClick={next}
+                className="mt-5 w-full rounded-xl bg-brand-600 py-3.5 font-semibold text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700 active:scale-[0.98]">
+                Review &amp; Confirm
+              </button>
             </div>
           )}
 
@@ -683,7 +856,7 @@ function BookContent() {
             </div>
           )}
 
-          {step === 2 && !isCurbItems() && (
+          {step === 2 && !isCurbItems() && !isEntranceCleaning() && (
             <div>
               <h2 className="text-lg font-bold">Service Details</h2>
               <p className="mt-1 text-sm text-gray-500">Review and adjust your barrel details</p>
@@ -1043,7 +1216,79 @@ function BookContent() {
             </div>
           )}
 
-          {step === 3 && !isCurbItems() && (
+          {step === 3 && isEntranceCleaning() && (
+            <div>
+              <h2 className="text-lg font-bold">Confirm Cleaning Request</h2>
+              <p className="mt-1 text-sm text-gray-500">Review your building details and price</p>
+
+              <div className="mt-4 space-y-2.5 rounded-xl bg-gray-50 p-4">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">Service</span>
+                  <span className="text-sm font-medium">{selected.serviceType?.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">Address</span>
+                  <span className="text-sm font-medium text-right">{selectedAddr?.street}{selectedAddr?.unit ? `, ${selectedAddr.unit}` : ''}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">Date</span>
+                  <span className="text-sm font-medium">{new Date(selected.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">Floors</span>
+                  <span className="text-sm font-medium">{selected.floors} × ${ecPerFloor} = ${(selected.floors * ecPerFloor).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">Staircases</span>
+                  <span className="text-sm font-medium">{selected.staircases} × ${ecPerStair} = ${(selected.staircases * ecPerStair).toFixed(2)}</span>
+                </div>
+                {selected.frontEntrance && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-500">Front entrance</span>
+                    <span className="text-sm font-medium">${ecEntranceFee.toFixed(2)}</span>
+                  </div>
+                )}
+                {selected.backEntrance && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-500">Back entrance</span>
+                    <span className="text-sm font-medium">${ecEntranceFee.toFixed(2)}</span>
+                  </div>
+                )}
+                <hr className="border-gray-200" />
+                <div className="flex justify-between">
+                  <span className="font-semibold">Total</span>
+                  <span className="font-bold text-brand-600">${entranceCleaningTotal().toFixed(2)}</span>
+                </div>
+              </div>
+
+              <div className="mt-4 flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-3 text-sm text-blue-700">
+                <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+                </svg>
+                <span>Your card on file will be charged <strong>${entranceCleaningTotal().toFixed(2)}</strong> after service completion.</span>
+              </div>
+
+              {bookingConfirmed ? (
+                <div className="mt-6 flex flex-col items-center py-8 text-center">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+                    <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h2 className="mt-4 text-xl font-bold text-gray-900">Booking Confirmed!</h2>
+                  <p className="mt-2 text-sm text-gray-500">Entrance cleaning scheduled for {selected.date ? new Date(selected.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) : ''}.</p>
+                  <p className="mt-1 text-xs text-gray-400">Redirecting to your dashboard...</p>
+                </div>
+              ) : (
+                <button onClick={handleConfirm} disabled={submitting}
+                  className="mt-6 w-full rounded-xl bg-brand-600 py-3.5 font-semibold text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700 active:scale-[0.98] disabled:opacity-50">
+                  {submitting ? 'Processing...' : 'Confirm Booking'}
+                </button>
+              )}
+            </div>
+          )}
+
+          {step === 3 && !isCurbItems() && !isEntranceCleaning() && (
             <div>
               <h2 className="text-lg font-bold">Confirm Booking</h2>
               <p className="mt-1 text-sm text-gray-500">Review your service details</p>
