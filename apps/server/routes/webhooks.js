@@ -63,7 +63,18 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
     case 'customer.subscription.updated': {
       const sub = await Subscription.findOne({ stripeSubscriptionId: event.data.object.id });
       if (sub) {
-        sub.status = event.data.object.status === 'active' ? 'active' : 'past_due';
+        const stripeStatus = event.data.object.status;
+        // Map Stripe statuses to our local enum; ignore 'incomplete' (payment pending confirmation — don't downgrade)
+        const statusMap = {
+          active: 'active',
+          trialing: 'trialing',
+          past_due: 'past_due',
+          unpaid: 'past_due',
+          incomplete_expired: 'cancelled',
+        };
+        if (statusMap[stripeStatus]) {
+          sub.status = statusMap[stripeStatus];
+        }
         sub.currentPeriodStart = new Date(event.data.object.current_period_start * 1000);
         sub.currentPeriodEnd = new Date(event.data.object.current_period_end * 1000);
         sub.cancelAtPeriodEnd = !!event.data.object.cancel_at_period_end;

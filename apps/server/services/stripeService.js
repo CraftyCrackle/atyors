@@ -167,6 +167,7 @@ async function createStripeSubscription(user, priceId, metadata = {}) {
     customer: customerId,
     items: [{ price: priceId }],
     default_payment_method: defaultPm,
+    payment_behavior: 'default_incomplete',
     payment_settings: { save_default_payment_method: 'on_subscription' },
     expand: ['latest_invoice.payment_intent'],
     metadata,
