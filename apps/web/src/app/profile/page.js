@@ -11,9 +11,9 @@ import AppStoreBadge from '../../components/AppStoreBadge';
 import PhotoViewer from '../../components/PhotoViewer';
 import { reverseGeocode } from '../../lib/reverseGeocode';
 
-function SectionShell({ isOpen, onToggle, icon, title, subtitle, badge, headerRight, dark, children, disclaimer }) {
+function SectionShell({ id, isOpen, onToggle, icon, title, subtitle, badge, headerRight, dark, children, disclaimer }) {
   return (
-    <div className={`mt-4 overflow-hidden rounded-2xl ${dark ? 'border border-gray-700 bg-gray-800' : 'border border-gray-200 bg-white shadow-md'}`}>
+    <div id={id} className={`mt-4 overflow-hidden rounded-2xl ${dark ? 'border border-gray-700 bg-gray-800' : 'border border-gray-200 bg-white shadow-md'}`}>
       <button
         type="button"
         onClick={onToggle}
@@ -76,13 +76,19 @@ function ProfilePage() {
   const [form, setForm] = useState({ firstName: '', lastName: '', phone: '' });
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [openSection, setOpenSection] = useState('personal');
+  const linkedSection = searchParams.get('section');
+  const [openSection, setOpenSection] = useState(linkedSection || 'personal');
   function toggleSection(key) { setOpenSection((prev) => (prev === key ? null : key)); }
 
   useEffect(() => {
-    const section = searchParams.get('section');
-    if (section) setOpenSection(section);
-  }, [searchParams]);
+    if (!linkedSection || !user) return;
+    setOpenSection(linkedSection);
+    const timer = setTimeout(() => {
+      const el = document.getElementById(`section-${linkedSection}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [linkedSection, user]);
   const isCustomer = user?.role === 'customer';
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -246,11 +252,11 @@ function ProfilePage() {
             )}
           </SectionShell>
 
-          {isCustomer && <SubscriptionSection isOpen={openSection === 'subscriptions'} onToggle={() => toggleSection('subscriptions')} />}
+          {isCustomer && <SubscriptionSection id="section-subscriptions" isOpen={openSection === 'subscriptions'} onToggle={() => toggleSection('subscriptions')} />}
 
-          {isCustomer && <PaymentMethodsSection user={user} isOpen={openSection === 'payments'} onToggle={() => toggleSection('payments')} />}
+          {isCustomer && <PaymentMethodsSection id="section-payments" user={user} isOpen={openSection === 'payments'} onToggle={() => toggleSection('payments')} />}
 
-          {isCustomer && <InvoiceSection isOpen={openSection === 'billing'} onToggle={() => toggleSection('billing')} />}
+          {isCustomer && <InvoiceSection id="section-billing" isOpen={openSection === 'billing'} onToggle={() => toggleSection('billing')} />}
 
           {!isStandalone && isIos && hasAppStore && (
             <div className="mt-4 flex justify-center">
@@ -1337,7 +1343,7 @@ function AddAddressForm({ dark, onAdded, onCancel }) {
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-function SubscriptionSection({ isOpen, onToggle }) {
+function SubscriptionSection({ id, isOpen, onToggle }) {
   const [subs, setSubs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState(null);
@@ -1393,6 +1399,7 @@ function SubscriptionSection({ isOpen, onToggle }) {
 
   return (
     <SectionShell
+      id={id}
       isOpen={isOpen}
       onToggle={onToggle}
       dark={false}
@@ -1583,7 +1590,7 @@ function CardIcon({ brand }) {
   );
 }
 
-function PaymentMethodsSection({ user, isOpen, onToggle }) {
+function PaymentMethodsSection({ id, user, isOpen, onToggle }) {
   const [methods, setMethods] = useState([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -1656,6 +1663,7 @@ function PaymentMethodsSection({ user, isOpen, onToggle }) {
 
   return (
     <SectionShell
+      id={id}
       isOpen={isOpen}
       onToggle={onToggle}
       dark={false}
@@ -1745,7 +1753,7 @@ function formatChargeDescription(desc, amountCents) {
   return cleaned || 'Service charge';
 }
 
-function InvoiceSection({ isOpen, onToggle }) {
+function InvoiceSection({ id, isOpen, onToggle }) {
   const [charges, setCharges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(false);
@@ -1764,6 +1772,7 @@ function InvoiceSection({ isOpen, onToggle }) {
 
   return (
     <SectionShell
+      id={id}
       isOpen={isOpen}
       onToggle={onToggle}
       dark={false}
