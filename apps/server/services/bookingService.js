@@ -440,10 +440,20 @@ async function chargeBookingOnCompletion(bookingId) {
   const city = addr?.city || '';
   const dateStr = booking.scheduledDate ? new Date(booking.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
   const isCurbItem = svcType && svcType.slug === 'curb-items';
-  const countLabel = isCurbItem
-    ? `${booking.itemCount || 1} item${(booking.itemCount || 1) > 1 ? 's' : ''}`
-    : `${booking.barrelCount || 1} barrel${(booking.barrelCount || 1) > 1 ? 's' : ''}`;
-  const desc = `${svcName}${city ? ` — ${city}` : ''}${dateStr ? ` (${dateStr})` : ''} — ${countLabel}`;
+  const isEntranceCleaning = svcType && svcType.slug === 'entrance-cleaning';
+  let countLabel;
+  if (isCurbItem) {
+    countLabel = `${booking.itemCount || 1} item${(booking.itemCount || 1) > 1 ? 's' : ''}`;
+  } else if (isEntranceCleaning) {
+    const parts = [`${booking.floors || 1} floor${(booking.floors || 1) > 1 ? 's' : ''}`];
+    if (booking.staircases > 0) parts.push(`${booking.staircases} staircase${booking.staircases > 1 ? 's' : ''}`);
+    if (booking.frontEntrance) parts.push('front entrance');
+    if (booking.backEntrance) parts.push('back entrance');
+    countLabel = parts.join(', ');
+  } else {
+    countLabel = `${booking.barrelCount || 1} barrel${(booking.barrelCount || 1) > 1 ? 's' : ''}`;
+  }
+  const desc = `${svcName}${city ? ` (${city})` : ''}${dateStr ? ` ${dateStr}` : ''} — ${countLabel}`;
 
   const notificationService = require('./notificationService');
   const { sendPaymentSuccessEmail, sendPaymentFailedEmail } = require('./paymentEmailService');

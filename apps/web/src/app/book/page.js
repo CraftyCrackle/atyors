@@ -94,6 +94,7 @@ function BookContent() {
 
   useEffect(() => {
     if (!selected.date) { setDateFullyBooked(false); return; }
+    if (isEntranceCleaning()) { setDateFullyBooked(false); return; }
     const updates = {};
     if (selected.putOutTime && isTimeWindowPast(selected.putOutTime, false)) updates.putOutTime = '';
     if (selected.bringInTime && isTimeWindowPast(selected.bringInTime, true)) updates.bringInTime = '';
@@ -103,7 +104,7 @@ function BookContent() {
     api.get(`/bookings/capacity?date=${selected.date}&count=${count}`)
       .then((res) => { if (!res.data.available) setDateFullyBooked(true); })
       .catch(() => {});
-  }, [selected.date, selectedAddresses.length]);
+  }, [selected.date, selectedAddresses.length, selected.serviceType]);
 
   useEffect(() => {
     if (needsPutOut() && !selected.putOutTime) {

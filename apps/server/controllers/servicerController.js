@@ -248,6 +248,7 @@ async function updateTaskProgress(req, res, next) {
     if (booking.serviceTypeId?.slug !== 'entrance-cleaning') {
       return res.status(400).json({ success: false, error: { code: 'INVALID_SERVICE', message: 'Task progress only applies to entrance cleaning bookings' } });
     }
+    if (!Array.isArray(booking.taskProgress)) booking.taskProgress = [];
     if (completed) {
       if (!booking.taskProgress.includes(taskKey)) booking.taskProgress.push(taskKey);
     } else {
