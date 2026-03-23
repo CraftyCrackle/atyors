@@ -176,8 +176,8 @@ router.get('/reports/summary', async (req, res, next) => {
 
     const ecType = await ServiceType.findOne({ slug: 'entrance-cleaning' }).select('_id').lean();
     const ecTypeId = ecType?._id;
-    const ecFilter = ecTypeId ? { serviceTypeId: ecTypeId } : { serviceTypeId: null };
     const nonEcFilter = ecTypeId ? { serviceTypeId: { $ne: ecTypeId } } : {};
+    const todayStatusFilter = { scheduledDate: { $gte: todayStart, $lt: todayEnd }, status: { $in: ['pending', 'active', 'en-route', 'arrived', 'completed'] } };
 
     const [totalBookings, activeBookings, completedBookings, totalCustomers, settings, todayBooked, ecTodayBooked, revenueAll, revenueWeek, revenueMonth] = await Promise.all([
       Booking.countDocuments(),
@@ -185,16 +185,10 @@ router.get('/reports/summary', async (req, res, next) => {
       Booking.countDocuments({ status: 'completed' }),
       User.countDocuments({ role: 'customer' }),
       AppSettings.get(),
-      Booking.countDocuments({
-        scheduledDate: { $gte: todayStart, $lt: todayEnd },
-        status: { $in: ['pending', 'active', 'en-route', 'arrived', 'completed'] },
-        ...nonEcFilter,
-      }),
-      Booking.countDocuments({
-        scheduledDate: { $gte: todayStart, $lt: todayEnd },
-        status: { $in: ['pending', 'active', 'en-route', 'arrived', 'completed'] },
-        ...ecFilter,
-      }),
+      Booking.countDocuments({ ...todayStatusFilter, ...nonEcFilter }),
+      ecTypeId
+        ? Booking.countDocuments({ ...todayStatusFilter, serviceTypeId: ecTypeId })
+        : Promise.resolve(0),
       Booking.aggregate([{ $match: completedMatch }, { $group: { _id: null, total: { $sum: revenueExpr } } }]),
       Booking.aggregate([{ $match: { ...completedMatch, completedAt: { $gte: weekStart } }, }, { $group: { _id: null, total: { $sum: revenueExpr } } }]),
       Booking.aggregate([{ $match: { ...completedMatch, completedAt: { $gte: monthStart } }, }, { $group: { _id: null, total: { $sum: revenueExpr } } }]),

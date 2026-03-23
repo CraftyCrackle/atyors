@@ -76,7 +76,9 @@ function ProfilePage() {
   const [form, setForm] = useState({ firstName: '', lastName: '', phone: '' });
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const linkedSection = searchParams.get('section');
+  const VALID_SECTIONS = ['personal', 'password', 'trashday', 'streetcleaning', 'addresses', 'subscriptions', 'payments', 'billing'];
+  const rawSection = searchParams.get('section');
+  const linkedSection = VALID_SECTIONS.includes(rawSection) ? rawSection : null;
   const [openSection, setOpenSection] = useState(linkedSection || 'personal');
   function toggleSection(key) { setOpenSection((prev) => (prev === key ? null : key)); }
 
@@ -2148,7 +2150,7 @@ function AddCardModal({ clientSecret, user, onSuccess, onClose, onRetry }) {
 
 export default function ProfilePageWrapper() {
   return (
-    <Suspense>
+    <Suspense fallback={null}>
       <ProfilePage />
     </Suspense>
   );
