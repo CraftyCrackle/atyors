@@ -180,6 +180,18 @@ async function uploadCurbItemPhotos(req, res, next) {
   } catch (err) { next(err); }
 }
 
+async function uploadCleaningAreaPhotos(req, res, next) {
+  try {
+    if (!req.files || req.files.length === 0) {
+      const err = new Error('No photos uploaded');
+      err.status = 400;
+      throw err;
+    }
+    const urls = req.files.map((f) => `/uploads/${f.filename}`);
+    res.json({ success: true, data: { photos: urls } });
+  } catch (err) { next(err); }
+}
+
 async function checkCapacity(req, res, next) {
   try {
     const { date, count, subscriber } = req.query;
@@ -248,4 +260,4 @@ async function createBatch(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { create, confirmPayment, list, getById, cancel, reschedule, getQueuePosition, uploadCurbItemPhotos, checkCapacity, checkEntranceCleaningCapacity, createBatch };
+module.exports = { create, confirmPayment, list, getById, cancel, reschedule, getQueuePosition, uploadCurbItemPhotos, uploadCleaningAreaPhotos, checkCapacity, checkEntranceCleaningCapacity, createBatch };

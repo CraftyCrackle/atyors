@@ -102,6 +102,8 @@ async function create(userId, data) {
     if (frontEntrance) taskKeys.push('front-entrance');
     if (backEntrance) taskKeys.push('back-entrance');
 
+    const cleaningAreaPhotos = Array.isArray(data.cleaningAreaPhotos) ? data.cleaningAreaPhotos : [];
+
     const booking = await Booking.create({
       userId,
       addressId: data.addressId,
@@ -112,6 +114,7 @@ async function create(userId, data) {
       frontEntrance,
       backEntrance,
       taskProgress: [],
+      cleaningAreaPhotos,
       amount,
       serviceValue: amount,
       paymentStatus: 'pending_payment',

@@ -9,20 +9,31 @@ const validateUpload = require('../middleware/validateUpload');
 
 const sanitizeExt = (name) => path.extname(path.basename(name)).replace(/[^a-zA-Z0-9.]/g, '');
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, path.join(__dirname, '../../../uploads')),
-  filename: (req, file, cb) => cb(null, `curb-item-${req.user._id}-${Date.now()}${sanitizeExt(file.originalname)}`),
-});
+const uploadsDir = path.join(__dirname, '../../../uploads');
+
+const fileFilter = (req, file, cb) => {
+  const allowed = /jpeg|jpg|png|webp|heic/;
+  const ext = allowed.test(path.extname(file.originalname).toLowerCase());
+  const mime = allowed.test(file.mimetype.replace('image/', ''));
+  cb(null, ext || mime);
+};
 
 const upload = multer({
-  storage,
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, uploadsDir),
+    filename: (req, file, cb) => cb(null, `curb-item-${req.user._id}-${Date.now()}${sanitizeExt(file.originalname)}`),
+  }),
   limits: { fileSize: 10 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const allowed = /jpeg|jpg|png|webp|heic/;
-    const ext = allowed.test(path.extname(file.originalname).toLowerCase());
-    const mime = allowed.test(file.mimetype.replace('image/', ''));
-    cb(null, ext || mime);
-  },
+  fileFilter,
+});
+
+const uploadCleaning = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, uploadsDir),
+    filename: (req, file, cb) => cb(null, `cleaning-area-${req.user._id}-${Date.now()}${sanitizeExt(file.originalname)}`),
+  }),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter,
 });
 
 router.post('/', authenticate, bookingController.create);
@@ -36,6 +47,7 @@ router.get('/:id', authenticate, bookingController.getById);
 router.get('/:id/queue', authenticate, bookingController.getQueuePosition);
 router.post('/:id/confirm-payment', authenticate, bookingController.confirmPayment);
 router.post('/upload-curb-photos', authenticate, upload.array('photos', 5), validateUpload, bookingController.uploadCurbItemPhotos);
+router.post('/upload-cleaning-photos', authenticate, uploadCleaning.array('photos', 5), validateUpload, bookingController.uploadCleaningAreaPhotos);
 router.patch('/:id/cancel', authenticate, bookingController.cancel);
 router.patch('/:id/reschedule', authenticate, bookingController.reschedule);
 

@@ -57,6 +57,8 @@ function BookContent() {
   });
   const [curbItemPhotos, setCurbItemPhotos] = useState([]);
   const [curbItemPreviews, setCurbItemPreviews] = useState([]);
+  const [cleaningPhotos, setCleaningPhotos] = useState([]);
+  const [cleaningPreviews, setCleaningPreviews] = useState([]);
   const [dateFullyBooked, setDateFullyBooked] = useState(false);
   const [zipNotServed, setZipNotServed] = useState(false);
   const [zipWarnings, setZipWarnings] = useState({});
@@ -183,6 +185,20 @@ function BookContent() {
   function removeCurbItemPhoto(idx) {
     setCurbItemPhotos((prev) => prev.filter((_, i) => i !== idx));
     setCurbItemPreviews((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  function handleCleaningPhotos(e) {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    const allowed = 5 - cleaningPhotos.length;
+    const toAdd = files.slice(0, allowed);
+    setCleaningPhotos((prev) => [...prev, ...toAdd]);
+    setCleaningPreviews((prev) => [...prev, ...toAdd.map((f) => URL.createObjectURL(f))]);
+  }
+
+  function removeCleaningPhoto(idx) {
+    setCleaningPhotos((prev) => prev.filter((_, i) => i !== idx));
+    setCleaningPreviews((prev) => prev.filter((_, i) => i !== idx));
   }
 
   function oneTimePrice() {
@@ -319,6 +335,21 @@ function BookContent() {
           }
         }
       } else if (isEntranceCleaning()) {
+        let cleaningPhotoUrls = [];
+        if (cleaningPhotos.length > 0) {
+          const token = localStorage.getItem('accessToken');
+          const fd = new FormData();
+          cleaningPhotos.forEach((f) => fd.append('photos', f));
+          const uploadRes = await fetch('/api/v1/bookings/upload-cleaning-photos', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            body: fd,
+          });
+          const uploadData = await uploadRes.json();
+          if (!uploadData.success) throw new Error(uploadData.error?.message || 'Failed to upload photos');
+          cleaningPhotoUrls = uploadData.data.photos;
+        }
+
         await api.post('/bookings', {
           addressId: selected.addressId,
           serviceTypeId: selected.serviceType._id,
@@ -327,6 +358,7 @@ function BookContent() {
           staircases: selected.staircases,
           frontEntrance: selected.frontEntrance,
           backEntrance: selected.backEntrance,
+          cleaningAreaPhotos: cleaningPhotoUrls,
           amount: entranceCleaningTotal(),
         });
       } else if (isCurbItems()) {
@@ -773,6 +805,41 @@ function BookContent() {
                     </button>
                   </div>
                 </div>
+              </div>
+
+              {/* Optional area photos */}
+              <div className="mt-5">
+                <label className="text-sm font-semibold text-gray-700">Photos of the area <span className="text-gray-400 font-normal">(optional)</span></label>
+                <p className="mt-0.5 text-xs text-gray-400">Help your servicer prepare — upload up to 5 photos of the hallways, staircases, or entrances to be cleaned.</p>
+                {cleaningPreviews.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {cleaningPreviews.map((url, i) => (
+                      <div key={i} className="relative">
+                        <img src={url} alt={`Area photo ${i + 1}`} className="h-20 w-24 rounded-lg object-cover border border-gray-200" />
+                        <button
+                          type="button"
+                          onClick={() => removeCleaningPhoto(i)}
+                          className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow"
+                          aria-label="Remove photo"
+                        >
+                          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {cleaningPhotos.length < 5 && (
+                  <label className="mt-3 flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-200 px-4 py-3.5 text-sm font-medium text-gray-400 transition hover:border-brand-400 hover:text-brand-600">
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    {cleaningPhotos.length === 0 ? 'Add photos of the area' : `Add more (${cleaningPhotos.length}/5)`}
+                    <input type="file" accept="image/*" multiple className="sr-only" onChange={handleCleaningPhotos} />
+                  </label>
+                )}
               </div>
 
               {(() => {

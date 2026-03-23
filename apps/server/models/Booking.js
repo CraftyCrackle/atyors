@@ -46,6 +46,7 @@ const bookingSchema = new mongoose.Schema({
   itemCount: { type: Number, min: 1, max: 10 },
   curbItemPhotos: [{ type: String }],
   curbItemNotes: { type: String, trim: true },
+  cleaningAreaPhotos: [{ type: String }],
   batchId: { type: String, index: true },
   isGuaranteed: { type: Boolean, default: false },
   floors: { type: Number, min: 1 },

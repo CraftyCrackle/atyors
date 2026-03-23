@@ -55,6 +55,19 @@ describe('Booking Model Schema', () => {
     expect(paths.stripePaymentIntentId).toBeDefined();
     expect(paths.stripePaymentIntentId.instance).toBe('String');
   });
+
+  test('schema includes cleaningAreaPhotos array field', () => {
+    const paths = BookingModel.schema.paths;
+    expect(paths['cleaningAreaPhotos']).toBeDefined();
+  });
+
+  test('schema includes EC-specific fields (floors, staircases, frontEntrance, backEntrance)', () => {
+    const paths = BookingModel.schema.paths;
+    expect(paths.floors).toBeDefined();
+    expect(paths.staircases).toBeDefined();
+    expect(paths.frontEntrance).toBeDefined();
+    expect(paths.backEntrance).toBeDefined();
+  });
 });
 
 describe('Put-out date scheduling', () => {

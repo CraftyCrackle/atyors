@@ -516,6 +516,19 @@ export default function ServicerJobPage() {
           </div>
         )}
 
+        {/* Customer area photos for EC */}
+        {svc?.slug === 'entrance-cleaning' && booking.cleaningAreaPhotos?.length > 0 && (
+          <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
+            <h3 className="text-sm font-semibold text-white mb-3">Customer photos</h3>
+            <p className="text-xs text-gray-400 mb-3">The customer provided these photos of the area to be cleaned.</p>
+            <div className="grid grid-cols-2 gap-2">
+              {booking.cleaningAreaPhotos.map((url, i) => (
+                <PhotoViewer key={i} src={url} alt={`Area photo ${i + 1}`} className="w-full rounded-lg object-cover max-h-40" />
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Barrel overflow notice for servicers */}
         {svc && svc.slug !== 'curb-items' && svc.slug !== 'entrance-cleaning' && isActive && (
           <div className="flex gap-2.5 rounded-xl border border-amber-800/40 bg-amber-900/20 px-4 py-3">
