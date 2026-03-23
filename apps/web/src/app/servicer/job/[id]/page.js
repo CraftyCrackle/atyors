@@ -407,6 +407,16 @@ export default function ServicerJobPage() {
           </div>
         )}
 
+        {/* Entrance cleaning service window */}
+        {svc?.slug === 'entrance-cleaning' && isActive && (
+          <div className="flex items-center gap-2 rounded-xl border border-blue-800/40 bg-blue-900/20 px-4 py-3">
+            <svg className="h-5 w-5 shrink-0 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-sm text-blue-300">Service window: <span className="font-semibold text-blue-200">10 AM – 4 PM</span></p>
+          </div>
+        )}
+
         {/* Entrance cleaning task checklist */}
         {svc?.slug === 'entrance-cleaning' && (
           <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">

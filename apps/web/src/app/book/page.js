@@ -604,10 +604,24 @@ function BookContent() {
                     type="date"
                     min={new Date().toISOString().slice(0, 10)}
                     value={selected.date}
-                    onChange={(e) => setSelected((prev) => ({ ...prev, date: e.target.value }))}
+                    onChange={(e) => {
+                      const d = new Date(e.target.value + 'T12:00:00');
+                      if (d.getDay() === 0) {
+                        setError('Entrance cleaning is available Monday through Saturday only. Sundays are not available.');
+                        setSelected((prev) => ({ ...prev, date: '' }));
+                      } else {
+                        setError('');
+                        setSelected((prev) => ({ ...prev, date: e.target.value }));
+                      }
+                    }}
                     className="mt-2 w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-base font-medium focus:border-brand-600 focus:outline-none"
                   />
-                  <p className="mt-1.5 text-xs text-gray-400">Any day of the week is available for this service.</p>
+                  <div className="mt-2 flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2">
+                    <svg className="h-4 w-4 shrink-0 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-xs text-blue-700">Available <strong>Monday–Saturday</strong>, service window <strong>10 AM – 4 PM</strong></p>
+                  </div>
                 </div>
               )}
 
@@ -729,9 +743,12 @@ function BookContent() {
                 </div>
               </div>
 
-              <p className="mt-3 text-xs text-gray-400 leading-relaxed">
-                You won&apos;t be charged until the job is complete. Your servicer will go floor-by-floor and check off each task as they go.
-              </p>
+              <div className="mt-3 flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2.5">
+                <svg className="h-4 w-4 shrink-0 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-xs text-blue-700">Your servicer will arrive between <strong>10 AM and 4 PM</strong> on the selected date. You won&apos;t be charged until the job is complete.</p>
+              </div>
 
               <button onClick={next}
                 className="mt-5 w-full rounded-xl bg-brand-600 py-3.5 font-semibold text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700 active:scale-[0.98]">

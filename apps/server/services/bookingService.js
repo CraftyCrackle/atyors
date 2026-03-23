@@ -57,8 +57,7 @@ async function create(userId, data) {
   const isPutOut = svcType && svcType.slug === 'put-out';
   const isEntranceCleaning = svcType && svcType.slug === 'entrance-cleaning';
 
-  // Entrance cleaning is not trash-day-bound; no Sunday restriction or putOutDate offset
-  if (!isEntranceCleaning && scheduledDate.getDay() === 0) {
+  if (scheduledDate.getDay() === 0) {
     const err = new Error('Service is not available on Sundays. Please select a day Monday through Saturday.');
     err.status = 400;
     err.code = 'SUNDAY_BLOCKED';
