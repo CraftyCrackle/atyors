@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const STOP_STATUSES = ['pending', 'en-route', 'arrived', 'completed', 'skipped'];
+const STOP_STATUSES = ['pending', 'en-route', 'arrived', 'completed', 'skipped', 'denied'];
 
 const routeSchema = new mongoose.Schema({
   servicerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },

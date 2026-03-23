@@ -45,5 +45,6 @@ router.patch('/routes/:id/start', routeController.startRoute);
 router.patch('/routes/:id/mark-arrived', routeController.markArrived);
 router.patch('/routes/:id/complete-stop', upload.single('photo'), routeController.completeStop);
 router.patch('/routes/:id/skip-stop', routeController.skipStop);
+router.patch('/routes/:id/deny-stop', routeController.denyStop);
 
 module.exports = router;

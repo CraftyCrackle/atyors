@@ -127,6 +127,16 @@ export default function ServicerRoutePage() {
     setActing(false);
   }
 
+  async function handleDenyStop(reason) {
+    if (!activeRoute) return;
+    setActing(true);
+    try {
+      await api.patch(`/servicer/routes/${activeRoute._id}/deny-stop`, { reason });
+      await load();
+    } catch (err) { alert(err.message || 'Failed'); }
+    setActing(false);
+  }
+
   if (authLoading || !user) {
     return (
       <div className="flex min-h-screen-safe items-center justify-center bg-gray-900">
@@ -194,6 +204,7 @@ export default function ServicerRoutePage() {
               onArrived={handleMarkArrived}
               onComplete={handleCompleteStop}
               onSkip={handleSkipStop}
+              onDeny={handleDenyStop}
             />
           )}
 
@@ -330,19 +341,29 @@ export default function ServicerRoutePage() {
                 const svc = b?.serviceTypeId;
                 const isCurrent = i === route.currentStopIndex;
                 return (
-                  <Link key={s._id || i} href={`/servicer/job/${b?._id}`} className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 transition active:scale-[0.98] ${isCurrent ? 'border-brand-500 bg-brand-900/30' : s.status === 'completed' ? 'border-green-800 bg-green-900/20' : s.status === 'skipped' ? 'border-gray-700 bg-gray-800/50 opacity-50' : 'border-gray-700 bg-gray-800'}`}>
-                    <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${s.status === 'completed' ? 'bg-green-600' : s.status === 'skipped' ? 'bg-gray-600' : isCurrent ? 'bg-brand-600' : 'bg-gray-600'}`}>
-                      {s.status === 'completed' ? '✓' : s.status === 'skipped' ? '—' : i + 1}
+                  <Link key={s._id || i} href={`/servicer/job/${b?._id}`} className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 transition active:scale-[0.98] ${
+                    isCurrent ? 'border-brand-500 bg-brand-900/30' :
+                    s.status === 'completed' ? 'border-green-800 bg-green-900/20' :
+                    s.status === 'skipped' || s.status === 'denied' ? 'border-gray-700 bg-gray-800/50 opacity-50' :
+                    'border-gray-700 bg-gray-800'
+                  }`}>
+                    <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${
+                      s.status === 'completed' ? 'bg-green-600' :
+                      s.status === 'denied' ? 'bg-red-700' :
+                      s.status === 'skipped' ? 'bg-gray-600' :
+                      isCurrent ? 'bg-brand-600' : 'bg-gray-600'
+                    }`}>
+                      {s.status === 'completed' ? '✓' : s.status === 'skipped' ? '—' : s.status === 'denied' ? '✕' : i + 1}
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className={`truncate text-sm font-medium ${isCurrent ? 'text-brand-300' : 'text-white'}`}>{addr?.street || 'Address'}</p>
-                      <p className="text-xs text-gray-400">{svc?.name || 'Service'} &middot; {b?.barrelCount || 0} barrel{(b?.barrelCount || 0) !== 1 ? 's' : ''}</p>
+                      <p className="text-xs text-gray-400">{svc?.name || 'Service'} &middot; {b?.barrelCount || b?.itemCount || 0} {b?.itemCount ? 'item' : 'barrel'}{(b?.barrelCount || b?.itemCount || 0) !== 1 ? 's' : ''}</p>
                     </div>
                     <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
                       s.status === 'completed' ? 'bg-green-900/50 text-green-400' :
                       s.status === 'en-route' ? 'bg-purple-900/50 text-purple-400' :
                       s.status === 'arrived' ? 'bg-indigo-900/50 text-indigo-400' :
-                      s.status === 'skipped' ? 'bg-gray-700 text-gray-400' :
+                      s.status === 'denied' ? 'bg-red-900/50 text-red-400' :
                       'bg-gray-700 text-gray-400'
                     }`}>{s.status}</span>
                     <svg className="h-4 w-4 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
@@ -357,7 +378,7 @@ export default function ServicerRoutePage() {
   );
 }
 
-function CurrentStopCard({ stop, index, total, acting, onNavigate, onArrived, onComplete, onSkip }) {
+function CurrentStopCard({ stop, index, total, acting, onNavigate, onArrived, onComplete, onSkip, onDeny }) {
   const b = stop.bookingId;
   const addr = b?.addressId;
   const svc = b?.serviceTypeId;
@@ -366,6 +387,11 @@ function CurrentStopCard({ stop, index, total, acting, onNavigate, onArrived, on
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [showDenyModal, setShowDenyModal] = useState(false);
+  const [denyReason, setDenyReason] = useState('');
+
+  const isEnRoute = stop.status === 'en-route';
+  const isArrived = stop.status === 'arrived';
 
   function openPhotoCapture() {
     setPhotoFile(null);
@@ -399,42 +425,92 @@ function CurrentStopCard({ stop, index, total, acting, onNavigate, onArrived, on
     }
   }
 
+  function handleDenySubmit() {
+    if (!denyReason.trim()) return;
+    onDeny(denyReason.trim());
+    setShowDenyModal(false);
+    setDenyReason('');
+  }
+
+  const statusColors = {
+    'en-route': 'bg-purple-900/60 text-purple-300 border border-purple-700/50',
+    'arrived': 'bg-indigo-900/60 text-indigo-300 border border-indigo-700/50',
+  };
+  const statusLabels = { 'en-route': 'En Route', 'arrived': 'Arrived' };
+
   return (
     <>
-      <div className="rounded-xl border border-brand-500 bg-gray-800 p-4">
-        <div className="flex items-center justify-between">
-          <p className="text-xs font-semibold text-brand-400">Stop {index + 1} of {total}</p>
-          <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-            stop.status === 'en-route' ? 'bg-purple-900/50 text-purple-400' :
-            stop.status === 'arrived' ? 'bg-indigo-900/50 text-indigo-400' :
-            'bg-yellow-900/50 text-yellow-400'
-          }`}>{stop.status}</span>
+      <div className="overflow-hidden rounded-2xl border border-brand-500/70 bg-gray-800 shadow-lg shadow-black/30">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-gray-700/60 px-5 py-3.5">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white">
+              {index + 1}
+            </div>
+            <span className="text-sm font-semibold text-brand-400">Stop {index + 1} of {total}</span>
+          </div>
+          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusColors[stop.status] || 'bg-gray-700 text-gray-300'}`}>
+            {statusLabels[stop.status] || stop.status}
+          </span>
         </div>
 
-        <p className="mt-2 text-lg font-bold text-white">{addr?.street}{addr?.unit ? `, ${addr.unit}` : ''}</p>
-        <p className="text-sm text-gray-400">{addr?.city}, {addr?.state} {addr?.zip}</p>
-
-        <div className="mt-3 rounded-lg bg-gray-900/60 p-3 space-y-1">
-          <p className="text-sm text-gray-300">{svc?.name} &middot; {b?.barrelCount || 0} barrel{(b?.barrelCount || 0) !== 1 ? 's' : ''}</p>
-          {customer && <p className="text-xs text-gray-500">Customer: {customer.firstName} {customer.lastName}</p>}
-          {addr?.barrelLocation && <p className="text-xs text-gray-400">Location: {addr.barrelLocation}</p>}
-          {addr?.barrelPlacementInstructions && <p className="text-xs text-blue-400">Curb: {addr.barrelPlacementInstructions}</p>}
-          {addr?.barrelReturnInstructions && <p className="text-xs text-amber-400">Return: {addr.barrelReturnInstructions}</p>}
+        {/* Address */}
+        <div className="px-5 pt-4 pb-3">
+          <p className="text-xl font-bold leading-snug text-white">{addr?.street}{addr?.unit ? `, ${addr.unit}` : ''}</p>
+          <p className="mt-0.5 text-sm text-gray-400">{addr?.city}, {addr?.state} {addr?.zip}</p>
         </div>
 
+        {/* Job details */}
+        <div className="mx-5 mb-4 rounded-xl bg-gray-900/70 px-4 py-3.5 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-gray-200">{svc?.name}</p>
+            {b?.barrelCount > 0 && (
+              <span className="rounded-full bg-gray-700 px-2.5 py-0.5 text-xs font-medium text-gray-300">
+                {b.barrelCount} barrel{b.barrelCount !== 1 ? 's' : ''}
+              </span>
+            )}
+            {b?.itemCount > 0 && (
+              <span className="rounded-full bg-gray-700 px-2.5 py-0.5 text-xs font-medium text-gray-300">
+                {b.itemCount} item{b.itemCount !== 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
+          {customer && (
+            <p className="flex items-center gap-1.5 text-xs text-gray-400">
+              <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+              {customer.firstName} {customer.lastName}
+            </p>
+          )}
+          {addr?.barrelLocation && (
+            <p className="flex items-start gap-1.5 text-xs text-gray-400">
+              <svg className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              Location: {addr.barrelLocation}
+            </p>
+          )}
+          {addr?.barrelPlacementInstructions && (
+            <p className="rounded-lg bg-blue-900/20 px-3 py-2 text-xs text-blue-300">Curb: {addr.barrelPlacementInstructions}</p>
+          )}
+          {addr?.barrelReturnInstructions && (
+            <p className="rounded-lg bg-amber-900/20 px-3 py-2 text-xs text-amber-300">Return: {addr.barrelReturnInstructions}</p>
+          )}
+        </div>
+
+        {/* Customer photos */}
         {(addr?.barrelPhotoUrl || addr?.photos?.length > 0) && (
-          <div className="mt-3">
-            <p className="mb-1 text-[10px] uppercase font-medium text-gray-500">Customer Photos</p>
-            <div className="flex gap-1.5 overflow-x-auto">
-              {addr.barrelPhotoUrl && <PhotoViewer src={addr.barrelPhotoUrl} alt="Barrel" className="h-16 w-20 shrink-0 rounded-lg object-cover" />}
-              {addr.photos?.map((url, i) => <PhotoViewer key={i} src={url} alt={`Photo ${i + 1}`} className="h-16 w-20 shrink-0 rounded-lg object-cover" />)}
+          <div className="mx-5 mb-4">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-500">Customer Photos</p>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {addr.barrelPhotoUrl && <PhotoViewer src={addr.barrelPhotoUrl} alt="Barrel" className="h-20 w-24 shrink-0 rounded-xl object-cover" />}
+              {addr.photos?.map((url, i) => <PhotoViewer key={i} src={url} alt={`Photo ${i + 1}`} className="h-20 w-24 shrink-0 rounded-xl object-cover" />)}
             </div>
           </div>
         )}
 
-        <div className="mt-4 space-y-2">
+        {/* Actions */}
+        <div className="border-t border-gray-700/60 px-5 py-4 space-y-3">
+          {/* Navigate — always visible */}
           <button onClick={onNavigate}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700 active:scale-[0.98]">
+            className="flex w-full items-center justify-center gap-2.5 rounded-xl bg-blue-600 py-3.5 font-semibold text-white shadow-sm transition hover:bg-blue-700 active:scale-[0.98]">
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -442,29 +518,42 @@ function CurrentStopCard({ stop, index, total, acting, onNavigate, onArrived, on
             Navigate
           </button>
 
-          <div className="flex gap-2">
-            {stop.status === 'en-route' && (
+          {/* En-route phase: only Mark Arrived + Skip */}
+          {isEnRoute && (
+            <div className="flex gap-2.5">
               <button onClick={onArrived} disabled={acting}
-                className="flex-1 rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-50">
-                {acting ? '...' : 'Mark Arrived'}
+                className="flex-1 rounded-xl bg-indigo-600 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 active:scale-[0.98] disabled:opacity-50">
+                {acting ? 'Updating…' : 'Mark Arrived'}
               </button>
-            )}
-            {(stop.status === 'arrived' || stop.status === 'en-route') && (
-              <button onClick={openPhotoCapture} disabled={acting}
-                className="flex-1 rounded-xl bg-green-600 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-50">
-                <span className="flex items-center justify-center gap-1.5">
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" /><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" /></svg>
-                  {acting ? '...' : 'Complete Stop'}
-                </span>
+              <button onClick={onSkip} disabled={acting}
+                className="rounded-xl border border-gray-600 px-5 py-3.5 text-sm font-medium text-gray-400 transition hover:bg-gray-700 active:scale-[0.98] disabled:opacity-50">
+                Skip
               </button>
-            )}
-            <button onClick={onSkip} disabled={acting}
-              className="rounded-xl border border-gray-600 px-4 py-2.5 text-sm text-gray-400 transition hover:bg-gray-800 disabled:opacity-50">
-              Skip
-            </button>
-          </div>
+            </div>
+          )}
 
-          <Link href={`/servicer/job/${b?._id}`} className="block text-center text-sm text-brand-400 underline">
+          {/* Arrived phase: Complete Stop, Deny Service, Skip */}
+          {isArrived && (
+            <>
+              <button onClick={openPhotoCapture} disabled={acting}
+                className="flex w-full items-center justify-center gap-2.5 rounded-xl bg-green-600 py-3.5 font-semibold text-white shadow-sm transition hover:bg-green-700 active:scale-[0.98] disabled:opacity-50">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" /><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" /></svg>
+                {acting ? 'Submitting…' : 'Complete Stop'}
+              </button>
+              <div className="flex gap-2.5">
+                <button onClick={() => setShowDenyModal(true)} disabled={acting}
+                  className="flex-1 rounded-xl border border-red-700/60 bg-red-900/20 py-3 text-sm font-semibold text-red-400 transition hover:bg-red-900/40 active:scale-[0.98] disabled:opacity-50">
+                  Deny Service
+                </button>
+                <button onClick={onSkip} disabled={acting}
+                  className="rounded-xl border border-gray-600 px-5 py-3 text-sm font-medium text-gray-400 transition hover:bg-gray-700 active:scale-[0.98] disabled:opacity-50">
+                  Skip
+                </button>
+              </div>
+            </>
+          )}
+
+          <Link href={`/servicer/job/${b?._id}`} className="block text-center text-sm font-medium text-brand-400 hover:text-brand-300">
             View full job details
           </Link>
         </div>
@@ -472,6 +561,7 @@ function CurrentStopCard({ stop, index, total, acting, onNavigate, onArrived, on
 
       <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
 
+      {/* Completion photo modal */}
       {showPhotoModal && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm" onClick={() => { if (!acting) { setShowPhotoModal(false); setPhotoFile(null); setPhotoPreview(null); } }}>
           <div className="w-full max-w-lg rounded-t-2xl bg-gray-800 p-5 pb-8 safe-bottom" onClick={(e) => e.stopPropagation()}>
@@ -481,7 +571,6 @@ function CurrentStopCard({ stop, index, total, acting, onNavigate, onArrived, on
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
-
             {photoPreview ? (
               <div className="space-y-4">
                 <div className="overflow-hidden rounded-xl border border-gray-600">
@@ -494,7 +583,7 @@ function CurrentStopCard({ stop, index, total, acting, onNavigate, onArrived, on
                   </button>
                   <button onClick={handleSubmit} disabled={acting}
                     className="flex-1 rounded-xl bg-green-600 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-50">
-                    {acting ? 'Submitting...' : 'Submit & Complete'}
+                    {acting ? 'Submitting…' : 'Submit & Complete'}
                   </button>
                 </div>
               </div>
@@ -507,12 +596,52 @@ function CurrentStopCard({ stop, index, total, acting, onNavigate, onArrived, on
                   </div>
                 </div>
                 <button onClick={() => fileRef.current?.click()}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 py-3 font-semibold text-white transition hover:bg-brand-700 active:scale-[0.98]">
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 py-3.5 font-semibold text-white transition hover:bg-brand-700 active:scale-[0.98]">
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" /><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" /></svg>
                   Open Camera
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Deny service modal */}
+      {showDenyModal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm" onClick={() => { if (!acting) setShowDenyModal(false); }}>
+          <div className="w-full max-w-lg rounded-t-2xl bg-gray-800 p-5 pb-8 safe-bottom" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-white">Deny Service</h3>
+                <p className="mt-0.5 text-xs text-gray-400">The customer will be notified with your reason.</p>
+              </div>
+              <button onClick={() => setShowDenyModal(false)} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-700">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="mb-4 rounded-xl border border-red-800/40 bg-red-900/20 px-4 py-3 text-sm text-red-300">
+              This will cancel the service request and notify the customer via email and in-app alert.
+            </div>
+            <label className="mb-1.5 block text-sm font-medium text-gray-300">
+              Reason for denial <span className="text-red-400">*</span>
+            </label>
+            <textarea
+              value={denyReason}
+              onChange={(e) => setDenyReason(e.target.value)}
+              placeholder="e.g. Item exceeds weight limit, area is inaccessible, safety concern…"
+              rows={4}
+              className="w-full rounded-xl border border-gray-600 bg-gray-900 px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-red-500 focus:outline-none resize-none"
+            />
+            <div className="mt-4 flex gap-3">
+              <button onClick={() => setShowDenyModal(false)} disabled={acting}
+                className="flex-1 rounded-xl border border-gray-600 py-3 text-sm font-semibold text-gray-300 transition hover:bg-gray-700 disabled:opacity-50">
+                Cancel
+              </button>
+              <button onClick={handleDenySubmit} disabled={acting || !denyReason.trim()}
+                className="flex-1 rounded-xl bg-red-600 py-3 text-sm font-semibold text-white transition hover:bg-red-700 active:scale-[0.98] disabled:opacity-50">
+                {acting ? 'Submitting…' : 'Confirm Denial'}
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -2,7 +2,7 @@ const Route = require('../models/Route');
 
 describe('Route model', () => {
   test('stop statuses enum', () => {
-    const validStatuses = ['pending', 'en-route', 'arrived', 'completed', 'skipped'];
+    const validStatuses = ['pending', 'en-route', 'arrived', 'completed', 'skipped', 'denied'];
     const stopPath = Route.schema.path('stops.status');
     expect(stopPath.options.enum).toEqual(validStatuses);
   });
@@ -30,6 +30,7 @@ describe('Route service queue logic', () => {
     expect(typeof routeService.startRoute).toBe('function');
     expect(typeof routeService.completeCurrentStop).toBe('function');
     expect(typeof routeService.skipCurrentStop).toBe('function');
+    expect(typeof routeService.denyCurrentStop).toBe('function');
     expect(typeof routeService.getActiveRoute).toBe('function');
     expect(typeof routeService.getPlannedRoute).toBe('function');
     expect(typeof routeService.getQueuePosition).toBe('function');

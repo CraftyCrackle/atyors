@@ -140,4 +140,42 @@ async function skipStop(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { optimizePreview, createRoute, getActiveRoute, getPlannedRoute, startRoute, completeStop, markArrived, skipStop };
+async function denyStop(req, res, next) {
+  try {
+    const { reason } = req.body;
+    if (!reason?.trim()) {
+      return res.status(400).json({ success: false, error: { code: 'REASON_REQUIRED', message: 'A reason is required when denying service' } });
+    }
+
+    const { route, booking } = await routeService.denyCurrentStop(req.params.id, req.user._id, reason.trim());
+
+    const io = req.app.locals.io;
+    const userId = booking.userId?._id || booking.userId;
+    const bId = booking._id;
+    const svcName = booking.serviceTypeId?.name || 'service';
+    const addr = booking.addressId;
+    const addrStr = addr ? `${addr.street}${addr.unit ? `, ${addr.unit}` : ''}, ${addr.city}` : 'your address';
+
+    const notifMsg = `Your ${svcName} at ${addrStr} could not be completed. Servicer note: "${reason.trim()}"`;
+    await notificationService.create({ userId, type: 'booking:denied', title: 'Service Could Not Be Completed', body: notifMsg, bookingId: bId, meta: { status: 'denied' } });
+    if (io) io.of('/notifications').to(`user:${userId}`).emit('booking:status', { bookingId: bId, status: 'denied', message: notifMsg });
+
+    try {
+      const emailService = require('../services/emailService');
+      const customer = booking.userId;
+      if (customer?.email) {
+        const dateStr = new Date(booking.scheduledDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+        await emailService.send({
+          to: customer.email,
+          subject: 'Service Update — We Were Unable to Complete Your Request',
+          text: `Hi ${customer.firstName || 'there'},\n\nUnfortunately, our servicer was unable to complete your ${svcName} at ${addrStr} on ${dateStr}.\n\nServicer note: ${reason.trim()}\n\nPlease visit your dashboard or contact us if you have questions or would like to reschedule.\n\n— The atyors team`,
+          html: `<p>Hi ${customer.firstName || 'there'},</p><p>Unfortunately, our servicer was unable to complete your <strong>${svcName}</strong> at <strong>${addrStr}</strong> on ${dateStr}.</p><p><strong>Servicer note:</strong> ${reason.trim()}</p><p>Please <a href="https://atyors.com/dashboard">visit your dashboard</a> or contact us if you have questions or would like to reschedule.</p><p>— The atyors team</p>`,
+        });
+      }
+    } catch { }
+
+    res.json({ success: true, data: { route } });
+  } catch (err) { next(err); }
+}
+
+module.exports = { optimizePreview, createRoute, getActiveRoute, getPlannedRoute, startRoute, completeStop, markArrived, skipStop, denyStop };

@@ -245,6 +245,56 @@ async function markStopArrived(routeId, servicerId) {
   return route.populate(DEEP_POPULATE);
 }
 
+async function denyCurrentStop(routeId, servicerId, reason) {
+  const route = await Route.findOne({ _id: routeId, servicerId, status: 'in-progress' });
+  if (!route) {
+    const err = new Error('No active route found');
+    err.status = 404;
+    throw err;
+  }
+
+  const idx = route.currentStopIndex;
+  if (idx < 0 || idx >= route.stops.length) {
+    const err = new Error('No current stop to deny');
+    err.status = 400;
+    throw err;
+  }
+
+  const booking = await Booking.findById(route.stops[idx].bookingId).populate('userId serviceTypeId addressId');
+  if (!booking || !booking.canTransitionTo('denied')) {
+    const err = new Error(`Cannot deny from status: ${booking?.status}`);
+    err.status = 400;
+    err.code = 'INVALID_TRANSITION';
+    throw err;
+  }
+
+  route.stops[idx].status = 'denied';
+  booking.status = 'denied';
+  booking.denialReason = reason;
+  booking.statusHistory.push({ status: 'denied', changedAt: new Date(), changedBy: servicerId });
+  await booking.save();
+
+  const nextIdx = idx + 1;
+  if (nextIdx < route.stops.length) {
+    route.currentStopIndex = nextIdx;
+    const nextBooking = await Booking.findById(route.stops[nextIdx].bookingId).populate('serviceTypeId');
+    const windowReady = !nextBooking || new Date() >= getServiceWindowStart(nextBooking);
+    if (windowReady && nextBooking && nextBooking.canTransitionTo('en-route')) {
+      route.stops[nextIdx].status = 'en-route';
+      nextBooking.status = 'en-route';
+      nextBooking.statusHistory.push({ status: 'en-route', changedAt: new Date(), changedBy: servicerId });
+      await nextBooking.save();
+    }
+  } else {
+    route.currentStopIndex = route.stops.length;
+    route.status = 'completed';
+    route.completedAt = new Date();
+  }
+
+  await route.save();
+  return { route: await route.populate(DEEP_POPULATE), booking };
+}
+
 async function skipCurrentStop(routeId, servicerId) {
   const route = await Route.findOne({ _id: routeId, servicerId, status: 'in-progress' });
   if (!route) {
@@ -399,6 +449,7 @@ module.exports = {
   completeCurrentStop,
   markStopArrived,
   skipCurrentStop,
+  denyCurrentStop,
   getActiveRoute,
   getPlannedRoute,
   getQueuePosition,
