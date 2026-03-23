@@ -39,7 +39,7 @@ export default function ReviewModal({ bookingId, revieweeName, onClose, onSubmit
   const inputBg = dark ? 'bg-gray-900 text-white placeholder-gray-500 border-gray-700' : 'bg-gray-50 text-gray-900 placeholder-gray-400 border-gray-200';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" onClick={onClose}>
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center" onClick={onClose}>
       <div className="absolute inset-0 bg-black/50" />
       <div className={`relative w-full max-w-md rounded-t-2xl sm:rounded-2xl ${bg} p-6 animate-slide-up`} onClick={(e) => e.stopPropagation()}>
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-gray-300 sm:hidden" />

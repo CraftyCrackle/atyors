@@ -2,7 +2,7 @@
 
 export default function ConfirmModal({ title, message, confirmLabel = 'Confirm', cancelLabel = 'Cancel', onConfirm, onCancel, danger = false }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" onClick={onCancel}>
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center" onClick={onCancel}>
       <div className="absolute inset-0 bg-black/50" />
       <div className="relative w-full max-w-sm rounded-t-2xl sm:rounded-2xl bg-white p-6 animate-slide-up" onClick={(e) => e.stopPropagation()}>
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-gray-300 sm:hidden" />

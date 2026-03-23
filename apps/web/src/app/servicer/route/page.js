@@ -563,7 +563,7 @@ function CurrentStopCard({ stop, index, total, acting, onNavigate, onArrived, on
 
       {/* Completion photo modal */}
       {showPhotoModal && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm" onClick={() => { if (!acting) { setShowPhotoModal(false); setPhotoFile(null); setPhotoPreview(null); } }}>
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/70 backdrop-blur-sm" onClick={() => { if (!acting) { setShowPhotoModal(false); setPhotoFile(null); setPhotoPreview(null); } }}>
           <div className="w-full max-w-lg rounded-t-2xl bg-gray-800 p-5 pb-8 safe-bottom" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-bold text-white">Completion Photo</h3>
@@ -608,7 +608,7 @@ function CurrentStopCard({ stop, index, total, acting, onNavigate, onArrived, on
 
       {/* Deny service modal */}
       {showDenyModal && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm" onClick={() => { if (!acting) setShowDenyModal(false); }}>
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/70 backdrop-blur-sm" onClick={() => { if (!acting) setShowDenyModal(false); }}>
           <div className="w-full max-w-lg rounded-t-2xl bg-gray-800 p-5 pb-8 safe-bottom" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
               <div>

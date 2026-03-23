@@ -287,8 +287,8 @@ function ProfilePage() {
 
           {/* Sign Out confirmation modal */}
           {showSignOutModal && (
-            <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowSignOutModal(false)}>
-              <div className={`w-full max-w-lg rounded-t-2xl p-6 pb-10 safe-bottom ${dark ? 'bg-gray-800' : 'bg-white'}`} onClick={(e) => e.stopPropagation()}>
+            <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowSignOutModal(false)}>
+              <div className={`w-full max-w-lg rounded-t-2xl p-6 pb-[calc(env(safe-area-inset-bottom)+4.5rem)] ${dark ? 'bg-gray-800' : 'bg-white'}`} onClick={(e) => e.stopPropagation()}>
                 <div className="mb-5 flex flex-col items-center text-center">
                   <div className={`mb-3 flex h-14 w-14 items-center justify-center rounded-full ${dark ? 'bg-gray-700' : 'bg-red-50'}`}>
                     <svg className="h-7 w-7 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -1882,8 +1882,8 @@ function DeleteAccountModal({ dark, onClose, onDeleted }) {
     : 'border border-gray-200 text-gray-700 hover:bg-gray-50';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm" onClick={() => { if (!deleting) onClose(); }}>
-      <div className={`w-full max-w-lg rounded-t-2xl p-6 pb-10 safe-bottom ${bg}`} onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50 backdrop-blur-sm" onClick={() => { if (!deleting) onClose(); }}>
+      <div className={`w-full max-w-lg rounded-t-2xl p-6 pb-[calc(env(safe-area-inset-bottom)+4.5rem)] ${bg}`} onClick={(e) => e.stopPropagation()}>
 
         {step === 1 && (
           <>
