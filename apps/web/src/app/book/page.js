@@ -276,14 +276,17 @@ function BookContent() {
 
         if (photoUrls.length === 0) throw new Error('At least one photo is required');
 
-        await api.post('/bookings', {
-          addressId: selected.addressId,
-          serviceTypeId: selected.serviceType._id,
-          scheduledDate: selected.date,
-          itemCount: selected.itemCount,
-          curbItemNotes: selected.curbItemNotes,
-          curbItemPhotos: photoUrls,
-        });
+        const addressesToBook = selectedAddresses.length > 1 ? selectedAddresses : [{ _id: selected.addressId }];
+        for (const addr of addressesToBook) {
+          await api.post('/bookings', {
+            addressId: addr._id,
+            serviceTypeId: selected.serviceType._id,
+            scheduledDate: selected.date,
+            itemCount: selected.itemCount,
+            curbItemNotes: selected.curbItemNotes,
+            curbItemPhotos: photoUrls,
+          });
+        }
       } else if (selected.bookingType === 'subscription') {
         const dayOfWeek = new Date(selected.date + 'T12:00:00').getDay();
         const subRes = await api.post('/subscriptions', {
@@ -934,20 +937,46 @@ function BookContent() {
           {step === 3 && isCurbItems() && (
             <div>
               <h2 className="text-lg font-bold">Confirm Booking</h2>
-              <p className="mt-1 text-sm text-gray-500">Review your curb item service</p>
+              <p className="mt-1 text-sm text-gray-500">
+                {isBatchMode ? `Review your curb item service — ${selectedAddresses.length} properties` : 'Review your curb item service'}
+              </p>
+
+              {/* Multi-property banner for curb items */}
+              {isBatchMode && (
+                <div className="mt-4 rounded-xl border border-brand-200 bg-brand-50 p-4">
+                  <p className="text-sm font-semibold text-brand-800">Scheduling {selectedAddresses.length} properties on the same day</p>
+                  <div className="mt-2 space-y-2">
+                    {selectedAddresses.map((addr) => (
+                      <div key={addr._id} className="flex items-center justify-between rounded-lg bg-white px-3 py-2">
+                        <div>
+                          <p className="text-xs font-semibold text-gray-800">{addr.street}{addr.unit ? `, ${addr.unit}` : ''}</p>
+                          <p className="text-xs text-gray-400">{addr.city}, {addr.state}</p>
+                        </div>
+                        <span className="text-xs font-bold text-brand-600">${(curbItemPrice * selected.itemCount).toFixed(2)}</span>
+                      </div>
+                    ))}
+                    <div className="flex items-center justify-between border-t border-brand-200 pt-2">
+                      <span className="text-sm font-semibold text-gray-700">Total</span>
+                      <span className="text-base font-bold text-brand-600">${(curbItemPrice * selected.itemCount * selectedAddresses.length).toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="mt-4 space-y-3 rounded-xl bg-gray-50 p-4">
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-500">Service</span>
                   <span className="text-sm font-medium">Curb Items</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Address</span>
-                  <span className="text-sm font-medium text-right">{selectedAddr?.street}{selectedAddr?.unit ? `, ${selectedAddr.unit}` : ''}</span>
-                </div>
+                {!isBatchMode && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-500">Address</span>
+                    <span className="text-sm font-medium text-right">{selectedAddr?.street}{selectedAddr?.unit ? `, ${selectedAddr.unit}` : ''}</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-500">Items</span>
-                  <span className="text-sm font-medium">{selected.itemCount}</span>
+                  <span className="text-sm font-medium">{selected.itemCount} per property</span>
                 </div>
                 {selected.curbItemNotes && (
                   <div className="flex justify-between">
@@ -969,18 +998,22 @@ function BookContent() {
                     </div>
                   </div>
                 )}
-                <hr className="border-gray-200" />
-                <div className="flex justify-between">
-                  <span className="font-semibold">Total</span>
-                  <span className="font-bold text-brand-600">${(curbItemPrice * selected.itemCount).toFixed(2)}</span>
-                </div>
+                {!isBatchMode && (
+                  <>
+                    <hr className="border-gray-200" />
+                    <div className="flex justify-between">
+                      <span className="font-semibold">Total</span>
+                      <span className="font-bold text-brand-600">${(curbItemPrice * selected.itemCount).toFixed(2)}</span>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="mt-4 flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-3 text-sm text-blue-700">
                 <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
                 </svg>
-                <span>Your card on file will be charged <strong>${(curbItemPrice * selected.itemCount).toFixed(2)}</strong> after service completion.</span>
+                <span>Your card on file will be charged <strong>${isBatchMode ? (curbItemPrice * selected.itemCount * selectedAddresses.length).toFixed(2) : (curbItemPrice * selected.itemCount).toFixed(2)}</strong> after service completion.</span>
               </div>
 
               {bookingConfirmed ? (
@@ -991,7 +1024,11 @@ function BookContent() {
                     </svg>
                   </div>
                   <h2 className="mt-4 text-xl font-bold text-gray-900">Booking Confirmed!</h2>
-                  <p className="mt-2 text-sm text-gray-500">Your curb item service (${(curbItemPrice * selected.itemCount).toFixed(2)}) has been scheduled.</p>
+                  <p className="mt-2 text-sm text-gray-500">
+                    {isBatchMode
+                      ? `${selectedAddresses.length} curb item services scheduled for ${new Date(selected.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}.`
+                      : `Your curb item service ($${(curbItemPrice * selected.itemCount).toFixed(2)}) has been scheduled.`}
+                  </p>
                   <p className="mt-1 text-xs text-gray-400">Redirecting to your dashboard...</p>
                   <div className="mt-4 h-1 w-32 overflow-hidden rounded-full bg-gray-200">
                     <div className="h-full animate-pulse rounded-full bg-brand-600" style={{ width: '100%' }} />
@@ -1000,7 +1037,7 @@ function BookContent() {
               ) : (
                 <button onClick={handleConfirm} disabled={submitting}
                   className="mt-6 w-full rounded-xl bg-brand-600 py-3.5 font-semibold text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700 active:scale-[0.98] disabled:opacity-50">
-                  {submitting ? 'Processing...' : 'Confirm Booking'}
+                  {submitting ? 'Processing...' : isBatchMode ? `Confirm ${selectedAddresses.length} Bookings` : 'Confirm Booking'}
                 </button>
               )}
             </div>
