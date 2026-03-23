@@ -36,7 +36,7 @@ export default function BottomNav() {
   return (
     <>
       {/* ── MOBILE bottom bar ─────────────────────────────────────────── */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 pb-safe">
+      <nav aria-label="Main navigation" className="md:hidden fixed bottom-0 left-0 right-0 z-50 pb-safe">
         {/* frosted glass backdrop */}
         <div className="absolute inset-0 bg-white/88 backdrop-blur-2xl border-t border-gray-200/70 shadow-[0_-6px_24px_rgba(0,0,0,0.07)]" />
 
@@ -46,7 +46,7 @@ export default function BottomNav() {
 
             if (tab.primary) {
               return (
-                <Link key={tab.href} href={tab.href}
+                <Link key={tab.href} href={tab.href} aria-current={active ? 'page' : undefined}
                   className="relative flex flex-1 flex-col items-center">
                   <div className={`flex w-full max-w-[88px] flex-col items-center justify-center gap-0.5 rounded-2xl py-2.5 transition-all duration-200 active:scale-95
                     ${active
@@ -63,7 +63,7 @@ export default function BottomNav() {
             }
 
             return (
-              <Link key={tab.href} href={tab.href}
+              <Link key={tab.href} href={tab.href} aria-current={active ? 'page' : undefined}
                 className="relative flex flex-1 flex-col items-center">
                 <div className={`flex w-full max-w-[88px] flex-col items-center justify-center gap-0.5 rounded-2xl py-2.5 transition-all duration-200 active:scale-95
                   ${active
@@ -89,13 +89,13 @@ export default function BottomNav() {
       </nav>
 
       {/* ── DESKTOP floating dock ──────────────────────────────────────── */}
-      <nav className="hidden md:flex fixed bottom-6 left-1/2 z-50 -translate-x-1/2">
+      <nav aria-label="Main navigation" className="hidden md:flex fixed bottom-6 left-1/2 z-50 -translate-x-1/2">
         <div className="flex items-center gap-1.5 rounded-2xl border border-gray-200/70 bg-white/92 px-2.5 py-2 shadow-[0_8px_32px_rgba(0,0,0,0.13)] backdrop-blur-2xl">
 
           {/* Brand mark */}
-          <Link href="/dashboard"
+          <Link href="/dashboard" aria-label="Go to dashboard" aria-current={pathname.startsWith('/dashboard') ? 'page' : undefined}
             className="mr-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-600 shadow-sm shadow-brand-600/30 transition hover:bg-brand-700">
-            <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="h-5 w-5 text-white" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
             </svg>
           </Link>
@@ -105,7 +105,7 @@ export default function BottomNav() {
           {TABS.filter(t => !t.primary).map((tab) => {
             const active = pathname.startsWith(tab.href);
             return (
-              <Link key={tab.href} href={tab.href}
+              <Link key={tab.href} href={tab.href} aria-current={active ? 'page' : undefined}
                 className={`relative flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-150 hover:scale-[1.02] active:scale-[0.97]
                   ${active
                     ? 'bg-brand-50 text-brand-700 shadow-sm'

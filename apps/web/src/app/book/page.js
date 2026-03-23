@@ -473,24 +473,28 @@ function BookContent() {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen-safe bg-white pb-24">
+      <div id="main-content" className="min-h-screen-safe bg-white pb-24">
         <header className="sticky top-0 z-10 flex items-center gap-3 border-b bg-white px-4 pb-3 pt-sticky-safe">
-          <button onClick={back} className="rounded-lg p-2 hover:bg-gray-100">
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+          <button onClick={back} aria-label="Go back" className="rounded-lg p-2 hover:bg-gray-100">
+            <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
           </button>
           <div className="flex-1">
             <h1 className="font-semibold">Book a Service</h1>
-            <p className="text-xs text-gray-400">Step {step + 1} of {STEPS.length}</p>
+            <p className="text-xs text-gray-400" aria-live="polite">Step {step + 1} of {STEPS.length}</p>
           </div>
         </header>
 
-        <div className="mx-4 mt-3 flex gap-1">
+        <div role="progressbar" aria-valuenow={step + 1} aria-valuemin={1} aria-valuemax={STEPS.length} aria-label={`Step ${step + 1} of ${STEPS.length}`} className="mx-4 mt-3 flex gap-1">
           {STEPS.map((_, i) => (
-            <div key={i} className={`h-1 flex-1 rounded-full transition ${i <= step ? 'bg-brand-600' : 'bg-gray-200'}`} />
+            <div key={i} aria-hidden="true" className={`h-1 flex-1 rounded-full transition ${i <= step ? 'bg-brand-600' : 'bg-gray-200'}`} />
           ))}
         </div>
 
-        {error && <div className="mx-4 mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>}
+        {error && (
+          <div role="alert" aria-live="assertive" className="mx-4 mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">
+            {error}
+          </div>
+        )}
 
         <div className="mt-6 px-4">
 

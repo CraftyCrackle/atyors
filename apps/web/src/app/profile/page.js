@@ -12,15 +12,18 @@ import PhotoViewer from '../../components/PhotoViewer';
 import { reverseGeocode } from '../../lib/reverseGeocode';
 
 function SectionShell({ id, isOpen, onToggle, icon, title, subtitle, badge, headerRight, dark, children, disclaimer }) {
+  const contentId = id ? `${id}-content` : undefined;
   return (
     <div id={id} className={`mt-4 overflow-hidden rounded-2xl ${dark ? 'border border-gray-700 bg-gray-800' : 'border border-gray-200 bg-white shadow-md'}`}>
       <button
         type="button"
         onClick={onToggle}
+        aria-expanded={isOpen}
+        aria-controls={contentId}
         className={`flex w-full items-center gap-3 px-5 py-4 text-left transition ${dark ? 'hover:bg-gray-700/40 active:bg-gray-700/60' : 'hover:bg-brand-50/40 active:bg-brand-50/70'}`}
       >
         {icon && (
-          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${dark ? 'bg-gray-700' : 'bg-brand-100'}`}>
+          <div aria-hidden="true" className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${dark ? 'bg-gray-700' : 'bg-brand-100'}`}>
             {icon}
           </div>
         )}
@@ -39,6 +42,7 @@ function SectionShell({ id, isOpen, onToggle, icon, title, subtitle, badge, head
           </div>
         )}
         <svg
+          aria-hidden="true"
           className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''} ${dark ? 'text-gray-500' : 'text-gray-400'}`}
           fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
         >
@@ -46,11 +50,11 @@ function SectionShell({ id, isOpen, onToggle, icon, title, subtitle, badge, head
         </svg>
       </button>
       {isOpen && (
-        <div className={`border-t ${dark ? 'border-gray-700' : 'border-gray-200'}`}>
+        <div id={contentId} className={`border-t ${dark ? 'border-gray-700' : 'border-gray-200'}`}>
           {disclaimer && (
             <div className="px-5 pt-4">
               <div className={`flex items-start gap-2 rounded-lg px-3 py-2.5 text-xs leading-relaxed ${dark ? 'bg-blue-900/20 text-blue-300' : 'bg-sky-50 text-sky-700'}`}>
-                <svg className="mt-0.5 h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span>{disclaimer}</span>
@@ -144,7 +148,7 @@ function ProfilePage() {
 
   return (
     <AuthGuard>
-      <div className={`min-h-[100dvh] min-h-[100vh] pb-24 ${dark ? 'bg-gray-900 text-white' : 'bg-gray-100'}`}>
+      <div id="main-content" className={`min-h-[100dvh] min-h-[100vh] pb-24 ${dark ? 'bg-gray-900 text-white' : 'bg-gray-100'}`}>
         <header className={`sticky top-0 z-10 px-6 pb-6 pt-header-safe ${dark ? 'border-b border-gray-800 bg-gray-900' : 'border-b border-gray-200 bg-white shadow-sm'}`}>
           {dark && (
             <a href="/servicer/dashboard" className="mb-3 inline-flex items-center gap-1 text-sm text-gray-400 hover:text-white">
@@ -201,9 +205,9 @@ function ProfilePage() {
           >
             {editing ? (
               <div className="space-y-4">
-                <input type="text" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} placeholder="First name" className={inputCls} />
-                <input type="text" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} placeholder="Last name" className={inputCls} />
-                <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Phone" className={inputCls} />
+                <div><label htmlFor="profile-first-name" className="sr-only">First name</label><input id="profile-first-name" type="text" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} placeholder="First name" className={inputCls} /></div>
+                <div><label htmlFor="profile-last-name" className="sr-only">Last name</label><input id="profile-last-name" type="text" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} placeholder="Last name" className={inputCls} /></div>
+                <div><label htmlFor="profile-phone" className="sr-only">Phone number</label><input id="profile-phone" type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Phone" className={inputCls} /></div>
                 <button onClick={handleSave} disabled={saving} className="w-full rounded-xl bg-brand-600 py-3.5 text-base font-semibold text-white disabled:opacity-50 active:scale-[0.98] transition">
                   {saving ? 'Saving...' : 'Save Changes'}
                 </button>
@@ -376,14 +380,14 @@ function ChangePasswordSection({ dark, isOpen, onToggle }) {
       )}
       {open && (
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input type="password" placeholder="Current password" value={form.currentPassword}
-            onChange={(e) => setForm({ ...form, currentPassword: e.target.value })} className={baseCls} required autoComplete="current-password" />
-          <input type="password" placeholder="New password (min 8 chars)" value={form.newPassword}
-            onChange={(e) => setForm({ ...form, newPassword: e.target.value })} className={baseCls} required minLength={8} autoComplete="new-password" />
-          <input type="password" placeholder="Confirm new password" value={form.confirmPassword}
-            onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} className={baseCls} required autoComplete="new-password" />
-          {error && <p className="text-sm text-red-500">{error}</p>}
-          {success && <p className="text-sm text-green-600">Password updated!</p>}
+          <div><label htmlFor="chpw-current" className="sr-only">Current password</label><input id="chpw-current" type="password" placeholder="Current password" value={form.currentPassword}
+            onChange={(e) => setForm({ ...form, currentPassword: e.target.value })} className={baseCls} required autoComplete="current-password" /></div>
+          <div><label htmlFor="chpw-new" className="sr-only">New password (minimum 8 characters)</label><input id="chpw-new" type="password" placeholder="New password (min 8 chars)" value={form.newPassword}
+            onChange={(e) => setForm({ ...form, newPassword: e.target.value })} className={baseCls} required minLength={8} autoComplete="new-password" /></div>
+          <div><label htmlFor="chpw-confirm" className="sr-only">Confirm new password</label><input id="chpw-confirm" type="password" placeholder="Confirm new password" value={form.confirmPassword}
+            onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} className={baseCls} required autoComplete="new-password" /></div>
+          {error && <p role="alert" className="text-sm text-red-500">{error}</p>}
+          {success && <p role="status" className="text-sm text-green-600">Password updated!</p>}
           <button type="submit" disabled={saving}
             className="w-full rounded-xl bg-brand-600 py-3.5 text-base font-semibold text-white hover:bg-brand-700 disabled:opacity-50 active:scale-[0.98] transition">
             {saving ? 'Updating...' : 'Update Password'}

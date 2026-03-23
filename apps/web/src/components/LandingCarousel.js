@@ -27,6 +27,9 @@ export default function LandingCarousel() {
 
   useEffect(() => {
     if (images.length <= 1) return;
+    const prefersReduced = typeof window !== 'undefined'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReduced) return;
     timerRef.current = setInterval(() => go(1), 5000);
     return () => clearInterval(timerRef.current);
   }, [images.length, go]);

@@ -257,9 +257,9 @@ export default function NotificationProvider({ children }) {
       {children}
 
       {bannerMessage && (
-        <div className="fixed bottom-20 left-4 right-4 z-[99] mx-auto max-w-sm animate-slide-in rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-lg">
+        <div role="alert" aria-live="assertive" className="fixed bottom-20 left-4 right-4 z-[99] mx-auto max-w-sm animate-slide-in rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-lg">
           <div className="flex items-start gap-3">
-            <svg className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
             <div className="flex-1">
@@ -272,21 +272,22 @@ export default function NotificationProvider({ children }) {
               )}
             </div>
             <button
+              aria-label="Dismiss notification banner"
               onClick={() => {
                 setPushBannerDismissed(true);
                 try { sessionStorage.setItem('push-banner-dismissed', '1'); } catch {}
               }}
               className="shrink-0 rounded p-1 text-amber-500 hover:bg-amber-100"
             >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
           </div>
         </div>
       )}
 
-      <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 w-80">
+      <div aria-live="polite" aria-atomic="false" className="fixed top-4 right-4 z-[100] flex flex-col gap-2 w-80">
         {notifications.map((n) => (
-          <div key={n.id}
+          <div key={n.id} role="status"
             className={`animate-slide-in rounded-xl p-4 shadow-lg ${
               n.type === 'success' ? 'bg-green-600 text-white'
               : n.type === 'message' ? 'bg-gray-800 text-white'
@@ -294,7 +295,7 @@ export default function NotificationProvider({ children }) {
             }`}>
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-start gap-2">
-                <svg className="mt-0.5 h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   {n.type === 'message' ? (
                     <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                   ) : (
@@ -303,8 +304,8 @@ export default function NotificationProvider({ children }) {
                 </svg>
                 <p className="text-sm font-medium">{n.message}</p>
               </div>
-              <button onClick={() => dismiss(n.id)} className="shrink-0 rounded p-0.5 hover:bg-white/20">
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              <button onClick={() => dismiss(n.id)} aria-label="Dismiss notification" className="shrink-0 rounded p-0.5 hover:bg-white/20">
+                <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
           </div>

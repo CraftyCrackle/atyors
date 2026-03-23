@@ -29,8 +29,6 @@ export const metadata = {
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   viewportFit: 'cover',
   themeColor: '#1b70f5',
 };
@@ -39,6 +37,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className="text-gray-900 antialiased">
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[200] focus:rounded-xl focus:bg-brand-600 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white focus:shadow-lg">
+          Skip to main content
+        </a>
         <InstallProvider>
           <NotificationProvider>
             <GpsBroadcaster>{children}</GpsBroadcaster>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
 
 function StarIcon({ filled, half }) {
@@ -17,6 +17,18 @@ export default function ReviewModal({ bookingId, revieweeName, onClose, onSubmit
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const dialogRef = useRef(null);
+  const titleId = 'review-modal-title';
+
+  useEffect(() => {
+    const el = dialogRef.current;
+    if (!el) return;
+    const focusable = el.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    focusable[0]?.focus();
+    function onKeyDown(e) { if (e.key === 'Escape') onClose(); }
+    el.addEventListener('keydown', onKeyDown);
+    return () => el.removeEventListener('keydown', onKeyDown);
+  }, [onClose]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -40,35 +52,49 @@ export default function ReviewModal({ bookingId, revieweeName, onClose, onSubmit
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/50" />
-      <div className={`relative w-full max-w-md rounded-t-2xl sm:rounded-2xl ${bg} p-6 animate-slide-up`} onClick={(e) => e.stopPropagation()}>
+      <div className="absolute inset-0 bg-black/50" aria-hidden="true" />
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className={`relative w-full max-w-md rounded-t-2xl sm:rounded-2xl ${bg} p-6 animate-slide-up`}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-gray-300 sm:hidden" />
 
-        <h2 className={`text-center text-lg font-bold ${text}`}>Rate {revieweeName}</h2>
+        <h2 id={titleId} className={`text-center text-lg font-bold ${text}`}>Rate {revieweeName}</h2>
         <p className={`mt-1 text-center text-sm ${subtext}`}>How was your experience?</p>
 
         <form onSubmit={handleSubmit}>
           {/* Stars */}
-          <div className="mt-6 flex justify-center gap-1">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <button
-                key={star}
-                type="button"
-                onClick={() => setRating(star)}
-                onMouseEnter={() => setHover(star)}
-                onMouseLeave={() => setHover(0)}
-                className={`transition-transform hover:scale-110 ${(hover || rating) >= star ? 'text-yellow-400' : dark ? 'text-gray-600' : 'text-gray-300'}`}
-              >
-                <StarIcon filled={(hover || rating) >= star} />
-              </button>
-            ))}
-          </div>
-          <p className={`mt-2 text-center text-sm font-medium ${text}`}>
+          <fieldset className="mt-6">
+            <legend className="sr-only">Rating</legend>
+            <div className="flex justify-center gap-1">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  aria-label={`${star} star${star !== 1 ? 's' : ''}`}
+                  aria-pressed={rating === star}
+                  onClick={() => setRating(star)}
+                  onMouseEnter={() => setHover(star)}
+                  onMouseLeave={() => setHover(0)}
+                  className={`transition-transform hover:scale-110 ${(hover || rating) >= star ? 'text-yellow-400' : dark ? 'text-gray-600' : 'text-gray-300'}`}
+                >
+                  <StarIcon filled={(hover || rating) >= star} />
+                </button>
+              ))}
+            </div>
+          </fieldset>
+          <p aria-live="polite" className={`mt-2 text-center text-sm font-medium ${text}`}>
             {rating === 0 ? 'Tap a star' : ['', 'Poor', 'Fair', 'Good', 'Great', 'Excellent'][rating]}
           </p>
 
           {/* Comment */}
+          <label htmlFor="review-comment" className="sr-only">Comment (optional)</label>
           <textarea
+            id="review-comment"
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             placeholder="Leave a comment (optional)..."
@@ -77,7 +103,7 @@ export default function ReviewModal({ bookingId, revieweeName, onClose, onSubmit
             className={`mt-4 w-full resize-none rounded-xl border p-3 text-sm outline-none focus:ring-2 focus:ring-brand-500 ${inputBg}`}
           />
 
-          {error && <p className="mt-2 text-center text-xs text-red-500">{error}</p>}
+          {error && <p role="alert" aria-live="assertive" className="mt-2 text-center text-xs text-red-500">{error}</p>}
 
           <div className="mt-4 flex gap-2">
             <button type="button" onClick={onClose}

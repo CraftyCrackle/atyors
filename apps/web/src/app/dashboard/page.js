@@ -550,7 +550,7 @@ export default function DashboardPage() {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen-safe bg-gray-50 pb-20">
+      <div id="main-content" className="min-h-screen-safe bg-gray-50 pb-20">
         <header className="sticky top-0 z-10 bg-white px-6 pb-4 pt-header-safe shadow-sm">
           <div className="mb-3">
             <Logo size="sm" variant="wordmark" />
@@ -577,12 +577,12 @@ export default function DashboardPage() {
                 </div>
               </div>
             </div>
-            <Link href="/notifications" className="relative rounded-lg p-2 text-gray-500 hover:bg-gray-100">
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <Link href="/notifications" aria-label={`Notifications${unreadNotifs > 0 ? `, ${unreadNotifs} unread` : ''}`} className="relative rounded-lg p-2 text-gray-500 hover:bg-gray-100">
+              <svg aria-hidden="true" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
               </svg>
               {unreadNotifs > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                <span aria-hidden="true" className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
                   {unreadNotifs > 9 ? '9+' : unreadNotifs}
                 </span>
               )}
@@ -662,9 +662,9 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        <div className="mt-6 flex gap-1 px-4">
+        <div role="tablist" aria-label="Booking history" className="mt-6 flex gap-1 px-4">
           {[['upcoming', `Upcoming (${upcoming.length})`], ['active', `Active (${active.length})`], ['past', `Past (${past.length})`]].map(([key, label]) => (
-            <button key={key} onClick={() => switchTab(key)} className={`flex-1 rounded-lg py-2 text-xs font-medium transition ${tab === key ? 'bg-brand-600 text-white' : 'bg-white text-gray-500'}`}>
+            <button key={key} role="tab" aria-selected={tab === key} onClick={() => switchTab(key)} className={`flex-1 rounded-lg py-2 text-xs font-medium transition ${tab === key ? 'bg-brand-600 text-white' : 'bg-white text-gray-500'}`}>
               {label}
             </button>
           ))}

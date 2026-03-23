@@ -157,8 +157,8 @@ export default function ChatPage() {
       <AuthGuard>
         <div className={`fixed inset-0 flex flex-col ${bg}`}>
           <header className={`sticky top-0 z-10 flex items-center gap-3 px-4 pb-3 pt-sticky-safe shadow-sm ${isServicer ? 'bg-gray-900 border-b border-gray-800' : 'bg-white border-b border-gray-200'}`}>
-            <button onClick={() => router.back()} className={`rounded-lg p-2 transition ${isServicer ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-600'}`}>
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+            <button aria-label="Go back" onClick={() => router.back()} className={`rounded-lg p-2 transition ${isServicer ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-600'}`}>
+              <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
             </button>
             <p className={`text-sm font-semibold ${isServicer ? 'text-white' : 'text-gray-900'}`}>Chat</p>
           </header>
@@ -186,8 +186,8 @@ export default function ChatPage() {
       <div className={`fixed inset-0 flex flex-col ${bg}`}>
         {/* Header */}
         <header className={`sticky top-0 z-10 flex items-center gap-3 px-4 pb-3 pt-sticky-safe shadow-sm ${dark ? 'bg-gray-900 border-b border-gray-800' : 'bg-white border-b border-gray-200'}`}>
-          <button onClick={() => router.back()} className={`rounded-lg p-2 transition ${dark ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-600'}`}>
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+          <button aria-label="Go back" onClick={() => router.back()} className={`rounded-lg p-2 transition ${dark ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-600'}`}>
+            <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
           </button>
           <Initials name={otherName} />
           <div className="min-w-0 flex-1">
@@ -208,7 +208,7 @@ export default function ChatPage() {
         </header>
 
         {/* Messages */}
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+        <div aria-live="polite" aria-label="Messages" className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
           {messages.length === 0 && (
             <div className="flex h-full flex-col items-center justify-center gap-3">
               <div className={`flex h-16 w-16 items-center justify-center rounded-full ${dark ? 'bg-gray-800' : 'bg-gray-100'}`}>
@@ -287,7 +287,9 @@ export default function ChatPage() {
           <form onSubmit={handleSend} className={`border-t px-3 py-3 ${dark ? 'border-gray-800 bg-gray-900' : 'border-gray-200 bg-white'}`}>
             <div className="flex items-end gap-2">
               <div className={`flex flex-1 items-end rounded-2xl px-4 py-2.5 ${dark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                <label htmlFor="chat-message-input" className="sr-only">Message to {otherName}</label>
                 <textarea
+                  id="chat-message-input"
                   ref={inputRef}
                   value={input}
                   onChange={(e) => {
@@ -310,6 +312,7 @@ export default function ChatPage() {
               </div>
               <button
                 type="submit"
+                aria-label="Send message"
                 disabled={!input.trim() || sending}
                 className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition ${
                   input.trim()
@@ -317,7 +320,7 @@ export default function ChatPage() {
                     : dark ? 'bg-gray-800 text-gray-600' : 'bg-gray-200 text-gray-400'
                 }`}
               >
-                <svg className="h-5 w-5 -rotate-45" fill="currentColor" viewBox="0 0 24 24">
+                <svg aria-hidden="true" className="h-5 w-5 -rotate-45" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
                 </svg>
               </button>
