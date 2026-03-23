@@ -77,6 +77,8 @@ export default function ProfilePage() {
   const [openSection, setOpenSection] = useState('personal');
   function toggleSection(key) { setOpenSection((prev) => (prev === key ? null : key)); }
   const isCustomer = user?.role === 'customer';
+  const [showSignOutModal, setShowSignOutModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     if (user) setForm({ firstName: user.firstName, lastName: user.lastName, phone: user.phone || '' });
@@ -260,11 +262,45 @@ export default function ProfilePage() {
             </button>
           )}
 
-          <button onClick={logout} className={`mt-6 w-full rounded-xl border py-3 text-sm font-semibold transition ${dark ? 'border-red-500/30 text-red-400 hover:bg-red-500/10' : 'border-red-200 text-red-500 hover:bg-red-50'}`}>
+          <button onClick={() => setShowSignOutModal(true)} className={`mt-6 w-full rounded-xl border py-3 text-sm font-semibold transition ${dark ? 'border-red-500/30 text-red-400 hover:bg-red-500/10' : 'border-red-200 text-red-500 hover:bg-red-50'}`}>
             Sign Out
           </button>
 
-          {isCustomer && <DeleteAccountSection onDeleted={logout} />}
+          {isCustomer && (
+            <button onClick={() => setShowDeleteModal(true)} className="mt-4 w-full rounded-xl py-3 text-xs text-gray-400 hover:text-red-400 transition">
+              Delete my account
+            </button>
+          )}
+
+          {/* Sign Out confirmation modal */}
+          {showSignOutModal && (
+            <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowSignOutModal(false)}>
+              <div className={`w-full max-w-lg rounded-t-2xl p-6 pb-10 safe-bottom ${dark ? 'bg-gray-800' : 'bg-white'}`} onClick={(e) => e.stopPropagation()}>
+                <div className="mb-5 flex flex-col items-center text-center">
+                  <div className={`mb-3 flex h-14 w-14 items-center justify-center rounded-full ${dark ? 'bg-gray-700' : 'bg-red-50'}`}>
+                    <svg className="h-7 w-7 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+                    </svg>
+                  </div>
+                  <h3 className={`text-lg font-bold ${dark ? 'text-white' : 'text-gray-900'}`}>Sign Out?</h3>
+                  <p className={`mt-1 text-sm ${dark ? 'text-gray-400' : 'text-gray-500'}`}>You&apos;ll need to sign back in to access your account.</p>
+                </div>
+                <div className="flex gap-3">
+                  <button onClick={() => setShowSignOutModal(false)} className={`flex-1 rounded-xl py-3.5 text-sm font-semibold transition ${dark ? 'border border-gray-600 text-gray-300 hover:bg-gray-700' : 'border border-gray-200 text-gray-700 hover:bg-gray-50'}`}>
+                    Cancel
+                  </button>
+                  <button onClick={logout} className="flex-1 rounded-xl bg-red-600 py-3.5 text-sm font-semibold text-white transition hover:bg-red-700">
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Delete Account confirmation modal */}
+          {showDeleteModal && (
+            <DeleteAccountModal dark={dark} onClose={() => setShowDeleteModal(false)} onDeleted={logout} />
+          )}
           </div>
         </div>
 
@@ -1806,8 +1842,8 @@ function InvoiceSection({ isOpen, onToggle }) {
   );
 }
 
-function DeleteAccountSection({ onDeleted }) {
-  const [step, setStep] = useState(0);
+function DeleteAccountModal({ dark, onClose, onDeleted }) {
+  const [step, setStep] = useState(1);
   const [confirmText, setConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
 
@@ -1822,68 +1858,94 @@ function DeleteAccountSection({ onDeleted }) {
     }
   }
 
-  if (step === 0) {
-    return (
-      <button
-        onClick={() => setStep(1)}
-        className="mt-4 w-full rounded-xl py-3 text-xs text-gray-400 hover:text-red-400 transition"
-      >
-        Delete my account
-      </button>
-    );
-  }
-
-  if (step === 1) {
-    return (
-      <div className="mt-4 rounded-xl border-2 border-red-200 bg-red-50 p-4 space-y-3">
-        <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100">
-            <svg className="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-            </svg>
-          </div>
-          <div>
-            <p className="font-semibold text-red-800">Are you sure?</p>
-            <p className="mt-1 text-sm text-red-700">
-              This will permanently delete your account, addresses, bookings, subscriptions, and payment data. This cannot be undone.
-            </p>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={() => setStep(0)} className="flex-1 rounded-lg border border-gray-300 bg-white py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50">
-            Never mind
-          </button>
-          <button onClick={() => setStep(2)} className="flex-1 rounded-lg bg-red-600 py-2.5 text-sm font-semibold text-white hover:bg-red-700">
-            Continue
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const bg = dark ? 'bg-gray-800' : 'bg-white';
+  const textPrimary = dark ? 'text-white' : 'text-gray-900';
+  const textMuted = dark ? 'text-gray-400' : 'text-gray-500';
+  const cancelCls = dark
+    ? 'border border-gray-600 text-gray-300 hover:bg-gray-700'
+    : 'border border-gray-200 text-gray-700 hover:bg-gray-50';
 
   return (
-    <div className="mt-4 rounded-xl border-2 border-red-300 bg-red-50 p-4 space-y-3">
-      <p className="text-sm font-semibold text-red-800">Type DELETE to confirm</p>
-      <p className="text-xs text-red-600/70">This is your last chance. Type the word DELETE below to permanently remove your account.</p>
-      <input
-        type="text"
-        value={confirmText}
-        onChange={(e) => setConfirmText(e.target.value)}
-        placeholder="Type DELETE"
-        className="w-full rounded-lg border border-red-300 bg-white px-3 py-2.5 text-sm text-red-900 placeholder-red-300 focus:border-red-500 focus:outline-none"
-        autoFocus
-      />
-      <div className="flex gap-2">
-        <button onClick={() => { setStep(0); setConfirmText(''); }} className="flex-1 rounded-lg border border-gray-300 bg-white py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50">
-          Cancel
-        </button>
-        <button
-          onClick={handleDelete}
-          disabled={confirmText !== 'DELETE' || deleting}
-          className="flex-1 rounded-lg bg-red-600 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-40 transition"
-        >
-          {deleting ? 'Deleting...' : 'Permanently Delete'}
-        </button>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm" onClick={() => { if (!deleting) onClose(); }}>
+      <div className={`w-full max-w-lg rounded-t-2xl p-6 pb-10 safe-bottom ${bg}`} onClick={(e) => e.stopPropagation()}>
+
+        {step === 1 && (
+          <>
+            <div className="mb-5 flex flex-col items-center text-center">
+              <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-red-100">
+                <svg className="h-7 w-7 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+              </div>
+              <h3 className={`text-lg font-bold ${textPrimary}`}>Delete Your Account?</h3>
+              <p className={`mt-1 text-sm ${textMuted}`}>This will immediately and permanently:</p>
+            </div>
+
+            <ul className="mb-5 space-y-2">
+              {[
+                'Cancel all active subscriptions',
+                'Cancel all pending & active service requests',
+                'Remove all saved addresses',
+                'Remove all payment methods',
+                'Delete your account data',
+              ].map((item) => (
+                <li key={item} className="flex items-center gap-2.5 rounded-lg bg-red-50 px-3 py-2">
+                  <svg className="h-4 w-4 shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  <span className="text-sm text-red-700">{item}</span>
+                </li>
+              ))}
+            </ul>
+
+            <p className="mb-5 text-center text-xs font-semibold text-red-600">This cannot be undone.</p>
+
+            <div className="flex gap-3">
+              <button onClick={onClose} className={`flex-1 rounded-xl py-3.5 text-sm font-semibold transition ${cancelCls}`}>
+                Never Mind
+              </button>
+              <button onClick={() => setStep(2)} className="flex-1 rounded-xl bg-red-600 py-3.5 text-sm font-semibold text-white transition hover:bg-red-700">
+                Continue
+              </button>
+            </div>
+          </>
+        )}
+
+        {step === 2 && (
+          <>
+            <div className="mb-5 flex flex-col items-center text-center">
+              <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-red-100">
+                <svg className="h-7 w-7 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </div>
+              <h3 className={`text-lg font-bold ${textPrimary}`}>Final Confirmation</h3>
+              <p className={`mt-1 text-sm ${textMuted}`}>Type <strong className="text-red-600">DELETE</strong> to permanently remove your account.</p>
+            </div>
+
+            <input
+              type="text"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder="Type DELETE"
+              autoFocus
+              className="mb-4 w-full rounded-xl border-2 border-red-200 bg-red-50 px-4 py-3 text-center text-sm font-semibold tracking-widest text-red-900 placeholder-red-300 focus:border-red-500 focus:outline-none"
+            />
+
+            <div className="flex gap-3">
+              <button onClick={() => { setStep(1); setConfirmText(''); }} disabled={deleting} className={`flex-1 rounded-xl py-3.5 text-sm font-semibold transition ${cancelCls}`}>
+                Back
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={confirmText !== 'DELETE' || deleting}
+                className="flex-1 rounded-xl bg-red-600 py-3.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-40"
+              >
+                {deleting ? 'Deleting…' : 'Permanently Delete'}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
