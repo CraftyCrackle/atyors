@@ -14,6 +14,10 @@ const ENTRANCE_CLEANING_PER_FLOOR = 15;
 const ENTRANCE_CLEANING_PER_STAIRCASE = 8;
 const ENTRANCE_CLEANING_ENTRANCE_FEE = 15;
 
+const EC_MONTHLY_PER_FLOOR = 12;
+const EC_MONTHLY_PER_STAIRCASE = 6;
+const EC_MONTHLY_ENTRANCE_FEE = 12;
+
 function calculateOneTimePrice(barrelCount) {
   return PRICE_PER_BARREL * barrelCount;
 }
@@ -44,6 +48,13 @@ function calculateEntranceCleaningPrice({ floors = 0, staircases = 0, frontEntra
     + (backEntrance ? ENTRANCE_CLEANING_ENTRANCE_FEE : 0);
 }
 
+function calculateEntranceCleaningMonthlyPrice({ floors = 0, staircases = 0, frontEntrance = false, backEntrance = false }) {
+  return (floors * EC_MONTHLY_PER_FLOOR)
+    + (staircases * EC_MONTHLY_PER_STAIRCASE)
+    + (frontEntrance ? EC_MONTHLY_ENTRANCE_FEE : 0)
+    + (backEntrance ? EC_MONTHLY_ENTRANCE_FEE : 0);
+}
+
 module.exports = {
   PRICE_PER_BARREL,
   PRICE_PER_BARREL_BOTH_TOTAL,
@@ -56,10 +67,14 @@ module.exports = {
   ENTRANCE_CLEANING_PER_FLOOR,
   ENTRANCE_CLEANING_PER_STAIRCASE,
   ENTRANCE_CLEANING_ENTRANCE_FEE,
+  EC_MONTHLY_PER_FLOOR,
+  EC_MONTHLY_PER_STAIRCASE,
+  EC_MONTHLY_ENTRANCE_FEE,
   calculateOneTimePrice,
   calculateOneTimePriceBothLeg,
   calculateCurbItemPrice,
   calculateMonthlyPrice,
   calculateMonthlyPriceBoth,
   calculateEntranceCleaningPrice,
+  calculateEntranceCleaningMonthlyPrice,
 };

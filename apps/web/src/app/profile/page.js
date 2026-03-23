@@ -1498,17 +1498,33 @@ function SubscriptionCard({ sub, toggling, onToggle, confirmCancel, setConfirmCa
         <p className="text-lg font-bold text-brand-600 shrink-0">${sub.monthlyPrice?.toFixed(2)}<span className="text-xs font-normal text-gray-400">/mo</span></p>
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
-        <span className="inline-flex items-center gap-1">
-          <svg className="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-          </svg>
-          Every {DAY_NAMES[sub.dayOfWeek]}
-        </span>
-        {sub.barrelCount > 0 && <span>{sub.barrelCount} barrel{sub.barrelCount > 1 ? 's' : ''}</span>}
-        {sub.putOutTime && <span>Out: {sub.putOutTime}</span>}
-        {sub.bringInTime && <span>In: {sub.bringInTime}</span>}
-      </div>
+      {(() => {
+        const isEC = svc?.slug === 'entrance-cleaning';
+        return (
+          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+            <span className="inline-flex items-center gap-1">
+              <svg className="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+              </svg>
+              {isEC ? `Bi-weekly (every other ${DAY_NAMES[sub.dayOfWeek]})` : `Every ${DAY_NAMES[sub.dayOfWeek]}`}
+            </span>
+            {isEC ? (
+              <>
+                {sub.floors > 0 && <span>{sub.floors} floor{sub.floors > 1 ? 's' : ''}</span>}
+                {sub.staircases > 0 && <span>{sub.staircases} staircase{sub.staircases > 1 ? 's' : ''}</span>}
+                {sub.frontEntrance && <span>Front entrance</span>}
+                {sub.backEntrance && <span>Back entrance</span>}
+              </>
+            ) : (
+              <>
+                {sub.barrelCount > 0 && <span>{sub.barrelCount} barrel{sub.barrelCount > 1 ? 's' : ''}</span>}
+                {sub.putOutTime && <span>Out: {sub.putOutTime}</span>}
+                {sub.bringInTime && <span>In: {sub.bringInTime}</span>}
+              </>
+            )}
+          </div>
+        );
+      })()}
 
       {periodEnd && !isCancelled && (
         <p className="mt-2 text-xs text-gray-400">

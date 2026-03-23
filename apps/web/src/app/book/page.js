@@ -132,6 +132,9 @@ function BookContent() {
   const ecPerFloor = pricing?.entranceCleaningPerFloor ?? 15;
   const ecPerStair = pricing?.entranceCleaningPerStaircase ?? 8;
   const ecEntranceFee = pricing?.entranceCleaningEntranceFee ?? 15;
+  const ecMonthlyPerFloor = pricing?.ecMonthlyPerFloor ?? 12;
+  const ecMonthlyPerStair = pricing?.ecMonthlyPerStaircase ?? 6;
+  const ecMonthlyEntranceFee = pricing?.ecMonthlyEntranceFee ?? 12;
 
   function isBothSvc(svc) {
     return svc?.slug === 'both';
@@ -158,10 +161,14 @@ function BookContent() {
   }
 
   function entranceCleaningTotal() {
-    return (selected.floors * ecPerFloor)
-      + (selected.staircases * ecPerStair)
-      + (selected.frontEntrance ? ecEntranceFee : 0)
-      + (selected.backEntrance ? ecEntranceFee : 0);
+    const isMonthly = selected.bookingType === 'subscription';
+    const pFloor = isMonthly ? ecMonthlyPerFloor : ecPerFloor;
+    const pStair = isMonthly ? ecMonthlyPerStair : ecPerStair;
+    const pEntrance = isMonthly ? ecMonthlyEntranceFee : ecEntranceFee;
+    return (selected.floors * pFloor)
+      + (selected.staircases * pStair)
+      + (selected.frontEntrance ? pEntrance : 0)
+      + (selected.backEntrance ? pEntrance : 0);
   }
 
   function handleCurbItemPhotos(e) {
@@ -190,6 +197,7 @@ function BookContent() {
   }
 
   function currentPrice() {
+    if (isEntranceCleaning()) return entranceCleaningTotal();
     return selected.bookingType === 'subscription' ? monthlyPrice() : oneTimePrice();
   }
 
@@ -289,7 +297,28 @@ function BookContent() {
     setSubmitting(true);
     setError('');
     try {
-      if (isEntranceCleaning()) {
+      if (isEntranceCleaning() && selected.bookingType === 'subscription') {
+        const dayOfWeek = new Date(selected.date + 'T12:00:00').getDay();
+        const subRes = await api.post('/subscriptions', {
+          addressId: selected.addressId,
+          serviceTypeId: selected.serviceType._id,
+          dayOfWeek,
+          floors: selected.floors,
+          staircases: selected.staircases,
+          frontEntrance: selected.frontEntrance,
+          backEntrance: selected.backEntrance,
+        });
+
+        const clientSecret = subRes.data?.clientSecret;
+        if (clientSecret && clientSecret !== 'dev_mock_secret') {
+          const { loadStripe } = await import('@stripe/stripe-js');
+          const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+          if (stripe) {
+            const { error } = await stripe.confirmCardPayment(clientSecret);
+            if (error) throw new Error(error.message || 'Payment confirmation failed');
+          }
+        }
+      } else if (isEntranceCleaning()) {
         await api.post('/bookings', {
           addressId: selected.addressId,
           serviceTypeId: selected.serviceType._id,
@@ -665,10 +694,34 @@ function BookContent() {
                 </div>
               )}
 
+              {/* Plan toggle for EC */}
+              <div className="mt-5">
+                <label className="text-sm font-medium text-gray-700">Service Plan</label>
+                <div className="mt-2 flex gap-2">
+                  <button onClick={() => setSelected((p) => ({ ...p, bookingType: 'one-time' }))}
+                    className={`flex-1 rounded-xl border-2 py-3 text-sm font-medium transition ${selected.bookingType === 'one-time' ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-gray-100 text-gray-500'}`}>
+                    One-Time
+                  </button>
+                  <button onClick={() => !hasActiveSubForAddress && setSelected((p) => ({ ...p, bookingType: 'subscription' }))}
+                    disabled={hasActiveSubForAddress}
+                    className={`flex-1 rounded-xl border-2 py-3 text-sm font-medium transition ${hasActiveSubForAddress ? 'border-gray-100 text-gray-300 cursor-not-allowed' : selected.bookingType === 'subscription' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-100 text-gray-500'}`}>
+                    Monthly (bi-weekly)
+                  </button>
+                </div>
+                {selected.bookingType === 'subscription' && (
+                  <p className="mt-2 text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2">
+                    Monthly plan includes <strong>2 cleanings per month</strong> at discounted rates — about 20% off the one-time price.
+                  </p>
+                )}
+                {hasActiveSubForAddress && (
+                  <p className="mt-2 text-xs text-amber-600">You already have an active monthly subscription for this address.</p>
+                )}
+              </div>
+
               <div className="mt-5 space-y-5">
                 <div>
                   <label className="text-sm font-semibold text-gray-700">Number of floors to clean <span className="text-red-500">*</span></label>
-                  <p className="mt-0.5 text-xs text-gray-400">Each floor includes vacuuming and mopping. ${ecPerFloor}/floor.</p>
+                  <p className="mt-0.5 text-xs text-gray-400">Each floor includes vacuuming and mopping. {selected.bookingType === 'subscription' ? `$${ecMonthlyPerFloor}/floor (monthly rate)` : `$${ecPerFloor}/floor`}.</p>
                   <div className="mt-2 flex items-center gap-4">
                     <button onClick={() => setSelected((p) => ({ ...p, floors: Math.max(1, p.floors - 1) }))}
                       className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-gray-200 text-xl font-bold text-gray-600 transition hover:border-brand-400 active:scale-95 disabled:opacity-30"
@@ -681,7 +734,7 @@ function BookContent() {
 
                 <div>
                   <label className="text-sm font-semibold text-gray-700">Number of staircases/flights <span className="text-red-500">*</span></label>
-                  <p className="mt-0.5 text-xs text-gray-400">Includes vacuum and mop. ${ecPerStair}/staircase. Enter 0 if none.</p>
+                  <p className="mt-0.5 text-xs text-gray-400">Includes vacuum and mop. {selected.bookingType === 'subscription' ? `$${ecMonthlyPerStair}/staircase (monthly rate)` : `$${ecPerStair}/staircase`}. Enter 0 if none.</p>
                   <div className="mt-2 flex items-center gap-4">
                     <button onClick={() => setSelected((p) => ({ ...p, staircases: Math.max(0, p.staircases - 1) }))}
                       className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-gray-200 text-xl font-bold text-gray-600 transition hover:border-brand-400 active:scale-95 disabled:opacity-30"
@@ -694,7 +747,7 @@ function BookContent() {
 
                 <div>
                   <label className="text-sm font-semibold text-gray-700">Optional add-ons</label>
-                  <p className="mt-0.5 text-xs text-gray-400">${ecEntranceFee} each — sweep, mop, and wipe down the entrance area.</p>
+                  <p className="mt-0.5 text-xs text-gray-400">{selected.bookingType === 'subscription' ? `$${ecMonthlyEntranceFee}` : `$${ecEntranceFee}`} each — sweep, mop, and wipe down the entrance area.</p>
                   <div className="mt-3 space-y-2.5">
                     <button onClick={() => setSelected((p) => ({ ...p, frontEntrance: !p.frontEntrance }))}
                       className={`flex w-full items-center gap-3 rounded-xl border-2 px-4 py-3 text-left transition active:scale-[0.99] ${selected.frontEntrance ? 'border-brand-600 bg-brand-50' : 'border-gray-200'}`}>
@@ -705,7 +758,7 @@ function BookContent() {
                         <p className="font-medium">Front entrance cleaning</p>
                         <p className="text-xs text-gray-500">Sweep, mop, and wipe down the front door area</p>
                       </div>
-                      <span className="shrink-0 text-sm font-bold text-brand-600">+${ecEntranceFee}</span>
+                      <span className="shrink-0 text-sm font-bold text-brand-600">+${selected.bookingType === 'subscription' ? ecMonthlyEntranceFee : ecEntranceFee}</span>
                     </button>
                     <button onClick={() => setSelected((p) => ({ ...p, backEntrance: !p.backEntrance }))}
                       className={`flex w-full items-center gap-3 rounded-xl border-2 px-4 py-3 text-left transition active:scale-[0.99] ${selected.backEntrance ? 'border-brand-600 bg-brand-50' : 'border-gray-200'}`}>
@@ -716,39 +769,55 @@ function BookContent() {
                         <p className="font-medium">Back entrance cleaning</p>
                         <p className="text-xs text-gray-500">Sweep, mop, and wipe down the back door area</p>
                       </div>
-                      <span className="shrink-0 text-sm font-bold text-brand-600">+${ecEntranceFee}</span>
+                      <span className="shrink-0 text-sm font-bold text-brand-600">+${selected.bookingType === 'subscription' ? ecMonthlyEntranceFee : ecEntranceFee}</span>
                     </button>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-6 rounded-xl bg-brand-50 p-4 space-y-1.5">
-                <p className="text-xs font-bold uppercase tracking-wider text-brand-700 mb-2">Price Breakdown</p>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Floors ({selected.floors} × ${ecPerFloor})</span>
-                  <span className="font-semibold">${(selected.floors * ecPerFloor).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Staircases ({selected.staircases} × ${ecPerStair})</span>
-                  <span className="font-semibold">${(selected.staircases * ecPerStair).toFixed(2)}</span>
-                </div>
-                {selected.frontEntrance && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Front entrance</span>
-                    <span className="font-semibold">${ecEntranceFee.toFixed(2)}</span>
+              {(() => {
+                const ecIsMonthly = selected.bookingType === 'subscription';
+                const pF = ecIsMonthly ? ecMonthlyPerFloor : ecPerFloor;
+                const pS = ecIsMonthly ? ecMonthlyPerStair : ecPerStair;
+                const pE = ecIsMonthly ? ecMonthlyEntranceFee : ecEntranceFee;
+                return (
+                  <div className="mt-6 rounded-xl bg-brand-50 p-4 space-y-1.5">
+                    <p className="text-xs font-bold uppercase tracking-wider text-brand-700 mb-2">
+                      Price Breakdown{ecIsMonthly ? ' · per cleaning' : ''}
+                    </p>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Floors ({selected.floors} × ${pF})</span>
+                      <span className="font-semibold">${(selected.floors * pF).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Staircases ({selected.staircases} × ${pS})</span>
+                      <span className="font-semibold">${(selected.staircases * pS).toFixed(2)}</span>
+                    </div>
+                    {selected.frontEntrance && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Front entrance</span>
+                        <span className="font-semibold">${pE.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {selected.backEntrance && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Back entrance</span>
+                        <span className="font-semibold">${pE.toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="mt-2 border-t border-brand-200 pt-2 flex justify-between">
+                      <span className="font-bold text-gray-900">{ecIsMonthly ? 'Per cleaning' : 'Total'}</span>
+                      <span className="text-xl font-bold text-brand-600">${entranceCleaningTotal().toFixed(2)}</span>
+                    </div>
+                    {ecIsMonthly && (
+                      <div className="flex justify-between text-sm text-green-700 font-semibold pt-1">
+                        <span>Monthly total (2 cleanings)</span>
+                        <span>${(entranceCleaningTotal() * 2).toFixed(2)}/mo</span>
+                      </div>
+                    )}
                   </div>
-                )}
-                {selected.backEntrance && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Back entrance</span>
-                    <span className="font-semibold">${ecEntranceFee.toFixed(2)}</span>
-                  </div>
-                )}
-                <div className="mt-2 border-t border-brand-200 pt-2 flex justify-between">
-                  <span className="font-bold text-gray-900">Total</span>
-                  <span className="text-xl font-bold text-brand-600">${entranceCleaningTotal().toFixed(2)}</span>
-                </div>
-              </div>
+                );
+              })()}
 
               <div className="mt-3 flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2.5">
                 <svg className="h-4 w-4 shrink-0 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -1245,52 +1314,83 @@ function BookContent() {
               <h2 className="text-lg font-bold">Confirm Cleaning Request</h2>
               <p className="mt-1 text-sm text-gray-500">Review your building details and price</p>
 
-              <div className="mt-4 space-y-2.5 rounded-xl bg-gray-50 p-4">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Service</span>
-                  <span className="text-sm font-medium">{selected.serviceType?.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Address</span>
-                  <span className="text-sm font-medium text-right">{selectedAddr?.street}{selectedAddr?.unit ? `, ${selectedAddr.unit}` : ''}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Date</span>
-                  <span className="text-sm font-medium">{new Date(selected.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Floors</span>
-                  <span className="text-sm font-medium">{selected.floors} × ${ecPerFloor} = ${(selected.floors * ecPerFloor).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Staircases</span>
-                  <span className="text-sm font-medium">{selected.staircases} × ${ecPerStair} = ${(selected.staircases * ecPerStair).toFixed(2)}</span>
-                </div>
-                {selected.frontEntrance && (
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Front entrance</span>
-                    <span className="text-sm font-medium">${ecEntranceFee.toFixed(2)}</span>
-                  </div>
-                )}
-                {selected.backEntrance && (
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Back entrance</span>
-                    <span className="text-sm font-medium">${ecEntranceFee.toFixed(2)}</span>
-                  </div>
-                )}
-                <hr className="border-gray-200" />
-                <div className="flex justify-between">
-                  <span className="font-semibold">Total</span>
-                  <span className="font-bold text-brand-600">${entranceCleaningTotal().toFixed(2)}</span>
-                </div>
-              </div>
+              {(() => {
+                const ecIsMonthly = selected.bookingType === 'subscription';
+                const pF = ecIsMonthly ? ecMonthlyPerFloor : ecPerFloor;
+                const pS = ecIsMonthly ? ecMonthlyPerStair : ecPerStair;
+                const pE = ecIsMonthly ? ecMonthlyEntranceFee : ecEntranceFee;
+                return (
+                  <>
+                    <div className="mt-4 space-y-2.5 rounded-xl bg-gray-50 p-4">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-500">Service</span>
+                        <span className="text-sm font-medium">{selected.serviceType?.name}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-500">Plan</span>
+                        <span className="text-sm font-medium">{ecIsMonthly ? 'Monthly (bi-weekly)' : 'One-Time'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-500">Address</span>
+                        <span className="text-sm font-medium text-right">{selectedAddr?.street}{selectedAddr?.unit ? `, ${selectedAddr.unit}` : ''}</span>
+                      </div>
+                      {!ecIsMonthly && (
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-500">Date</span>
+                          <span className="text-sm font-medium">{new Date(selected.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                        </div>
+                      )}
+                      {ecIsMonthly && (
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-500">Start week</span>
+                          <span className="text-sm font-medium">Week of {new Date(selected.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-500">Floors</span>
+                        <span className="text-sm font-medium">{selected.floors} × ${pF} = ${(selected.floors * pF).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-500">Staircases</span>
+                        <span className="text-sm font-medium">{selected.staircases} × ${pS} = ${(selected.staircases * pS).toFixed(2)}</span>
+                      </div>
+                      {selected.frontEntrance && (
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-500">Front entrance</span>
+                          <span className="text-sm font-medium">${pE.toFixed(2)}</span>
+                        </div>
+                      )}
+                      {selected.backEntrance && (
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-500">Back entrance</span>
+                          <span className="text-sm font-medium">${pE.toFixed(2)}</span>
+                        </div>
+                      )}
+                      <hr className="border-gray-200" />
+                      <div className="flex justify-between">
+                        <span className="font-semibold">{ecIsMonthly ? 'Per cleaning' : 'Total'}</span>
+                        <span className="font-bold text-brand-600">${entranceCleaningTotal().toFixed(2)}</span>
+                      </div>
+                      {ecIsMonthly && (
+                        <div className="flex justify-between text-sm text-green-700 font-semibold">
+                          <span>Monthly total (2 cleanings)</span>
+                          <span>${(entranceCleaningTotal() * 2).toFixed(2)}/mo</span>
+                        </div>
+                      )}
+                    </div>
 
-              <div className="mt-4 flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-3 text-sm text-blue-700">
-                <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
-                </svg>
-                <span>Your card on file will be charged <strong>${entranceCleaningTotal().toFixed(2)}</strong> after service completion.</span>
-              </div>
+                    <div className="mt-4 flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-3 text-sm text-blue-700">
+                      <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+                      </svg>
+                      {ecIsMonthly
+                        ? <span>You will be charged <strong>${(entranceCleaningTotal() * 2).toFixed(2)}/month</strong> for 2 cleanings. Your card is billed after each visit.</span>
+                        : <span>Your card on file will be charged <strong>${entranceCleaningTotal().toFixed(2)}</strong> after service completion.</span>
+                      }
+                    </div>
+                  </>
+                );
+              })()}
 
               {bookingConfirmed ? (
                 <div className="mt-6 flex flex-col items-center py-8 text-center">
@@ -1299,14 +1399,14 @@ function BookContent() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
-                  <h2 className="mt-4 text-xl font-bold text-gray-900">Booking Confirmed!</h2>
-                  <p className="mt-2 text-sm text-gray-500">Entrance cleaning scheduled for {selected.date ? new Date(selected.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) : ''}.</p>
+                  <h2 className="mt-4 text-xl font-bold text-gray-900">{selected.bookingType === 'subscription' ? 'Subscription Started!' : 'Booking Confirmed!'}</h2>
+                  <p className="mt-2 text-sm text-gray-500">{selected.bookingType === 'subscription' ? 'Your bi-weekly entrance cleaning subscription is active.' : `Entrance cleaning scheduled for ${selected.date ? new Date(selected.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) : ''}.`}</p>
                   <p className="mt-1 text-xs text-gray-400">Redirecting to your dashboard...</p>
                 </div>
               ) : (
                 <button onClick={handleConfirm} disabled={submitting}
                   className="mt-6 w-full rounded-xl bg-brand-600 py-3.5 font-semibold text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700 active:scale-[0.98] disabled:opacity-50">
-                  {submitting ? 'Processing...' : 'Confirm Booking'}
+                  {submitting ? 'Processing...' : selected.bookingType === 'subscription' ? 'Start Subscription' : 'Confirm Booking'}
                 </button>
               )}
             </div>

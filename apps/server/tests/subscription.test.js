@@ -12,7 +12,7 @@ jest.mock('../config', () => mockConfig);
 const Subscription = require('../models/Subscription');
 const Booking = require('../models/Booking');
 const stripeService = require('../services/stripeService');
-const { toggleAutoRenew, cancel } = require('../services/subscriptionService');
+const { toggleAutoRenew, cancel, create } = require('../services/subscriptionService');
 
 const userId = new mongoose.Types.ObjectId();
 const subId = new mongoose.Types.ObjectId();
@@ -86,6 +86,61 @@ describe('cancel', () => {
   it('throws 404 when subscription not found', async () => {
     Subscription.findOne.mockResolvedValue(null);
     await expect(cancel(subId, userId)).rejects.toThrow('Subscription not found');
+  });
+});
+
+describe('create — entrance cleaning subscription', () => {
+  const ServiceType = require('../models/ServiceType');
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    Subscription.findOne.mockResolvedValue(null);
+    Subscription.create.mockImplementation((data) => Promise.resolve({ ...data, _id: new mongoose.Types.ObjectId(), save: jest.fn() }));
+    Booking.create.mockResolvedValue({ _id: new mongoose.Types.ObjectId() });
+    Booking.findOne.mockResolvedValue(null);
+  });
+
+  it('calculates monthly price from floors and staircases', async () => {
+    ServiceType.findById.mockResolvedValue({ _id: new mongoose.Types.ObjectId(), slug: 'entrance-cleaning', name: 'Multi-Family Entrance Cleaning' });
+    const { subscription } = await create(userId, {
+      serviceTypeId: new mongoose.Types.ObjectId().toString(),
+      addressId: new mongoose.Types.ObjectId().toString(),
+      dayOfWeek: 1,
+      floors: 2,
+      staircases: 1,
+      frontEntrance: false,
+      backEntrance: false,
+    });
+    // 2 floors × $12 + 1 staircase × $6 = $30
+    expect(subscription.monthlyPrice).toBe(30);
+    expect(subscription.floors).toBe(2);
+    expect(subscription.staircases).toBe(1);
+  });
+
+  it('throws FLOORS_REQUIRED when floors is missing', async () => {
+    ServiceType.findById.mockResolvedValue({ _id: new mongoose.Types.ObjectId(), slug: 'entrance-cleaning', name: 'Multi-Family Entrance Cleaning' });
+    await expect(create(userId, {
+      serviceTypeId: new mongoose.Types.ObjectId().toString(),
+      addressId: new mongoose.Types.ObjectId().toString(),
+      dayOfWeek: 1,
+    })).rejects.toThrow('Number of floors is required');
+  });
+
+  it('includes entrance fees when selected', async () => {
+    ServiceType.findById.mockResolvedValue({ _id: new mongoose.Types.ObjectId(), slug: 'entrance-cleaning', name: 'Multi-Family Entrance Cleaning' });
+    const { subscription } = await create(userId, {
+      serviceTypeId: new mongoose.Types.ObjectId().toString(),
+      addressId: new mongoose.Types.ObjectId().toString(),
+      dayOfWeek: 2,
+      floors: 1,
+      staircases: 0,
+      frontEntrance: true,
+      backEntrance: true,
+    });
+    // 1 floor × $12 + 2 entrances × $12 = $36
+    expect(subscription.monthlyPrice).toBe(36);
+    expect(subscription.frontEntrance).toBe(true);
+    expect(subscription.backEntrance).toBe(true);
   });
 });
 

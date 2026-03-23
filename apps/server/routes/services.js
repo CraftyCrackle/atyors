@@ -36,6 +36,9 @@ router.get('/pricing', (req, res) => {
       entranceCleaningPerFloor: pricingService.ENTRANCE_CLEANING_PER_FLOOR,
       entranceCleaningPerStaircase: pricingService.ENTRANCE_CLEANING_PER_STAIRCASE,
       entranceCleaningEntranceFee: pricingService.ENTRANCE_CLEANING_ENTRANCE_FEE,
+      ecMonthlyPerFloor: pricingService.EC_MONTHLY_PER_FLOOR,
+      ecMonthlyPerStaircase: pricingService.EC_MONTHLY_PER_STAIRCASE,
+      ecMonthlyEntranceFee: pricingService.EC_MONTHLY_ENTRANCE_FEE,
     },
   });
 });

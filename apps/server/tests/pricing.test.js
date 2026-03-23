@@ -5,11 +5,16 @@ const {
   MONTHLY_BASE,
   MONTHLY_BASE_BOTH,
   MONTHLY_INCLUDED_BARRELS,
+  EC_MONTHLY_PER_FLOOR,
+  EC_MONTHLY_PER_STAIRCASE,
+  EC_MONTHLY_ENTRANCE_FEE,
   calculateOneTimePrice,
   calculateOneTimePriceBothLeg,
   calculateCurbItemPrice,
   calculateMonthlyPrice,
   calculateMonthlyPriceBoth,
+  calculateEntranceCleaningPrice,
+  calculateEntranceCleaningMonthlyPrice,
 } = require('../services/pricingService');
 
 describe('Pricing Service', () => {
@@ -101,6 +106,43 @@ describe('Pricing Service', () => {
 
     test('6 barrels = $30 + 3*$3 = $39/mo', () => {
       expect(calculateMonthlyPriceBoth(6)).toBe(39);
+    });
+  });
+
+  describe('EC monthly constants', () => {
+    test('EC_MONTHLY_PER_FLOOR = 12', () => {
+      expect(EC_MONTHLY_PER_FLOOR).toBe(12);
+    });
+    test('EC_MONTHLY_PER_STAIRCASE = 6', () => {
+      expect(EC_MONTHLY_PER_STAIRCASE).toBe(6);
+    });
+    test('EC_MONTHLY_ENTRANCE_FEE = 12', () => {
+      expect(EC_MONTHLY_ENTRANCE_FEE).toBe(12);
+    });
+  });
+
+  describe('calculateEntranceCleaningPrice (one-time)', () => {
+    test('2 floors no staircases = $30', () => {
+      expect(calculateEntranceCleaningPrice({ floors: 2, staircases: 0 })).toBe(30);
+    });
+    test('2 floors, 1 staircase, both entrances = $68', () => {
+      expect(calculateEntranceCleaningPrice({ floors: 2, staircases: 1, frontEntrance: true, backEntrance: true })).toBe(68);
+    });
+    test('1 floor, 0 staircases, front entrance only = $30', () => {
+      expect(calculateEntranceCleaningPrice({ floors: 1, staircases: 0, frontEntrance: true })).toBe(30);
+    });
+  });
+
+  describe('calculateEntranceCleaningMonthlyPrice (bi-weekly subscription)', () => {
+    test('2 floors no staircases = $24/cleaning', () => {
+      expect(calculateEntranceCleaningMonthlyPrice({ floors: 2, staircases: 0 })).toBe(24);
+    });
+    test('2 floors, 1 staircase, both entrances = $54/cleaning', () => {
+      expect(calculateEntranceCleaningMonthlyPrice({ floors: 2, staircases: 1, frontEntrance: true, backEntrance: true })).toBe(54);
+    });
+    test('monthly is cheaper than one-time for same inputs', () => {
+      const inputs = { floors: 3, staircases: 2, frontEntrance: true, backEntrance: false };
+      expect(calculateEntranceCleaningMonthlyPrice(inputs)).toBeLessThan(calculateEntranceCleaningPrice(inputs));
     });
   });
 });
