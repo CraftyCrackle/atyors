@@ -101,10 +101,18 @@ async function generateUpcomingBookings(subscription, weeksAhead = 4) {
     const dayEnd = new Date(dayStart);
     dayEnd.setDate(dayEnd.getDate() + 1);
 
+    // Dedup check spans Sunday–Tuesday so it catches both put-out (night before) and bring-in (trash day).
+    const dedupStart = new Date(dayStart);
+    dedupStart.setDate(dedupStart.getDate() - 1);
+
     const existing = await Booking.findOne({
       subscriptionId: subscription._id,
-      scheduledDate: { $gte: dayStart, $lt: dayEnd },
+      scheduledDate: { $gte: dedupStart, $lt: dayEnd },
     });
+
+    // Put-out service happens the evening before the trash day.
+    const putOutDate = new Date(date);
+    putOutDate.setDate(putOutDate.getDate() - 1);
 
     if (!existing) {
       if (isBoth) {
@@ -113,7 +121,7 @@ async function generateUpcomingBookings(subscription, weeksAhead = 4) {
           addressId: subscription.addressId,
           serviceTypeId: putOutType._id,
           subscriptionId: subscription._id,
-          scheduledDate: date,
+          scheduledDate: putOutDate,
           barrelCount,
           putOutTime: subscription.putOutTime || '',
           amount: 0,
@@ -144,12 +152,13 @@ async function generateUpcomingBookings(subscription, weeksAhead = 4) {
 
         bookings.push(putOutBooking, bringInBooking);
       } else {
+        const isSubPutOut = svcType && svcType.slug === 'put-out';
         bookings.push(await Booking.create({
           userId: subscription.userId,
           addressId: subscription.addressId,
           serviceTypeId: subscription.serviceTypeId,
           subscriptionId: subscription._id,
-          scheduledDate: date,
+          scheduledDate: isSubPutOut ? putOutDate : date,
           barrelCount,
           putOutTime: subscription.putOutTime || '',
           bringInTime: subscription.bringInTime || '',

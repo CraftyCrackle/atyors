@@ -17,6 +17,10 @@ function todayInEastern() {
 async function create(userId, data) {
   const scheduledDate = new Date(data.scheduledDate + 'T12:00:00');
 
+  // Put-out service happens the evening BEFORE the trash day.
+  const putOutDate = new Date(scheduledDate);
+  putOutDate.setDate(putOutDate.getDate() - 1);
+
   if (scheduledDate.getDay() === 0) {
     const err = new Error('Service is not available on Sundays. Please select a day Monday through Saturday.');
     err.status = 400;
@@ -57,6 +61,7 @@ async function create(userId, data) {
   const svcType = await ServiceType.findById(data.serviceTypeId);
   const isCurbItems = svcType && svcType.slug === 'curb-items';
   const isBoth = svcType && svcType.slug === 'both';
+  const isPutOut = svcType && svcType.slug === 'put-out';
 
   if (isCurbItems) {
     const itemCount = Math.min(10, Math.max(1, parseInt(data.itemCount) || 1));
@@ -133,7 +138,7 @@ async function create(userId, data) {
       userId,
       addressId: data.addressId,
       serviceTypeId: putOutType._id,
-      scheduledDate,
+      scheduledDate: putOutDate,
       barrelCount,
       putOutTime: data.putOutTime,
       amount: clientAmount,
@@ -174,7 +179,7 @@ async function create(userId, data) {
     userId,
     addressId: data.addressId,
     serviceTypeId: data.serviceTypeId,
-    scheduledDate,
+    scheduledDate: isPutOut ? putOutDate : scheduledDate,
     barrelCount,
     putOutTime: data.putOutTime,
     bringInTime: data.bringInTime,

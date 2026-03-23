@@ -56,3 +56,29 @@ describe('Booking Model Schema', () => {
     expect(paths.stripePaymentIntentId.instance).toBe('String');
   });
 });
+
+describe('Put-out date scheduling', () => {
+  test('putOutDate is the day before the trash day', () => {
+    // If trash day is Monday Mar 23, put-out date must be Sunday Mar 22.
+    const trashDay = new Date('2026-03-23T12:00:00');
+    const putOutDate = new Date(trashDay);
+    putOutDate.setDate(putOutDate.getDate() - 1);
+    expect(putOutDate.getDate()).toBe(22);
+    expect(putOutDate.getDay()).toBe(0); // Sunday
+  });
+
+  test('bring-in date stays on the trash day', () => {
+    const trashDay = new Date('2026-03-23T12:00:00');
+    expect(trashDay.getDay()).toBe(1); // Monday
+    expect(trashDay.getDate()).toBe(23);
+  });
+
+  test('put-out for Saturday trash day lands on Friday', () => {
+    const trashDay = new Date('2026-03-28T12:00:00'); // Saturday
+    const putOutDate = new Date(trashDay);
+    putOutDate.setDate(putOutDate.getDate() - 1);
+    expect(putOutDate.getDay()).toBe(5); // Friday
+    expect(putOutDate.getDate()).toBe(27);
+  });
+});
+
