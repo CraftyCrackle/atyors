@@ -4,6 +4,7 @@ const Booking = require('../models/Booking');
 const User = require('../models/User');
 const ServiceZone = require('../models/ServiceZone');
 const AppSettings = require('../models/AppSettings');
+const ServiceType = require('../models/ServiceType');
 const userService = require('../services/userService');
 
 router.use(authenticate, requireRole('admin', 'superadmin'));
@@ -173,7 +174,12 @@ router.get('/reports/summary', async (req, res, next) => {
     const revenueExpr = { $ifNull: ['$serviceValue', '$amount'] };
     const completedMatch = { status: 'completed' };
 
-    const [totalBookings, activeBookings, completedBookings, totalCustomers, settings, todayBooked, revenueAll, revenueWeek, revenueMonth] = await Promise.all([
+    const ecType = await ServiceType.findOne({ slug: 'entrance-cleaning' }).select('_id').lean();
+    const ecTypeId = ecType?._id;
+    const ecFilter = ecTypeId ? { serviceTypeId: ecTypeId } : { serviceTypeId: null };
+    const nonEcFilter = ecTypeId ? { serviceTypeId: { $ne: ecTypeId } } : {};
+
+    const [totalBookings, activeBookings, completedBookings, totalCustomers, settings, todayBooked, ecTodayBooked, revenueAll, revenueWeek, revenueMonth] = await Promise.all([
       Booking.countDocuments(),
       Booking.countDocuments({ status: { $in: ['pending', 'active', 'en-route', 'arrived', 'in-progress'] } }),
       Booking.countDocuments({ status: 'completed' }),
@@ -182,6 +188,12 @@ router.get('/reports/summary', async (req, res, next) => {
       Booking.countDocuments({
         scheduledDate: { $gte: todayStart, $lt: todayEnd },
         status: { $in: ['pending', 'active', 'en-route', 'arrived', 'completed'] },
+        ...nonEcFilter,
+      }),
+      Booking.countDocuments({
+        scheduledDate: { $gte: todayStart, $lt: todayEnd },
+        status: { $in: ['pending', 'active', 'en-route', 'arrived', 'completed'] },
+        ...ecFilter,
       }),
       Booking.aggregate([{ $match: completedMatch }, { $group: { _id: null, total: { $sum: revenueExpr } } }]),
       Booking.aggregate([{ $match: { ...completedMatch, completedAt: { $gte: weekStart } }, }, { $group: { _id: null, total: { $sum: revenueExpr } } }]),
@@ -192,7 +204,7 @@ router.get('/reports/summary', async (req, res, next) => {
     const weekRevenue = revenueWeek[0]?.total || 0;
     const monthRevenue = revenueMonth[0]?.total || 0;
 
-    res.json({ success: true, data: { totalBookings, activeBookings, completedBookings, totalCustomers, dailyBookingCap: settings.dailyBookingCap, todayBooked, totalRevenue, weekRevenue, monthRevenue } });
+    res.json({ success: true, data: { totalBookings, activeBookings, completedBookings, totalCustomers, dailyBookingCap: settings.dailyBookingCap, todayBooked, entranceCleaningDailyCap: settings.entranceCleaningDailyCap, ecTodayBooked, totalRevenue, weekRevenue, monthRevenue } });
   } catch (err) { next(err); }
 });
 
@@ -205,7 +217,7 @@ router.get('/settings', async (req, res, next) => {
 
 router.patch('/settings', async (req, res, next) => {
   try {
-    const { dailyBookingCap } = req.body;
+    const { dailyBookingCap, entranceCleaningDailyCap } = req.body;
     const updates = {};
     if (dailyBookingCap !== undefined) {
       const cap = parseInt(dailyBookingCap);
@@ -213,6 +225,13 @@ router.patch('/settings', async (req, res, next) => {
         return res.status(400).json({ success: false, error: { code: 'INVALID_VALUE', message: 'dailyBookingCap must be a positive number' } });
       }
       updates.dailyBookingCap = cap;
+    }
+    if (entranceCleaningDailyCap !== undefined) {
+      const cap = parseInt(entranceCleaningDailyCap);
+      if (isNaN(cap) || cap < 0) {
+        return res.status(400).json({ success: false, error: { code: 'INVALID_VALUE', message: 'entranceCleaningDailyCap must be 0 (unlimited) or a positive number' } });
+      }
+      updates.entranceCleaningDailyCap = cap;
     }
     const settings = await AppSettings.set(updates);
     res.json({ success: true, data: { settings } });

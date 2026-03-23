@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const appSettingsSchema = new mongoose.Schema({
   dailyBookingCap: { type: Number, default: 100, min: 1 },
+  entranceCleaningDailyCap: { type: Number, default: 0, min: 0 },
   servedZipcodes: { type: [String], default: [] },
 }, { timestamps: true });
 

@@ -29,6 +29,7 @@ router.post('/', authenticate, bookingController.create);
 router.post('/batch', authenticate, bookingController.createBatch);
 router.get('/', authenticate, bookingController.list);
 router.get('/capacity', authenticate, bookingController.checkCapacity);
+router.get('/capacity/entrance-cleaning', authenticate, bookingController.checkEntranceCleaningCapacity);
 router.get('/messages/unread', authenticate, messageController.unreadCount);
 router.get('/my-reviews', authenticate, reviewController.getMyReviews);
 router.get('/:id', authenticate, bookingController.getById);

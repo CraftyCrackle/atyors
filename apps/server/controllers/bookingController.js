@@ -194,6 +194,17 @@ async function checkCapacity(req, res, next) {
   } catch (err) { next(err); }
 }
 
+async function checkEntranceCleaningCapacity(req, res, next) {
+  try {
+    const { date } = req.query;
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_DATE', message: 'date query param required (YYYY-MM-DD)' } });
+    }
+    const data = await bookingService.getEntranceCleaningCapacity(date);
+    res.json({ success: true, data });
+  } catch (err) { next(err); }
+}
+
 async function createBatch(req, res, next) {
   try {
     const isSubscription = !!req.body.subscriptionId;
@@ -237,4 +248,4 @@ async function createBatch(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { create, confirmPayment, list, getById, cancel, reschedule, getQueuePosition, uploadCurbItemPhotos, checkCapacity, createBatch };
+module.exports = { create, confirmPayment, list, getById, cancel, reschedule, getQueuePosition, uploadCurbItemPhotos, checkCapacity, checkEntranceCleaningCapacity, createBatch };

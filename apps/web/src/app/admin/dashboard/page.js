@@ -49,6 +49,9 @@ export default function AdminDashboardPage() {
   const [capInput, setCapInput] = useState('');
   const [capSaving, setCapSaving] = useState(false);
   const [capMsg, setCapMsg] = useState('');
+  const [ecCapInput, setEcCapInput] = useState('');
+  const [ecCapSaving, setEcCapSaving] = useState(false);
+  const [ecCapMsg, setEcCapMsg] = useState('');
   const [zipcodes, setZipcodes] = useState([]);
   const [zipInput, setZipInput] = useState('');
   const [zipSaving, setZipSaving] = useState(false);
@@ -64,6 +67,7 @@ export default function AdminDashboardPage() {
       setStats(summaryRes.data);
       setBookings(bookingsRes.data.bookings || []);
       if (!capInput) setCapInput(String(summaryRes.data.dailyBookingCap || 100));
+      if (!ecCapInput) setEcCapInput(String(summaryRes.data.entranceCleaningDailyCap ?? 0));
       setZipcodes(settingsRes.data.settings?.servedZipcodes || []);
     } catch { }
     setLoading(false);
@@ -87,6 +91,20 @@ export default function AdminDashboardPage() {
     } catch { setCapMsg('Failed to save'); }
     setCapSaving(false);
     setTimeout(() => setCapMsg(''), 3000);
+  }
+
+  async function saveEcCap() {
+    const val = parseInt(ecCapInput);
+    if (isNaN(val) || val < 0) { setEcCapMsg('Must be 0 (unlimited) or higher'); return; }
+    setEcCapSaving(true);
+    setEcCapMsg('');
+    try {
+      await api.patch('/admin/settings', { entranceCleaningDailyCap: val });
+      setEcCapMsg('Saved');
+      load();
+    } catch { setEcCapMsg('Failed to save'); }
+    setEcCapSaving(false);
+    setTimeout(() => setEcCapMsg(''), 3000);
   }
 
   return (
@@ -190,6 +208,52 @@ export default function AdminDashboardPage() {
                           style={{ width: `${Math.min(100, (stats.todayBooked / stats.dailyBookingCap) * 100)}%` }}
                         />
                       </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-6 border-t border-gray-700 pt-5">
+                  <label className="block text-sm font-medium text-gray-300">Entrance Cleaning daily limit</label>
+                  <p className="mt-0.5 text-xs text-gray-500">Max entrance cleaning jobs per day. Set to <strong className="text-gray-400">0</strong> for unlimited.</p>
+                  <div className="mt-2 flex items-center gap-3">
+                    <input
+                      type="number"
+                      min="0"
+                      value={ecCapInput}
+                      onChange={(e) => setEcCapInput(e.target.value)}
+                      className="w-28 rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none"
+                    />
+                    <button onClick={saveEcCap} disabled={ecCapSaving}
+                      className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50">
+                      {ecCapSaving ? 'Saving...' : 'Save'}
+                    </button>
+                    {ecCapMsg && <span className={`text-xs ${ecCapMsg === 'Saved' ? 'text-green-400' : 'text-red-400'}`}>{ecCapMsg}</span>}
+                  </div>
+                  {stats && (
+                    <div className="mt-3">
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-gray-400">Today:</span>
+                        {stats.entranceCleaningDailyCap === 0 ? (
+                          <span className="font-semibold text-green-400">{stats.ecTodayBooked ?? 0} <span className="font-normal text-gray-500">(unlimited)</span></span>
+                        ) : (
+                          <>
+                            <span className={`font-semibold ${stats.ecTodayBooked >= stats.entranceCleaningDailyCap ? 'text-red-400' : 'text-green-400'}`}>
+                              {stats.ecTodayBooked ?? 0} / {stats.entranceCleaningDailyCap}
+                            </span>
+                            {stats.ecTodayBooked >= stats.entranceCleaningDailyCap && (
+                              <span className="rounded-full bg-red-500/20 px-2 py-0.5 text-xs font-medium text-red-400">At capacity</span>
+                            )}
+                          </>
+                        )}
+                      </div>
+                      {stats.entranceCleaningDailyCap > 0 && (
+                        <div className="mt-1.5 h-2 w-full max-w-xs overflow-hidden rounded-full bg-gray-700">
+                          <div
+                            className={`h-full rounded-full transition-all ${stats.ecTodayBooked >= stats.entranceCleaningDailyCap ? 'bg-red-500' : 'bg-teal-500'}`}
+                            style={{ width: `${Math.min(100, ((stats.ecTodayBooked ?? 0) / stats.entranceCleaningDailyCap) * 100)}%` }}
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

@@ -13,6 +13,18 @@ describe('AppSettings Model', () => {
     expect(paths.dailyBookingCap.options.min).toBe(1);
   });
 
+  test('schema has entranceCleaningDailyCap with default 0', () => {
+    const paths = AppSettings.schema.paths;
+    expect(paths.entranceCleaningDailyCap).toBeDefined();
+    expect(paths.entranceCleaningDailyCap.instance).toBe('Number');
+    expect(paths.entranceCleaningDailyCap.options.default).toBe(0);
+  });
+
+  test('entranceCleaningDailyCap enforces min value of 0', () => {
+    const paths = AppSettings.schema.paths;
+    expect(paths.entranceCleaningDailyCap.options.min).toBe(0);
+  });
+
   test('get static method is defined', () => {
     expect(typeof AppSettings.get).toBe('function');
   });
@@ -22,11 +34,15 @@ describe('AppSettings Model', () => {
   });
 });
 
-describe('bookingService.getCapacity', () => {
+describe('bookingService capacity exports', () => {
   const bookingService = require('../services/bookingService');
 
   test('getCapacity is exported', () => {
     expect(typeof bookingService.getCapacity).toBe('function');
+  });
+
+  test('getEntranceCleaningCapacity is exported', () => {
+    expect(typeof bookingService.getEntranceCleaningCapacity).toBe('function');
   });
 });
 

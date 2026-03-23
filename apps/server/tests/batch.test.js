@@ -35,7 +35,10 @@ describe('bookingService.getCapacity — subscriber bypass', () => {
     schema: { paths: {} },
   }));
 
-  jest.mock('../models/ServiceType', () => ({ findById: jest.fn(), findOne: jest.fn() }));
+  jest.mock('../models/ServiceType', () => ({
+    findById: jest.fn(),
+    findOne: jest.fn().mockReturnValue({ select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }) }),
+  }));
   jest.mock('../models/Address', () => ({ findOne: jest.fn() }));
   jest.mock('../models/Subscription', () => ({ findOne: jest.fn(), schema: { paths: {} } }));
 

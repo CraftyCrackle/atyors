@@ -77,6 +77,25 @@ async function create(userId, data) {
     const backEntrance = !!data.backEntrance;
     const amount = calculateEntranceCleaningPrice({ floors, staircases, frontEntrance, backEntrance });
 
+    const ecSettings = await AppSettings.get();
+    if (ecSettings.entranceCleaningDailyCap > 0) {
+      const ecDayStart = new Date(scheduledDate);
+      ecDayStart.setHours(0, 0, 0, 0);
+      const ecDayEnd = new Date(ecDayStart);
+      ecDayEnd.setDate(ecDayEnd.getDate() + 1);
+      const ecBooked = await Booking.countDocuments({
+        scheduledDate: { $gte: ecDayStart, $lt: ecDayEnd },
+        serviceTypeId: data.serviceTypeId,
+        status: { $in: ['pending', 'active', 'en-route', 'arrived', 'completed'] },
+      });
+      if (ecBooked >= ecSettings.entranceCleaningDailyCap) {
+        const err = new Error('Entrance cleaning is fully booked for this date. Please select another day.');
+        err.status = 400;
+        err.code = 'DAY_FULL';
+        throw err;
+      }
+    }
+
     const taskKeys = [];
     for (let i = 1; i <= floors; i++) taskKeys.push(`floor-${i}`);
     if (staircases > 0) taskKeys.push('stairs');
@@ -591,11 +610,31 @@ async function getCapacity(dateStr, { count = 1, isSubscriber = false } = {}) {
   const dayStart = new Date(dateStr + 'T00:00:00');
   const dayEnd = new Date(dayStart);
   dayEnd.setDate(dayEnd.getDate() + 1);
+  const ecType = await require('../models/ServiceType').findOne({ slug: 'entrance-cleaning' }).select('_id').lean();
+  const excludeFilter = ecType ? { serviceTypeId: { $ne: ecType._id } } : {};
   const booked = await Booking.countDocuments({
     scheduledDate: { $gte: dayStart, $lt: dayEnd },
     status: { $in: ['pending', 'active', 'en-route', 'arrived', 'completed'] },
+    ...excludeFilter,
   });
   return { date: dateStr, booked, cap, available: (booked + count) <= cap };
+}
+
+async function getEntranceCleaningCapacity(dateStr) {
+  const settings = await AppSettings.get();
+  const cap = settings.entranceCleaningDailyCap;
+  if (cap === 0) return { date: dateStr, booked: 0, cap: 0, available: true, unlimited: true };
+  const dayStart = new Date(dateStr + 'T00:00:00');
+  const dayEnd = new Date(dayStart);
+  dayEnd.setDate(dayEnd.getDate() + 1);
+  const ecType = await require('../models/ServiceType').findOne({ slug: 'entrance-cleaning' }).select('_id').lean();
+  if (!ecType) return { date: dateStr, booked: 0, cap, available: true };
+  const booked = await Booking.countDocuments({
+    scheduledDate: { $gte: dayStart, $lt: dayEnd },
+    serviceTypeId: ecType._id,
+    status: { $in: ['pending', 'active', 'en-route', 'arrived', 'completed'] },
+  });
+  return { date: dateStr, booked, cap, available: booked < cap };
 }
 
 async function createBatch(userId, { addresses, serviceTypeId, scheduledDate, bookingType, barrelCounts = {}, putOutTime, bringInTime, itemCount, curbItemNotes, curbItemPhotos }) {
@@ -634,4 +673,4 @@ async function createBatch(userId, { addresses, serviceTypeId, scheduledDate, bo
   return { bookings: created, batchId };
 }
 
-module.exports = { create, createBatch, listByUser, getById, updateStatus, cancel, reschedule, chargeBookingOnCompletion, expireOverdueBookings, getCapacity };
+module.exports = { create, createBatch, listByUser, getById, updateStatus, cancel, reschedule, chargeBookingOnCompletion, expireOverdueBookings, getCapacity, getEntranceCleaningCapacity };

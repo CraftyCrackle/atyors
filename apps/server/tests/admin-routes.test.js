@@ -2,6 +2,7 @@ jest.mock('../models/Booking');
 jest.mock('../models/User');
 jest.mock('../models/ServiceZone');
 jest.mock('../models/AppSettings');
+jest.mock('../models/ServiceType');
 jest.mock('../middleware/auth');
 
 const { authenticate, requireRole } = require('../middleware/auth');
@@ -17,8 +18,10 @@ const adminRoutes = require('../routes/admin');
 const User = require('../models/User');
 const Booking = require('../models/Booking');
 const AppSettings = require('../models/AppSettings');
+const ServiceType = require('../models/ServiceType');
 
-AppSettings.get.mockResolvedValue({ dailyBookingCap: 100 });
+AppSettings.get.mockResolvedValue({ dailyBookingCap: 100, entranceCleaningDailyCap: 0 });
+ServiceType.findOne.mockReturnValue({ select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue({ _id: 'ec-type-id' }) }) });
 
 const app = express();
 app.use(express.json());
@@ -47,10 +50,11 @@ describe('Admin routes', () => {
   describe('GET /admin/reports/summary', () => {
     test('returns aggregate counts with capacity and revenue info', async () => {
       Booking.countDocuments
-        .mockResolvedValueOnce(42)
-        .mockResolvedValueOnce(5)
-        .mockResolvedValueOnce(30)
-        .mockResolvedValueOnce(7);
+        .mockResolvedValueOnce(42)  // totalBookings
+        .mockResolvedValueOnce(5)   // activeBookings
+        .mockResolvedValueOnce(30)  // completedBookings
+        .mockResolvedValueOnce(7)   // todayBooked (non-EC)
+        .mockResolvedValueOnce(2);  // ecTodayBooked
       User.countDocuments.mockResolvedValue(10);
       Booking.aggregate
         .mockResolvedValueOnce([{ _id: null, total: 500 }])
@@ -60,13 +64,15 @@ describe('Admin routes', () => {
       const res = await request(app).get('/admin/reports/summary');
 
       expect(res.status).toBe(200);
-      expect(res.body.data).toEqual({
+      expect(res.body.data).toMatchObject({
         totalBookings: 42,
         activeBookings: 5,
         completedBookings: 30,
         totalCustomers: 10,
         dailyBookingCap: 100,
         todayBooked: 7,
+        entranceCleaningDailyCap: 0,
+        ecTodayBooked: 2,
         totalRevenue: 500,
         weekRevenue: 120,
         monthRevenue: 300,

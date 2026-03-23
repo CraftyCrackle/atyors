@@ -94,7 +94,13 @@ function BookContent() {
 
   useEffect(() => {
     if (!selected.date) { setDateFullyBooked(false); return; }
-    if (isEntranceCleaning()) { setDateFullyBooked(false); return; }
+    if (isEntranceCleaning()) {
+      setDateFullyBooked(false);
+      api.get(`/bookings/capacity/entrance-cleaning?date=${selected.date}`)
+        .then((res) => { if (!res.data.available) setDateFullyBooked(true); })
+        .catch(() => {});
+      return;
+    }
     const updates = {};
     if (selected.putOutTime && isTimeWindowPast(selected.putOutTime, false)) updates.putOutTime = '';
     if (selected.bringInTime && isTimeWindowPast(selected.bringInTime, true)) updates.bringInTime = '';
