@@ -156,7 +156,7 @@ async function generateUpcomingBookings(subscription, weeksAhead = 4) {
     if (frontEntrance) taskKeys.push('front-entrance');
     if (backEntrance) taskKeys.push('back-entrance');
 
-    const daysUntilNext = (subscription.dayOfWeek - now.getDay() + 7) % 7 || 7;
+    const daysUntilNext = (subscription.dayOfWeek - now.getDay() + 7) % 7;
     const firstDate = new Date(now);
     firstDate.setDate(firstDate.getDate() + daysUntilNext);
     firstDate.setHours(12, 0, 0, 0);

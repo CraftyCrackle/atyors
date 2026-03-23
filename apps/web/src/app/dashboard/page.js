@@ -216,7 +216,9 @@ function BookingCard({ booking, onRate, alreadyRated, onCancel, cancelling, onCo
               {date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
               {svc?.slug === 'curb-items'
                 ? <span className="mx-1">&middot; {booking.itemCount || 1} item{(booking.itemCount || 1) > 1 ? 's' : ''}</span>
-                : booking.barrelCount > 0 && <span className="mx-1">&middot; {booking.barrelCount} barrel{booking.barrelCount > 1 ? 's' : ''}</span>
+                : svc?.slug === 'entrance-cleaning'
+                  ? <span className="mx-1">&middot; {booking.floors || 1} floor{(booking.floors || 1) > 1 ? 's' : ''}{booking.staircases > 0 ? `, ${booking.staircases} staircase${booking.staircases > 1 ? 's' : ''}` : ''}</span>
+                  : booking.barrelCount > 0 && <span className="mx-1">&middot; {booking.barrelCount} barrel{booking.barrelCount > 1 ? 's' : ''}</span>
               }
               {booking.subscriptionId
                 ? <span className="mx-1 text-accent-600 font-medium">&middot; Subscription</span>

@@ -56,7 +56,9 @@ function JobCard({ booking, onAccept, accepting, onRate, alreadyRated }) {
             {date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
             {svc?.slug === 'curb-items'
               ? <span className="mx-1">&middot; {booking.itemCount || 1} item{(booking.itemCount || 1) > 1 ? 's' : ''}</span>
-              : booking.barrelCount > 0 && <span className="mx-1">&middot; {booking.barrelCount} barrel{booking.barrelCount > 1 ? 's' : ''}</span>
+              : svc?.slug === 'entrance-cleaning'
+                ? <span className="mx-1">&middot; {booking.floors || 1} floor{(booking.floors || 1) > 1 ? 's' : ''}{booking.staircases > 0 ? `, ${booking.staircases} staircase${booking.staircases > 1 ? 's' : ''}` : ''}</span>
+                : booking.barrelCount > 0 && <span className="mx-1">&middot; {booking.barrelCount} barrel{booking.barrelCount > 1 ? 's' : ''}</span>
             }
             <span className="mx-1">&middot; ${(Number(booking.serviceValue ?? booking.amount ?? 0) * SERVICER_SHARE).toFixed(2)}</span>
           </p>
@@ -331,7 +333,7 @@ function CalendarView({ user }) {
                     const slug = j.serviceTypeId?.slug || '';
                     const colors = SVC_PILL_COLORS[slug] || 'bg-gray-700 text-gray-300 border-gray-600';
                     const label = SVC_SHORT[slug] || 'Svc';
-                    const count = slug === 'curb-items' ? j.itemCount || 1 : j.barrelCount || 0;
+                    const count = slug === 'curb-items' ? j.itemCount || 1 : slug === 'entrance-cleaning' ? j.floors || 1 : j.barrelCount || 0;
                     const completed = j.status === 'completed';
                     return (
                       <div key={idx} className={`truncate rounded border px-1 text-[9px] font-medium leading-tight ${colors} ${completed ? 'opacity-50 line-through' : ''}`}>
@@ -370,8 +372,8 @@ function CalendarView({ user }) {
               const addr = j.addressId;
               const svc = j.serviceTypeId;
               const slug = svc?.slug || '';
-              const count = slug === 'curb-items' ? j.itemCount || 1 : j.barrelCount || 0;
-              const unit = slug === 'curb-items' ? 'item' : 'barrel';
+              const count = slug === 'curb-items' ? j.itemCount || 1 : slug === 'entrance-cleaning' ? j.floors || 1 : j.barrelCount || 0;
+              const unit = slug === 'curb-items' ? 'item' : slug === 'entrance-cleaning' ? 'floor' : 'barrel';
               const time = j.putOutTime || j.bringInTime || '';
               return (
                 <div key={j._id} className="rounded-xl border border-gray-700 bg-gray-800 p-3">
