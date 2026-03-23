@@ -73,7 +73,7 @@ async function create(userId, data) {
     }
 
     const settings = await AppSettings.get();
-    const dayStart = new Date(scheduledDate);
+    const dayStart = new Date(putOutDate);
     dayStart.setHours(0, 0, 0, 0);
     const dayEnd = new Date(dayStart);
     dayEnd.setDate(dayEnd.getDate() + 1);
@@ -90,7 +90,7 @@ async function create(userId, data) {
       userId,
       addressId: data.addressId,
       serviceTypeId: data.serviceTypeId,
-      scheduledDate,
+      scheduledDate: putOutDate,
       itemCount,
       curbItemPhotos: data.curbItemPhotos,
       curbItemNotes: data.curbItemNotes || '',
