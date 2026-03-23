@@ -14,6 +14,7 @@ export const metadata = {
     'mobile-web-app-capable': 'yes',
     'apple-mobile-web-app-status-bar-style': 'default',
     'apple-mobile-web-app-title': 'atyors',
+    'facebook-domain-verification': 'nhvycasjgrhas7ar2lssg91g0yctgy',
   },
   icons: {
     icon: [
