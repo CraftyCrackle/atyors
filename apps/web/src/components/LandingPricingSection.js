@@ -13,9 +13,10 @@ export default function LandingPricingSection({ id = 'pricing', className = '' }
           </span>
         </div>
         <h2 className="text-center text-2xl font-bold text-gray-900">How much does it cost?</h2>
-        <p className="mt-2 text-center text-gray-500">You only pay for what you use. No hidden fees. You see the full price before you confirm.</p>
+        <p className="mt-2 text-center text-gray-500">You only pay for what you use. No hidden fees. You see the full price before you confirm anything.</p>
 
-        <div className="mt-8 space-y-3">
+        <p className="mt-6 text-xs font-bold uppercase tracking-wider text-gray-400">Trash Barrel Services</p>
+        <div className="mt-2 space-y-3">
           <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-5 py-4">
             <div>
               <p className="font-semibold text-gray-900">Roll barrels out to the curb</p>
@@ -34,26 +35,47 @@ export default function LandingPricingSection({ id = 'pricing', className = '' }
 
           <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-5 py-4">
             <div>
-              <p className="font-semibold text-gray-900">Both out &amp; back <span className="text-xs font-medium text-brand-600 ml-1">Most popular</span></p>
-              <p className="text-sm text-gray-500">We take them out AND bring them back in — the full job</p>
+              <p className="font-semibold text-gray-900">Both out and back <span className="text-xs font-medium text-brand-600 ml-1">Most popular</span></p>
+              <p className="text-sm text-gray-500">We take them out and bring them back in. The full job, one price.</p>
             </div>
             <p className="text-xl font-bold text-brand-600">$4.00<span className="text-sm font-normal text-gray-400">/barrel</span></p>
           </div>
 
           <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-5 py-4">
             <div>
-              <p className="font-semibold text-gray-900">Monthly plan <span className="text-xs font-medium text-green-600 ml-1">Best value</span></p>
-              <p className="text-sm text-gray-500">We do it every week automatically — up to 3 barrels included, +$3/mo per extra barrel</p>
+              <p className="font-semibold text-gray-900">Weekly plan <span className="text-xs font-medium text-green-600 ml-1">Best value</span></p>
+              <p className="text-sm text-gray-500">We show up every week without you having to book each time. Up to 3 barrels included, plus $3 per month for each extra barrel.</p>
             </div>
             <p className="text-xl font-bold text-brand-600">$30<span className="text-sm font-normal text-gray-400">/mo</span></p>
           </div>
+        </div>
 
+        <p className="mt-6 text-xs font-bold uppercase tracking-wider text-gray-400">Other Property Services</p>
+        <div className="mt-2 space-y-3">
           <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-5 py-4">
             <div>
               <p className="font-semibold text-gray-900">Move items to the curb</p>
-              <p className="text-sm text-gray-500">Have boxes, bags, or other stuff to put out? We move up to 10 items (each up to 25 lbs) from your storage to the curb</p>
+              <p className="text-sm text-gray-500">Have boxes, bags, or bulky stuff to put out? We carry up to 10 items (each up to 25 lbs) from storage to the curb.</p>
             </div>
             <p className="text-xl font-bold text-brand-600">$2.00<span className="text-sm font-normal text-gray-400">/item</span></p>
+          </div>
+
+          <div className="rounded-xl border border-gray-200 bg-white px-5 py-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="font-semibold text-gray-900">Building entrance cleaning</p>
+                <p className="text-sm text-gray-500">We vacuum and mop shared hallways and stairways in apartment buildings and multi-family homes. Available Monday to Saturday, 10 AM to 4 PM.</p>
+              </div>
+              <div className="shrink-0 text-right">
+                <p className="text-xl font-bold text-brand-600">$15<span className="text-sm font-normal text-gray-400">/floor</span></p>
+              </div>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-500">
+              <span className="rounded-full bg-gray-100 px-2.5 py-1">$15/floor (vacuum + mop)</span>
+              <span className="rounded-full bg-gray-100 px-2.5 py-1">$8/staircase</span>
+              <span className="rounded-full bg-gray-100 px-2.5 py-1">+$15 front entrance</span>
+              <span className="rounded-full bg-gray-100 px-2.5 py-1">+$15 back entrance</span>
+            </div>
           </div>
         </div>
 

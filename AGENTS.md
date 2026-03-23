@@ -6,7 +6,7 @@ alwaysApply: true
 # AGENTS.md — atyors.com Development Guide
 
 > **Project:** atyors.com ("At Your Service")
-> **Domain:** Curbside services platform — starting with trash barrel pickup scheduling, expanding to additional service verticals.
+> **Domain:** On-demand property services platform. Currently live: trash barrel management, curb item pickup, and multi-family building entrance cleaning.
 > **Architecture:** Mobile-first progressive web app (PWA)
 > **Gold Standard Reference:** bidor.ai (repo: `workflowhero_io`)
 > **GitHub Repo:** [github.com/CraftyCrackle/atyors](https://github.com/CraftyCrackle/atyors)
@@ -28,16 +28,27 @@ alwaysApply: true
 
 ## 2. Project Overview
 
-**atyors.com** is a mobile-first web application that enables homeowners and property managers to schedule curbside services. The initial service vertical is **trash barrel management** (put-out/bring-in scheduling). The platform is designed to scale into additional service categories (lawn, snow, deliveries, etc.) as the business grows.
+**atyors.com** is a mobile-first web application that enables homeowners and property managers to book on-demand property services. The platform supports multiple service verticals and is designed to scale into additional categories (lawn, snow, deliveries, etc.) as the business grows.
 
-### Core User Flows (Phase 1 — Trash Barrels)
+### Live Service Verticals
+
+**Trash & Recycling** (category slug: `trash-recycling`)
+- Put Out Only (`put-out`) — $2.50/barrel
+- Bring In Only (`bring-in`) — $2.50/barrel
+- Both Put Out and Bring In (`both`) — $4.00/barrel one-time, $30/mo recurring (up to 3 barrels, +$3/mo each extra)
+- Curb Items (`curb-items`) — $2.00/item, up to 10 items (≤25 lbs each), photo required
+
+**Building Services** (category slug: `building-services`)
+- Multi-Family Entrance Cleaning (`entrance-cleaning`) — dynamic pricing: $15/floor (vacuum + mop), $8/staircase, +$15 front entrance (optional), +$15 back entrance (optional). Available Monday through Saturday, 10 AM to 4 PM only.
+
+### Core User Flow
 - User signs up / logs in
 - User enters service address
-- User selects trash barrel service
-- User picks schedule (one-time or recurring)
-- User pays via Stripe
-- Service provider receives job assignment
-- User gets confirmation and status updates
+- User selects a service from any live vertical
+- User picks schedule (one-time or recurring where available)
+- User pays via Stripe (charged after job completion)
+- Service provider receives job assignment with task checklist
+- User gets real-time tracking and status updates
 
 ---
 
@@ -292,13 +303,22 @@ Standard developer workflow commands (mirror bidor.ai):
 ## 10. Atyors-Specific Domain Concepts
 
 ### Service Model
-- **Service Category:** Top-level grouping (e.g., "Trash & Recycling", "Lawn Care", "Snow Removal")
-- **Service Type:** Specific offering within a category (e.g., "Barrel Put-Out", "Barrel Bring-In", "Both")
+- **Service Category:** Top-level grouping (e.g., "Trash & Recycling", "Building Services")
+- **Service Type:** Specific offering within a category (e.g., "Barrel Put-Out", "Entrance Cleaning")
 - **Booking:** A scheduled instance of a service at an address
-- **Subscription:** Recurring booking (weekly, bi-weekly)
+- **Subscription:** Recurring booking (weekly)
 - **Service Provider / Servicer:** The person fulfilling the job
 - **Service Zone:** Geographic area defining availability and pricing
 - **Route:** A servicer's ordered list of stops for a day, enabling queue-based tracking
+
+### Entrance Cleaning Specifics
+- Available Monday through Saturday only (Sundays blocked at API level)
+- Service window: 10 AM to 4 PM
+- Booking fields: `floors` (required, int ≥1), `staircases` (int ≥0), `frontEntrance` (bool), `backEntrance` (bool)
+- Price is calculated at booking time: `(floors × $15) + (staircases × $8) + (front ? $15 : 0) + (back ? $15 : 0)`
+- Task progress is tracked per section via `taskProgress[]` string array on the Booking (e.g. `['floor-1', 'floor-2', 'stairs', 'front-entrance']`)
+- Servicers toggle tasks via `PATCH /servicer/jobs/:id/task-progress` after marking Arrived
+- The booking flow uses a plain date input (not the trash-day CascadingDatePicker) for entrance cleaning
 
 ### Booking Status Lifecycle
 
@@ -317,13 +337,17 @@ pending → active → en-route → arrived → in-progress → completed
 - **cancelled** — Cancelled by customer or admin
 - **no-show** — Customer was unreachable
 
-### Phase 1 Scope (Trash Barrels)
-- Residential addresses only
-- Weekly recurring or one-time bookings
-- Stripe payments (subscription or per-service)
+### Current Scope (Live)
+- Residential and multi-family addresses
+- Trash barrel put-out, bring-in, both, and weekly recurring plans
+- Curb item pickup (up to 10 items, photo required)
+- Multi-family entrance cleaning (floors, staircases, optional front/back entrance; Mon-Sat 10 AM-4 PM)
+- Stripe payments (subscription or per-service, charged after completion)
 - SMS/push notifications for job status
-- Provider assignment and routing
-- Customer dashboard with upcoming/past services
+- Provider assignment, routing, and task-level progress tracking
+- Customer dashboard with upcoming/past services and live tracking
+- Batch booking for multiple properties with the same trash day
+- Guaranteed service for monthly subscribers
 
 ### Future Phases
 - Lawn mowing, leaf cleanup
@@ -343,7 +367,7 @@ pending → active → en-route → arrived → in-progress → completed
 |-------|------|------------|
 | **User** | `apps/server/models/User.js` | email, phone, firstName, lastName, passwordHash, role (customer/servicer/admin/superadmin), stripeCustomerId, notificationPreferences |
 | **Address** | `apps/server/models/Address.js` | userId, street, city, state, zip, location (GeoJSON), barrelLocation, barrelPhotoUrl, barrelNotes, serviceZoneId |
-| **Booking** | `apps/server/models/Booking.js` | userId, addressId, serviceTypeId, scheduledDate, timeWindow, status, assignedTo, routeId, routeOrder, amount, statusHistory[] |
+| **Booking** | `apps/server/models/Booking.js` | userId, addressId, serviceTypeId, scheduledDate, timeWindow, status, assignedTo, routeId, routeOrder, amount, statusHistory[], itemCount, curbItemPhotos, curbItemNotes, floors, staircases, frontEntrance, backEntrance, taskProgress[], batchId, isGuaranteed |
 | **Route** | `apps/server/models/Route.js` | servicerId, date, stops[] (bookingId, order, status), currentStopIndex, status (planned/in-progress/completed), lastLocation (lat/lng) |
 | **Subscription** | `apps/server/models/Subscription.js` | userId, stripeSubscriptionId, dayOfWeek, timeWindow, monthlyPrice |
 | **ServiceCategory** | `apps/server/models/ServiceCategory.js` | name, slug, description, icon, isActive |
@@ -400,6 +424,8 @@ pending → active → en-route → arrived → in-progress → completed
 | PATCH | `/routes/:id/start` | servicer+ | Start route, first stop → `en-route` |
 | PATCH | `/routes/:id/complete-stop` | servicer+ | Complete current stop, advance to next |
 | PATCH | `/routes/:id/skip-stop` | servicer+ | Skip current stop, advance to next |
+| PATCH | `/routes/:id/deny-stop` | servicer+ | Deny current stop with reason, notifies customer |
+| PATCH | `/jobs/:id/task-progress` | servicer+ | Toggle a task key (e.g. `floor-1`, `stairs`, `front-entrance`) on entrance cleaning bookings |
 
 **Subscriptions** (`/api/v1/subscriptions/`)
 | Method | Path | Auth | Description |
@@ -434,8 +460,10 @@ pending → active → en-route → arrived → in-progress → completed
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/categories` | List service categories |
-| GET | `/types/:categorySlug` | List types in a category |
-| POST | `/seed` | Seed demo data |
+| GET | `/all-types` | All active service types grouped by category (used by booking flow) |
+| GET | `/types/:categorySlug` | List types in a specific category |
+| GET | `/pricing` | Pricing constants for all services (barrel, curb items, entrance cleaning) |
+| POST | `/seed` | Seed/update service categories and types in the database |
 
 **Webhooks** (`/api/v1/webhooks/`) — public (Stripe signature verified)
 | Method | Path | Description |
@@ -464,13 +492,13 @@ pending → active → en-route → arrived → in-progress → completed
 | `/login` | `app/login/page.js` | Customer login form |
 | `/signup` | `app/signup/page.js` | Customer registration |
 | `/dashboard` | `app/dashboard/page.js` | Booking list (upcoming/active/past tabs) |
-| `/book` | `app/book/page.js` | Multi-step booking: address → service → schedule → confirm |
+| `/book` | `app/book/page.js` | Multi-step booking: service (grouped by category) → address + date → service details → confirm. Supports barrel, curb items, and entrance cleaning flows. Loads all services from `/services/all-types`. |
 | `/profile` | `app/profile/page.js` | Profile + address management |
 | `/tracking/[id]` | `app/tracking/[id]/page.js` | Live tracking: Leaflet map (if next) or queue position display |
 | `/servicer/login` | `app/servicer/login/page.js` | Dark-themed servicer login |
 | `/servicer/dashboard` | `app/servicer/dashboard/page.js` | Available/My Jobs/Done tabs + "Plan Route" CTA |
 | `/servicer/route` | `app/servicer/route/page.js` | Route planner: reorder stops → create → start → advance |
-| `/servicer/job/[id]` | `app/servicer/job/[id]/page.js` | Individual job detail with status controls |
+| `/servicer/job/[id]` | `app/servicer/job/[id]/page.js` | Individual job detail with status controls. For entrance cleaning jobs, shows a per-section task checklist (floors, staircases, entrances) that servicers check off on arrival. |
 
 ### 11.5 Frontend — Components
 

@@ -10,31 +10,55 @@ import LandingCarousel from '../components/LandingCarousel';
 import AppStoreBadge from '../components/AppStoreBadge';
 import { useInstall } from '../components/InstallContext';
 
+const SERVICES = [
+  {
+    icon: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16',
+    title: 'Trash Barrel Service',
+    desc: 'We roll your trash barrels to the curb before pickup and bring them back in when it is done. One time or every week.',
+    color: 'bg-brand-100 text-brand-600',
+    from: 'From $2.50/barrel',
+  },
+  {
+    icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4',
+    title: 'Curb Item Pickup',
+    desc: 'Need to put out boxes, bags, or bulky items? We carry them from storage to the curb so you do not have to lift a thing.',
+    color: 'bg-accent-100 text-accent-600',
+    from: 'From $2.00/item',
+  },
+  {
+    icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6',
+    title: 'Building Entrance Cleaning',
+    desc: 'We vacuum and mop shared hallways, stairways, and entrances in apartment buildings and multi-family homes. Monday to Saturday, 10 AM to 4 PM.',
+    color: 'bg-green-100 text-green-600',
+    from: 'From $15/floor',
+  },
+];
+
 const FEATURES = [
   {
     icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
     title: 'You Pick the Day',
-    desc: 'Just tell us which day your trash goes out. We show up, move your barrels, and you never have to think about it.',
+    desc: 'Tell us when you need help and we will be there. Book once or set it up to repeat every week.',
     color: 'bg-brand-100 text-brand-600',
   },
   {
     icon: 'M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7',
     title: 'Watch on a Live Map',
-    desc: 'You can see your person\'s location on a map in real time — just like tracking a pizza delivery.',
+    desc: 'See exactly where your worker is on a live map while they are on the way. No guessing, no waiting around.',
     color: 'bg-accent-100 text-accent-600',
   },
   {
     icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
-    title: 'Pay Only When You Use It',
-    desc: 'No subscription required. Pay per visit, or sign up for a monthly plan and save. Cancel anytime.',
+    title: 'Pay Only When Done',
+    desc: 'Your card is only charged after the work is finished. No upfront costs and no surprise fees.',
     color: 'bg-yellow-100 text-yellow-600',
   },
 ];
 
 const STEPS = [
-  { num: '1', label: 'Create a Free Account', desc: 'Takes about 60 seconds. No credit card needed to sign up.' },
-  { num: '2', label: 'Book a Visit', desc: 'Enter your address, pick a date, and tell us how many trash barrels you have.' },
-  { num: '3', label: 'We Do the Work', desc: 'Someone comes to your home, rolls your barrels to the curb, and brings them back in after pickup.' },
+  { num: '1', label: 'Create a Free Account', desc: 'Sign up in about 60 seconds. No credit card needed.' },
+  { num: '2', label: 'Pick a Service and a Date', desc: 'Tell us your address, what you need, and when. We show you the price right away.' },
+  { num: '3', label: 'We Take Care of It', desc: 'A local worker comes to your property and gets the job done. You will get a notification when it is finished.' },
 ];
 
 function NativeAppLanding() {
@@ -48,10 +72,10 @@ function NativeAppLanding() {
           <Logo size="lg" variant="wordmark" />
 
           <p className="mt-4 text-center text-lg font-medium text-gray-500">
-            Curbside trash barrel service
+            Property services on demand
           </p>
           <p className="mt-2 text-center text-sm text-gray-400">
-            We take your trash barrels to the curb and back, so you don&apos;t have to.
+            Trash barrels, curb items, and building cleaning. We handle the work so you do not have to.
           </p>
 
           <div className="mt-12 flex w-full flex-col gap-3">
@@ -113,35 +137,28 @@ function WebLanding() {
           </div>
 
           <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-gray-900 sm:text-5xl">
-            We move your<br />trash barrels<br />
-            <span className="bg-gradient-to-r from-brand-600 to-accent-500 bg-clip-text text-transparent">so you don&apos;t have to.</span>
+            Property services<br />that free up<br />
+            <span className="bg-gradient-to-r from-brand-600 to-accent-500 bg-clip-text text-transparent">your time.</span>
           </h1>
 
           <p className="mx-auto mt-4 max-w-md text-lg text-gray-500">
-            Tired of dragging heavy trash barrels to the curb every week?
-            We send someone to your home to do it for you — and bring them back in after pickup.
+            We handle the small tasks that pile up around your property. Trash barrels, heavy items to the curb, shared hallway cleaning. Book in minutes and we take care of the rest.
           </p>
 
           <div className="mt-8 flex flex-col items-center gap-3">
             <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:justify-center sm:items-center">
               <Link href="/signup" className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-8 py-4 font-semibold text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700 active:scale-[0.98] sm:w-auto">
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
-                Get Started
+                Get Started Free
               </Link>
               <Link href="/login" className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 px-8 py-4 font-semibold text-gray-700 transition hover:bg-gray-50 active:scale-[0.98] sm:w-auto">
                 I already have an account
               </Link>
             </div>
-            <div className="flex flex-col items-center gap-2 sm:flex-row sm:gap-4">
-              <a href="#pricing" className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-600 underline decoration-brand-200 underline-offset-4 transition hover:text-brand-800 hover:decoration-brand-400">
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                See pricing below
-              </a>
-              <span className="hidden text-gray-300 sm:inline" aria-hidden>|</span>
-              <Link href="/pricing" className="text-sm font-semibold text-gray-600 transition hover:text-gray-900">
-                Pricing page
-              </Link>
-            </div>
+            <a href="#pricing" className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-600 underline decoration-brand-200 underline-offset-4 transition hover:text-brand-800 hover:decoration-brand-400">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+              See pricing
+            </a>
           </div>
 
           {!isStandalone && (
@@ -162,8 +179,35 @@ function WebLanding() {
 
       <section className="bg-gray-50 px-6 py-16">
         <div className="mx-auto max-w-lg">
+          <h2 className="text-center text-sm font-semibold uppercase tracking-widest text-brand-600">What We Do</h2>
+          <p className="mt-2 text-center text-2xl font-bold text-gray-900">Services for your property</p>
+          <p className="mt-2 text-center text-sm text-gray-500">Pick one service or several. All bookings include live tracking and a photo when the job is done.</p>
+
+          <div className="mt-8 space-y-3">
+            {SERVICES.map((s, i) => (
+              <div key={i} className="flex items-start gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${s.color}`}>
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d={s.icon} />
+                  </svg>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <h3 className="font-semibold text-gray-900">{s.title}</h3>
+                    <span className="shrink-0 text-sm font-bold text-brand-600">{s.from}</span>
+                  </div>
+                  <p className="mt-1 text-sm leading-relaxed text-gray-500">{s.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="px-6 py-16">
+        <div className="mx-auto max-w-lg">
           <h2 className="text-center text-sm font-semibold uppercase tracking-widest text-brand-600">How It Works</h2>
-          <p className="mt-2 text-center text-2xl font-bold text-gray-900">3 simple steps. That&apos;s it.</p>
+          <p className="mt-2 text-center text-2xl font-bold text-gray-900">3 steps and you are done.</p>
 
           <div className="mt-10 space-y-6">
             {STEPS.map((step, i) => (
@@ -181,10 +225,10 @@ function WebLanding() {
         </div>
       </section>
 
-      <section className="px-6 py-16">
+      <section className="bg-gray-50 px-6 py-16">
         <div className="mx-auto max-w-lg">
-          <h2 className="text-center text-sm font-semibold uppercase tracking-widest text-accent-600">Why People Love Us</h2>
-          <p className="mt-2 text-center text-2xl font-bold text-gray-900">Trash day made completely hands-free</p>
+          <h2 className="text-center text-sm font-semibold uppercase tracking-widest text-accent-600">Why People Use Us</h2>
+          <p className="mt-2 text-center text-2xl font-bold text-gray-900">Less work for you</p>
 
           <div className="mt-10 space-y-4">
             {FEATURES.map((f, i) => (
@@ -208,11 +252,11 @@ function WebLanding() {
 
       <section className="bg-brand-600 px-6 py-16">
         <div className="mx-auto max-w-lg text-center">
-          <h2 className="text-2xl font-bold text-white">Stop moving your barrels. Let us do it.</h2>
-          <p className="mt-2 text-brand-100">Sign up free, book your first visit, and never worry about trash day again.</p>
+          <h2 className="text-2xl font-bold text-white">Let us handle the hard part.</h2>
+          <p className="mt-2 text-brand-100">Sign up free and book your first service in minutes. You only pay when the work is done.</p>
           <div className="mt-6 flex flex-col items-center gap-4">
             <Link href="/signup" className="inline-flex items-center gap-2 rounded-xl bg-white px-8 py-4 font-semibold text-brand-600 shadow-lg transition hover:bg-brand-50 active:scale-[0.98]">
-              Get Started
+              Get Started Free
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
             </Link>
             {!isStandalone && isIos && hasAppStore && (
