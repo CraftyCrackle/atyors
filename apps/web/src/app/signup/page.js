@@ -50,6 +50,16 @@ export default function SignupPage() {
     try {
       const data = await register({ firstName: form.firstName, lastName: form.lastName, email: form.email, phone: form.phone, password: form.password });
       if (data.pendingVerification) {
+        if (hasFullAddress && typeof window !== 'undefined') {
+          sessionStorage.setItem('atyors_pending_address', JSON.stringify({
+            street: form.street.trim(),
+            unit: form.unit?.trim() || undefined,
+            city: form.city.trim(),
+            state: form.state.trim(),
+            zip: form.zip.trim(),
+            isDefault: true,
+          }));
+        }
         const qs = new URLSearchParams({ userId: data.userId, email: data.email });
         router.push(`/verify?${qs.toString()}`);
         return;
@@ -64,10 +74,8 @@ export default function SignupPage() {
             zip: form.zip.trim(),
             isDefault: true,
           });
-        } catch (addrErr) {
-          if (typeof window !== 'undefined') {
-            sessionStorage.setItem('atyors_address_save_failed', '1');
-          }
+        } catch {
+          // Address save failed silently — user can add from profile
         }
       }
       const role = data.user?.role;

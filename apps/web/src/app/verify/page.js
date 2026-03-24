@@ -73,6 +73,18 @@ function VerifyContent() {
       localStorage.setItem('accessToken', res.data.accessToken);
       localStorage.setItem('refreshToken', res.data.refreshToken);
       setUser(res.data.user);
+
+      // Drain any address the user entered during signup (stored before redirect to this page)
+      const pendingAddress = sessionStorage.getItem('atyors_pending_address');
+      if (pendingAddress) {
+        sessionStorage.removeItem('atyors_pending_address');
+        try {
+          await api.post('/addresses', JSON.parse(pendingAddress));
+        } catch {
+          // Non-fatal — user can add from profile
+        }
+      }
+
       const role = res.data.user?.role;
       router.push(['admin', 'superadmin'].includes(role) ? '/admin/dashboard' : '/dashboard');
     } catch (err) {
