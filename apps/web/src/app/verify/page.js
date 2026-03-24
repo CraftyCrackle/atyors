@@ -124,7 +124,7 @@ function VerifyContent() {
         {error && <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>}
 
         <div className="mt-8">
-          <div className="flex justify-center gap-2" onPaste={handlePaste}>
+          <div className="flex justify-center gap-1.5 overflow-x-auto pb-1" onPaste={handlePaste}>
             {code.map((d, i) => (
               <input
                 key={i}
@@ -135,7 +135,7 @@ function VerifyContent() {
                 value={d}
                 onChange={(e) => handleInput(i, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(i, e)}
-                className="h-14 w-12 rounded-xl border border-gray-200 text-center text-xl font-bold focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                className="h-12 w-10 shrink-0 rounded-xl border border-gray-200 text-center text-xl font-bold focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 sm:h-14 sm:w-12"
               />
             ))}
           </div>

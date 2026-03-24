@@ -127,7 +127,7 @@ export default function AdminCarouselPage() {
           <p className="mt-1 text-sm text-gray-400">Upload photos to display in the carousel on the home page. Drag rows to reorder.</p>
 
           {/* Upload form */}
-          <form onSubmit={handleUpload} className="mt-6 rounded-xl border border-gray-700 bg-gray-800 p-4">
+          <form onSubmit={handleUpload} className="mt-6 rounded-xl border border-gray-700 bg-gray-800 p-4 overflow-hidden">
             <p className="text-sm font-semibold text-white">Add a new photo</p>
 
             <label
@@ -182,7 +182,7 @@ export default function AdminCarouselPage() {
               >
                 {uploading ? 'Uploading…' : 'Upload'}
               </button>
-              {msg && <p className={`text-xs ${msg.includes('failed') || msg === 'Please select an image.' ? 'text-red-400' : 'text-green-400'}`}>{msg}</p>}
+              {msg && <p className={`min-w-0 text-xs ${msg.includes('failed') || msg === 'Please select an image.' ? 'text-red-400' : 'text-green-400'}`}>{msg}</p>}
             </div>
           </form>
 
@@ -266,7 +266,7 @@ function CarouselRow({ img, draggingId, dragOver, onDragStart, onDragOver, onDro
       {/* Caption + actions */}
       <div className="min-w-0 flex-1">
         {editing ? (
-          <div className="flex gap-2">
+          <div className="flex gap-2 min-w-0">
             <input
               autoFocus
               value={editCaption}
@@ -274,7 +274,7 @@ function CarouselRow({ img, draggingId, dragOver, onDragStart, onDragOver, onDro
               onBlur={saveCaption}
               onKeyDown={(e) => { if (e.key === 'Enter') saveCaption(); if (e.key === 'Escape') { setEditing(false); setEditCaption(img.caption || ''); } }}
               maxLength={120}
-              className="flex-1 rounded border border-gray-600 bg-gray-700 px-2 py-1 text-sm text-white focus:border-brand-500 focus:outline-none"
+              className="min-w-0 flex-1 rounded border border-gray-600 bg-gray-700 px-2 py-1 text-sm text-white focus:border-brand-500 focus:outline-none"
             />
           </div>
         ) : (

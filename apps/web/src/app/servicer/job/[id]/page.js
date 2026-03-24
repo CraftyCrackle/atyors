@@ -236,7 +236,7 @@ export default function ServicerJobPage() {
         <button onClick={() => router.push('/servicer/dashboard')} className="rounded-lg p-2 text-gray-400 hover:bg-gray-800">
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
         </button>
-        <h1 className="flex-1 font-semibold text-white">Job Details</h1>
+        <h1 className="flex-1 min-w-0 truncate font-semibold text-white">Job Details</h1>
         {booking && isActive && (
           <Link href={`/chat/${id}`} className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-300 transition hover:bg-gray-800">
             Chat
@@ -280,8 +280,8 @@ export default function ServicerJobPage() {
               ) : (
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-700 text-sm font-bold text-gray-300">{customer.firstName?.[0]}{customer.lastName?.[0]}</div>
               )}
-              <div>
-                <p className="text-sm font-medium text-white">{customer.firstName} {customer.lastName}</p>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-white">{customer.firstName} {customer.lastName}</p>
                 {customer.phone && <p className="text-xs text-gray-400">{customer.phone}</p>}
               </div>
             </div>

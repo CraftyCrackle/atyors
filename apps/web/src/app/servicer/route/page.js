@@ -167,11 +167,11 @@ export default function ServicerRoutePage() {
         <button onClick={() => router.push('/servicer/dashboard')} className="rounded-lg p-2 text-gray-400 hover:bg-gray-800">
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
         </button>
-        <h1 className="font-semibold text-white">
+        <h1 className="min-w-0 flex-1 truncate font-semibold text-white">
           {activeRoute ? 'Active Route' : plannedRoute ? 'Planned Route' : inProgressJobs.length > 0 ? 'Active Jobs' : 'Plan Route'}
         </h1>
         {route && (
-          <span className="ml-auto rounded-full bg-brand-600/20 px-2.5 py-0.5 text-xs font-medium text-brand-400">
+          <span className="shrink-0 rounded-full bg-brand-600/20 px-2.5 py-0.5 text-xs font-medium text-brand-400">
             {route.stops.filter((s) => s.status === 'completed').length}/{route.stops.length} done
           </span>
         )}
@@ -455,8 +455,8 @@ function CurrentStopCard({ stop, index, total, acting, onNavigate, onArrived, on
         </div>
 
         {/* Address */}
-        <div className="px-5 pt-4 pb-3">
-          <p className="text-xl font-bold leading-snug text-white">{addr?.street}{addr?.unit ? `, ${addr.unit}` : ''}</p>
+        <div className="overflow-hidden px-5 pt-4 pb-3">
+          <p className="break-words text-xl font-bold leading-snug text-white">{addr?.street}{addr?.unit ? `, ${addr.unit}` : ''}</p>
           <p className="mt-0.5 text-sm text-gray-400">{addr?.city}, {addr?.state} {addr?.zip}</p>
         </div>
 

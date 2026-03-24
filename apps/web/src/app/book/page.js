@@ -473,13 +473,13 @@ function BookContent() {
 
   return (
     <AuthGuard>
-      <div id="main-content" className="min-h-screen-safe bg-white pb-24">
+      <div id="main-content" className="min-h-screen-safe overflow-x-hidden bg-white pb-24">
         <header className="sticky top-0 z-10 flex items-center gap-3 border-b bg-white px-4 pb-3 pt-sticky-safe">
-          <button onClick={back} aria-label="Go back" className="rounded-lg p-2 hover:bg-gray-100">
+          <button onClick={back} aria-label="Go back" className="shrink-0 rounded-lg p-2 hover:bg-gray-100">
             <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
           </button>
-          <div className="flex-1">
-            <h1 className="font-semibold">Book a Service</h1>
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate font-semibold">Book a Service</h1>
             <p className="text-xs text-gray-400" aria-live="polite">Step {step + 1} of {STEPS.length}</p>
           </div>
         </header>
@@ -798,7 +798,7 @@ function BookContent() {
                       <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition ${selected.frontEntrance ? 'border-brand-600 bg-brand-600' : 'border-gray-300'}`}>
                         {selected.frontEntrance && <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
                       </div>
-                      <div className="flex-1">
+                      <div className="min-w-0 flex-1">
                         <p className="font-medium">Front entrance cleaning</p>
                         <p className="text-xs text-gray-500">Sweep, mop, and wipe down the front door area</p>
                       </div>
@@ -809,7 +809,7 @@ function BookContent() {
                       <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition ${selected.backEntrance ? 'border-brand-600 bg-brand-600' : 'border-gray-300'}`}>
                         {selected.backEntrance && <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
                       </div>
-                      <div className="flex-1">
+                      <div className="min-w-0 flex-1">
                         <p className="font-medium">Back entrance cleaning</p>
                         <p className="text-xs text-gray-500">Sweep, mop, and wipe down the back door area</p>
                       </div>
@@ -961,7 +961,7 @@ function BookContent() {
                 {curbItemPreviews.length > 0 && (
                   <div className="mt-2 grid grid-cols-3 gap-2">
                     {curbItemPreviews.map((url, i) => (
-                      <div key={i} className="relative">
+                      <div key={i} className="relative min-w-0">
                         <PhotoViewer src={url} alt={`Item ${i + 1}`} className="h-24 w-full rounded-lg object-cover" />
                         <button type="button" onClick={(e) => { e.stopPropagation(); removeCurbItemPhoto(i); }} className="absolute top-1 right-1 z-10 rounded-full bg-black/50 p-1 text-white">
                           <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -1293,11 +1293,11 @@ function BookContent() {
                   <div className="mt-2 space-y-2">
                     {selectedAddresses.map((addr) => (
                       <div key={addr._id} className="flex items-center justify-between rounded-lg bg-white px-3 py-2">
-                        <div>
-                          <p className="text-xs font-semibold text-gray-800">{addr.street}{addr.unit ? `, ${addr.unit}` : ''}</p>
+                        <div className="min-w-0 flex-1 pr-2">
+                          <p className="truncate text-xs font-semibold text-gray-800">{addr.street}{addr.unit ? `, ${addr.unit}` : ''}</p>
                           <p className="text-xs text-gray-400">{addr.city}, {addr.state}</p>
                         </div>
-                        <span className="text-xs font-bold text-brand-600">${(curbItemPrice * selected.itemCount).toFixed(2)}</span>
+                        <span className="shrink-0 text-xs font-bold text-brand-600">${(curbItemPrice * selected.itemCount).toFixed(2)}</span>
                       </div>
                     ))}
                     <div className="flex items-center justify-between border-t border-brand-200 pt-2">
@@ -1314,9 +1314,9 @@ function BookContent() {
                   <span className="text-sm font-medium">Curb Items</span>
                 </div>
                 {!isBatchMode && (
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Address</span>
-                    <span className="text-sm font-medium text-right">{selectedAddr?.street}{selectedAddr?.unit ? `, ${selectedAddr.unit}` : ''}</span>
+                  <div className="flex justify-between gap-2">
+                    <span className="shrink-0 text-sm text-gray-500">Address</span>
+                    <span className="min-w-0 break-words text-right text-sm font-medium">{selectedAddr?.street}{selectedAddr?.unit ? `, ${selectedAddr.unit}` : ''}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
@@ -1409,9 +1409,9 @@ function BookContent() {
                         <span className="text-sm text-gray-500">Plan</span>
                         <span className="text-sm font-medium">{ecIsMonthly ? 'Monthly (bi-weekly)' : 'One-Time'}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-500">Address</span>
-                        <span className="text-sm font-medium text-right">{selectedAddr?.street}{selectedAddr?.unit ? `, ${selectedAddr.unit}` : ''}</span>
+                      <div className="flex justify-between gap-2">
+                        <span className="shrink-0 text-sm text-gray-500">Address</span>
+                        <span className="min-w-0 break-words text-right text-sm font-medium">{selectedAddr?.street}{selectedAddr?.unit ? `, ${selectedAddr.unit}` : ''}</span>
                       </div>
                       {!ecIsMonthly && (
                         <div className="flex justify-between">
@@ -1502,11 +1502,11 @@ function BookContent() {
                   <div className="mt-2 space-y-2">
                     {selectedAddresses.map((addr) => (
                       <div key={addr._id} className="flex items-center justify-between rounded-lg bg-white px-3 py-2">
-                        <div>
-                          <p className="text-xs font-semibold text-gray-800">{addr.street}{addr.unit ? `, ${addr.unit}` : ''}</p>
+                        <div className="min-w-0 flex-1 pr-2">
+                          <p className="truncate text-xs font-semibold text-gray-800">{addr.street}{addr.unit ? `, ${addr.unit}` : ''}</p>
                           <p className="text-xs text-gray-400">{addr.city}, {addr.state}</p>
                         </div>
-                        <span className="text-xs font-bold text-brand-600">${oneTimePrice().toFixed(2)}</span>
+                        <span className="shrink-0 text-xs font-bold text-brand-600">${oneTimePrice().toFixed(2)}</span>
                       </div>
                     ))}
                     <div className="flex items-center justify-between border-t border-brand-200 pt-2">
@@ -1544,9 +1544,9 @@ function BookContent() {
                     <span className="text-sm text-gray-500">Service</span>
                     <span className="text-sm font-medium">{selected.serviceType?.name}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Address</span>
-                    <span className="text-sm font-medium text-right">{selectedAddr?.street}{selectedAddr?.unit ? `, ${selectedAddr.unit}` : ''}</span>
+                  <div className="flex justify-between gap-2">
+                    <span className="shrink-0 text-sm text-gray-500">Address</span>
+                    <span className="min-w-0 break-words text-right text-sm font-medium">{selectedAddr?.street}{selectedAddr?.unit ? `, ${selectedAddr.unit}` : ''}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-500">Plan</span>
@@ -2026,7 +2026,7 @@ function AddAddressForm({ onAdded, show, onShowChange }) {
         {photoPreviews.length > 0 && (
           <div className="mt-2 grid grid-cols-3 gap-2">
             {photoPreviews.map((url, i) => (
-              <div key={i} className="relative">
+              <div key={i} className="relative min-w-0">
                 <PhotoViewer src={url} alt={`Photo ${i + 1}`} className="h-24 w-full rounded-lg object-cover" />
                 <button type="button" onClick={(e) => { e.stopPropagation(); removePhoto(i); }} className="absolute top-1 right-1 z-10 rounded-full bg-black/50 p-1 text-white">
                   <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>

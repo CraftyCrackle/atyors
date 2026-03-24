@@ -96,15 +96,15 @@ export default function SignupPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          <div className="flex gap-3">
-            <div className="flex-1">
+        <form onSubmit={handleSubmit} className="mt-6 space-y-4 overflow-x-hidden">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="min-w-0">
               <label htmlFor="signup-first-name" className="sr-only">First name</label>
-              <input id="signup-first-name" type="text" placeholder="First name" value={form.firstName} onChange={update('firstName')} required autoComplete="given-name" className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
+              <input id="signup-first-name" type="text" placeholder="First name" value={form.firstName} onChange={update('firstName')} required autoComplete="given-name" className="w-full min-w-0 rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
             </div>
-            <div className="flex-1">
+            <div className="min-w-0">
               <label htmlFor="signup-last-name" className="sr-only">Last name</label>
-              <input id="signup-last-name" type="text" placeholder="Last name" value={form.lastName} onChange={update('lastName')} required autoComplete="family-name" className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
+              <input id="signup-last-name" type="text" placeholder="Last name" value={form.lastName} onChange={update('lastName')} required autoComplete="family-name" className="w-full min-w-0 rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
             </div>
           </div>
           <div>
@@ -127,17 +127,17 @@ export default function SignupPage() {
               <input id="signup-unit" type="text" placeholder="Unit, apt, etc. (optional)" value={form.unit} onChange={update('unit')} autoComplete="address-line2" className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
             </div>
             <div className="grid grid-cols-3 gap-2">
-              <div className="col-span-1">
+              <div className="col-span-1 min-w-0">
                 <label htmlFor="signup-city" className="sr-only">City</label>
-                <input id="signup-city" type="text" placeholder="City" value={form.city} onChange={update('city')} autoComplete="address-level2" className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
+                <input id="signup-city" type="text" placeholder="City" value={form.city} onChange={update('city')} autoComplete="address-level2" className="w-full min-w-0 rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <label htmlFor="signup-state" className="sr-only">State</label>
-                <input id="signup-state" type="text" placeholder="State" value={form.state} onChange={update('state')} autoComplete="address-level1" className="rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 w-full" />
+                <input id="signup-state" type="text" placeholder="State" value={form.state} onChange={update('state')} autoComplete="address-level1" className="w-full min-w-0 rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <label htmlFor="signup-zip" className="sr-only">ZIP code</label>
-                <input id="signup-zip" type="text" placeholder="ZIP" value={form.zip} onChange={update('zip')} autoComplete="postal-code" className="rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 w-full" />
+                <input id="signup-zip" type="text" placeholder="ZIP" value={form.zip} onChange={update('zip')} autoComplete="postal-code" className="w-full min-w-0 rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
               </div>
             </div>
           </div>
