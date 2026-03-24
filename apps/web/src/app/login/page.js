@@ -39,7 +39,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main id="main-content" className="flex min-h-[100dvh] flex-col items-center justify-center overflow-y-auto bg-white px-6 pt-safe pb-safe">
+    <main id="main-content" className="flex min-h-[100dvh] w-full flex-col items-center justify-center overflow-x-hidden overflow-y-auto bg-white px-6 pt-safe pb-safe">
       <div className="w-full max-w-sm">
         <Link href="/" className="mb-8 inline-block">
           <Logo size="lg" variant="full" />

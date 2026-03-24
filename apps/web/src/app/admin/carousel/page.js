@@ -104,7 +104,7 @@ export default function AdminCarouselPage() {
 
   return (
     <AdminGuard>
-      <div className="flex min-h-[100dvh] flex-col bg-gray-900">
+      <div className="flex min-h-[100dvh] w-full flex-col overflow-x-hidden bg-gray-900">
         <header className="sticky top-0 z-10 border-b border-gray-800 bg-gray-900 px-4 pb-3 pt-header-safe">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">

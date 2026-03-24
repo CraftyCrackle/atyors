@@ -109,7 +109,7 @@ export default function AdminDashboardPage() {
 
   return (
     <AdminGuard>
-      <div className="flex min-h-[100dvh] min-h-[100vh] flex-col overflow-x-hidden bg-gray-900">
+      <div className="flex min-h-[100dvh] min-h-[100vh] w-full flex-col overflow-x-hidden bg-gray-900">
         <header className="sticky top-0 z-10 border-b border-gray-800 bg-gray-900 px-4 pb-3 pt-header-safe">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">

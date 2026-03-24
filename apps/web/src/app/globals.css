@@ -13,6 +13,8 @@
   html {
     height: -webkit-fill-available;
     scroll-behavior: smooth;
+    overflow-x: hidden;
+    max-width: 100%;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -26,6 +28,8 @@
     -moz-osx-font-smoothing: grayscale;
     min-height: 100dvh;
     min-height: -webkit-fill-available;
+    overflow-x: hidden;
+    max-width: 100%;
   }
 
   ::selection {

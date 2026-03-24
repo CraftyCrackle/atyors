@@ -188,7 +188,7 @@ export default function AdminUsersPage() {
 
   return (
     <AdminGuard>
-      <div className="flex min-h-[100dvh] min-h-[100vh] flex-col bg-gray-900">
+      <div className="flex min-h-[100dvh] min-h-[100vh] w-full flex-col overflow-x-hidden bg-gray-900">
         <header className="sticky top-0 z-10 border-b border-gray-800 bg-gray-900 px-4 pb-3 pt-sticky-safe">
           <div className="mx-auto flex max-w-5xl items-center gap-3">
             <Link href="/admin/dashboard" className="rounded-lg p-2 text-gray-400 hover:bg-gray-800">
