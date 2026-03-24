@@ -98,9 +98,9 @@ export default function QuickAddAddress({ onAdded, title = 'Add your address', s
 
   const isCard = variant === 'card';
   const containerCls = isCard
-    ? 'rounded-2xl border border-gray-200 bg-white p-5 shadow-sm'
+    ? 'rounded-2xl border border-gray-200 bg-white p-4 shadow-sm overflow-hidden'
     : 'space-y-4';
-  const inputCls = 'w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20';
+  const inputCls = 'w-full min-w-0 rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20';
   const locationDisabled = locationLoading || locationCooldown;
 
   return (
@@ -171,32 +171,37 @@ export default function QuickAddAddress({ onAdded, title = 'Add your address', s
           aria-required="true"
         />
         <div className="grid grid-cols-2 gap-2">
-          <input
-            type="text"
-            placeholder="State"
-            value={form.state}
-            onChange={update('state')}
-            required
-            className={inputCls}
-            aria-required="true"
-          />
-          <input
-            type="text"
-            placeholder="ZIP"
-            value={form.zip}
-            onChange={update('zip')}
-            required
-            className={inputCls}
-            aria-required="true"
-          />
+          <div className="min-w-0">
+            <input
+              type="text"
+              placeholder="State"
+              value={form.state}
+              onChange={update('state')}
+              required
+              className={inputCls}
+              aria-required="true"
+            />
+          </div>
+          <div className="min-w-0">
+            <input
+              type="text"
+              placeholder="ZIP"
+              value={form.zip}
+              onChange={update('zip')}
+              required
+              className={inputCls}
+              aria-required="true"
+            />
+          </div>
         </div>
       </div>
 
       {!compact && (
-        <div className="mt-4 flex gap-3">
-          <div className="flex-1">
-            <label className="text-xs font-medium text-gray-500">Barrels</label>
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <div className="min-w-0">
+            <label htmlFor="qaa-barrels" className="text-xs font-medium text-gray-500">Barrels</label>
             <input
+              id="qaa-barrels"
               type="number"
               min={1}
               value={form.barrelCount}
@@ -204,9 +209,10 @@ export default function QuickAddAddress({ onAdded, title = 'Add your address', s
               className={`mt-1 ${inputCls}`}
             />
           </div>
-          <div className="flex-1">
-            <label className="text-xs font-medium text-gray-500">Trash day</label>
+          <div className="min-w-0">
+            <label htmlFor="qaa-trashday" className="text-xs font-medium text-gray-500">Trash day</label>
             <select
+              id="qaa-trashday"
               value={form.trashDay}
               onChange={update('trashDay')}
               className={`mt-1 ${inputCls}`}
