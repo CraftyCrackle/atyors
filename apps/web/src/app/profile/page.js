@@ -337,8 +337,8 @@ function ChangePasswordSection({ dark, isOpen, onToggle }) {
   const [success, setSuccess] = useState(false);
 
   const baseCls = dark
-    ? 'w-full rounded-xl border border-gray-600 bg-gray-700 px-4 py-3 text-base text-white placeholder-gray-400 focus:border-brand-500 focus:outline-none'
-    : 'w-full rounded-xl border border-gray-200 px-4 py-3 text-base focus:border-brand-500 focus:outline-none';
+    ? 'w-full min-w-0 rounded-xl border border-gray-600 bg-gray-700 px-4 py-3 text-base text-white placeholder-gray-400 focus:border-brand-500 focus:outline-none'
+    : 'w-full min-w-0 rounded-xl border border-gray-200 px-4 py-3 text-base focus:border-brand-500 focus:outline-none';
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -692,12 +692,12 @@ function AddressCard({ address, dark, onUpdated, onDelete }) {
 
   const update = (f) => (e) => setForm({ ...form, [f]: e.target.value });
   const inputCls = dark
-    ? 'w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white placeholder-gray-400 focus:border-brand-500 focus:outline-none'
-    : 'w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none';
+    ? 'w-full min-w-0 rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white placeholder-gray-400 focus:border-brand-500 focus:outline-none'
+    : 'w-full min-w-0 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none';
 
   if (editing) {
     return (
-      <div className={`rounded-lg border p-4 space-y-3 ${dark ? 'border-brand-500/30 bg-gray-900/50' : 'border-brand-200 bg-brand-50/30'}`}>
+      <div className={`rounded-lg border p-4 space-y-3 overflow-hidden ${dark ? 'border-brand-500/30 bg-gray-900/50' : 'border-brand-200 bg-brand-50/30'}`}>
         <div className="flex items-center justify-between">
           <p className="text-xs font-semibold text-gray-500 uppercase">Edit Address</p>
           <button onClick={() => setEditing(false)} className="text-xs text-gray-400 hover:text-gray-600">Cancel</button>
@@ -706,9 +706,9 @@ function AddressCard({ address, dark, onUpdated, onDelete }) {
         <input type="text" placeholder="Street address" value={form.street} onChange={update('street')} required className={inputCls} />
         <input type="text" placeholder="Apt / Unit (optional)" value={form.unit} onChange={update('unit')} className={inputCls} />
         <input type="text" placeholder="City" value={form.city} onChange={update('city')} required className={inputCls} />
-        <div className="flex gap-2">
-          <input type="text" placeholder="State" value={form.state} onChange={update('state')} required className={`w-16 ${inputCls}`} />
-          <input type="text" placeholder="ZIP" value={form.zip} onChange={update('zip')} required className={`w-20 ${inputCls}`} />
+        <div className="grid grid-cols-2 gap-2">
+          <div className="min-w-0"><input type="text" placeholder="State" value={form.state} onChange={update('state')} required className={inputCls} /></div>
+          <div className="min-w-0"><input type="text" placeholder="ZIP" value={form.zip} onChange={update('zip')} required className={inputCls} /></div>
         </div>
 
         <hr className="border-gray-200" />
@@ -1054,38 +1054,38 @@ function StreetCleaningManager({ addressId, schedules, dark, onUpdated }) {
             <label className={`text-sm font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>Side of street</label>
             <input type="text" placeholder='e.g. "Even side" or "North side"' value={manualForm.side} onChange={(e) => setManualForm({ ...manualForm, side: e.target.value })} className={`mt-1 ${inputCls}`} />
           </div>
-          <div className="flex gap-3">
-            <div className="flex-1">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="min-w-0">
               <label className={`text-sm font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>Day</label>
               <select value={manualForm.dayOfWeek} onChange={(e) => setManualForm({ ...manualForm, dayOfWeek: e.target.value })} className={`mt-1 ${inputCls}`}>
                 <option value="">Select day</option>
                 {['Monday','Tuesday','Wednesday','Thursday','Friday'].map((d) => <option key={d} value={d}>{d}</option>)}
               </select>
             </div>
-            <div className="flex-1">
+            <div className="min-w-0">
               <label className={`text-sm font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>Frequency</label>
               <select value={manualForm.weekPattern} onChange={(e) => setManualForm({ ...manualForm, weekPattern: e.target.value })} className={`mt-1 ${inputCls}`}>
                 {WEEK_PATTERNS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
               </select>
             </div>
           </div>
-          <div className="flex gap-3">
-            <div className="flex-1">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="min-w-0">
               <label className={`text-sm font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>Start time</label>
               <input type="time" value={manualForm.startTime} onChange={(e) => setManualForm({ ...manualForm, startTime: e.target.value })} className={`mt-1 ${inputCls}`} />
             </div>
-            <div className="flex-1">
+            <div className="min-w-0">
               <label className={`text-sm font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>End time</label>
               <input type="time" value={manualForm.endTime} onChange={(e) => setManualForm({ ...manualForm, endTime: e.target.value })} className={`mt-1 ${inputCls}`} />
             </div>
           </div>
-          <div className="flex gap-3">
-            <div className="flex-1">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="min-w-0">
               <label className={`text-sm font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>Season start</label>
               <input type="text" placeholder="MM-DD (e.g. 04-01)" value={manualForm.seasonStart} onChange={(e) => setManualForm({ ...manualForm, seasonStart: e.target.value })} className={`mt-1 ${inputCls}`} />
               <p className={`mt-1 text-xs ${dark ? 'text-gray-500' : 'text-gray-400'}`}>Optional</p>
             </div>
-            <div className="flex-1">
+            <div className="min-w-0">
               <label className={`text-sm font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>Season end</label>
               <input type="text" placeholder="MM-DD (e.g. 11-30)" value={manualForm.seasonEnd} onChange={(e) => setManualForm({ ...manualForm, seasonEnd: e.target.value })} className={`mt-1 ${inputCls}`} />
               <p className={`mt-1 text-xs ${dark ? 'text-gray-500' : 'text-gray-400'}`}>Optional</p>
@@ -1104,37 +1104,37 @@ function ScannedEntryCard({ entry, dark, saving, onConfirm }) {
   const [form, setForm] = useState({ ...entry });
   const PATTERN_LABELS = { every: 'Every week', '1st': '1st week', '2nd': '2nd week', '3rd': '3rd week', '4th': '4th week', '1st_and_3rd': '1st & 3rd weeks', '2nd_and_4th': '2nd & 4th weeks' };
   const inputCls = dark
-    ? 'w-full rounded-xl border border-gray-600 bg-gray-700 px-4 py-3 text-base text-white focus:border-brand-500 focus:outline-none'
-    : 'w-full rounded-xl border border-gray-200 px-4 py-3 text-base focus:border-brand-500 focus:outline-none';
+    ? 'w-full min-w-0 rounded-xl border border-gray-600 bg-gray-700 px-4 py-3 text-base text-white focus:border-brand-500 focus:outline-none'
+    : 'w-full min-w-0 rounded-xl border border-gray-200 px-4 py-3 text-base focus:border-brand-500 focus:outline-none';
 
   return (
-    <div className={`rounded-xl p-4 space-y-4 ${dark ? 'bg-gray-800/50' : 'bg-white'}`}>
+    <div className={`rounded-xl p-4 space-y-4 overflow-hidden ${dark ? 'bg-gray-800/50' : 'bg-white'}`}>
       {form.rawSignText && (
         <p className={`text-sm italic ${dark ? 'text-gray-400' : 'text-gray-500'}`}>
           Read from sign: &quot;{form.rawSignText}&quot;
         </p>
       )}
-      <div className="flex gap-3">
-        <div className="flex-1">
+      <div className="grid grid-cols-2 gap-2">
+        <div className="min-w-0">
           <label className={`text-sm font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>Day</label>
           <select value={form.dayOfWeek || ''} onChange={(e) => setForm({ ...form, dayOfWeek: e.target.value })} className={`mt-1 ${inputCls}`}>
             <option value="">Select day</option>
             {['Monday','Tuesday','Wednesday','Thursday','Friday'].map((d) => <option key={d} value={d}>{d}</option>)}
           </select>
         </div>
-        <div className="flex-1">
+        <div className="min-w-0">
           <label className={`text-sm font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>Frequency</label>
           <select value={form.weekPattern || 'every'} onChange={(e) => setForm({ ...form, weekPattern: e.target.value })} className={`mt-1 ${inputCls}`}>
             {Object.entries(PATTERN_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
         </div>
       </div>
-      <div className="flex gap-3">
-        <div className="flex-1">
+      <div className="grid grid-cols-2 gap-2">
+        <div className="min-w-0">
           <label className={`text-sm font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>Start</label>
           <input type="time" value={form.startTime || ''} onChange={(e) => setForm({ ...form, startTime: e.target.value })} className={`mt-1 ${inputCls}`} />
         </div>
-        <div className="flex-1">
+        <div className="min-w-0">
           <label className={`text-sm font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>End</label>
           <input type="time" value={form.endTime || ''} onChange={(e) => setForm({ ...form, endTime: e.target.value })} className={`mt-1 ${inputCls}`} />
         </div>
@@ -1143,12 +1143,12 @@ function ScannedEntryCard({ entry, dark, saving, onConfirm }) {
         <label className={`text-sm font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>Side of street</label>
         <input type="text" value={form.side || ''} onChange={(e) => setForm({ ...form, side: e.target.value })} placeholder="e.g. Even side" className={`mt-1 ${inputCls}`} />
       </div>
-      <div className="flex gap-3">
-        <div className="flex-1">
+      <div className="grid grid-cols-2 gap-2">
+        <div className="min-w-0">
           <label className={`text-sm font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>Season start</label>
           <input type="text" placeholder="MM-DD" value={form.seasonStart || ''} onChange={(e) => setForm({ ...form, seasonStart: e.target.value })} className={`mt-1 ${inputCls}`} />
         </div>
-        <div className="flex-1">
+        <div className="min-w-0">
           <label className={`text-sm font-medium ${dark ? 'text-gray-300' : 'text-gray-600'}`}>Season end</label>
           <input type="text" placeholder="MM-DD" value={form.seasonEnd || ''} onChange={(e) => setForm({ ...form, seasonEnd: e.target.value })} className={`mt-1 ${inputCls}`} />
         </div>
@@ -1196,8 +1196,8 @@ function AddAddressForm({ dark, onAdded, onCancel }) {
   }
 
   const baseCls = dark
-    ? 'rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white placeholder-gray-400 focus:border-brand-500 focus:outline-none'
-    : 'rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none';
+    ? 'min-w-0 rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white placeholder-gray-400 focus:border-brand-500 focus:outline-none'
+    : 'min-w-0 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none';
 
   function handlePhotos(e) {
     const files = Array.from(e.target.files || []);
@@ -1266,7 +1266,7 @@ function AddAddressForm({ dark, onAdded, onCancel }) {
   }
 
   return (
-    <div className={`mt-3 space-y-3 rounded-lg border p-4 ${dark ? 'border-brand-500/30 bg-gray-900/50' : 'border-brand-200 bg-brand-50/30'}`}>
+    <div className={`mt-3 space-y-3 rounded-lg border p-4 overflow-hidden ${dark ? 'border-brand-500/30 bg-gray-900/50' : 'border-brand-200 bg-brand-50/30'}`}>
       <p className={`text-xs font-semibold uppercase ${dark ? 'text-gray-400' : 'text-gray-500'}`}>New Address</p>
       <button
         type="button"
@@ -1285,9 +1285,9 @@ function AddAddressForm({ dark, onAdded, onCancel }) {
       <input type="text" placeholder="Street address" value={form.street} onChange={update('street')} className={`w-full ${baseCls}`} />
       <input type="text" placeholder="Apt / Unit (optional)" value={form.unit} onChange={update('unit')} className={`w-full ${baseCls}`} />
       <input type="text" placeholder="City" value={form.city} onChange={update('city')} className={`w-full ${baseCls}`} />
-      <div className="flex gap-2">
-        <input type="text" placeholder="State" value={form.state} onChange={update('state')} className={`w-20 shrink-0 ${baseCls}`} />
-        <input type="text" placeholder="ZIP" value={form.zip} onChange={update('zip')} className={`min-w-0 flex-1 ${baseCls}`} />
+      <div className="grid grid-cols-2 gap-2">
+        <div className="min-w-0"><input type="text" placeholder="State" value={form.state} onChange={update('state')} className={`w-full ${baseCls}`} /></div>
+        <div className="min-w-0"><input type="text" placeholder="ZIP" value={form.zip} onChange={update('zip')} className={`w-full ${baseCls}`} /></div>
       </div>
       <div className="flex gap-2">
         <div className="flex-1 min-w-0">
