@@ -57,7 +57,7 @@ router.patch('/bookings/:id/status', async (req, res, next) => {
 router.get('/customers', async (req, res, next) => {
   try {
     const { search, page = 1, limit = 50 } = req.query;
-    const query = { role: 'customer' };
+    const query = { role: 'customer', email: { $ne: 'atyors.support@gmail.com' } };
     if (search) {
       query.$or = [
         { firstName: { $regex: search, $options: 'i' } },
