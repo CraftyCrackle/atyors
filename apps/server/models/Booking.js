@@ -2,9 +2,10 @@ const mongoose = require('mongoose');
 
 const STATUS_FLOW = {
   pending: ['active', 'cancelled', 'expired', 'denied'],
-  active: ['en-route', 'cancelled', 'expired', 'denied'],
-  'en-route': ['arrived', 'cancelled'],
-  arrived: ['completed', 'no-show', 'denied'],
+  active: ['en-route', 'in-progress', 'cancelled', 'expired', 'denied'],
+  'en-route': ['arrived', 'in-progress', 'cancelled'],
+  arrived: ['in-progress', 'completed', 'no-show', 'denied'],
+  'in-progress': ['completed', 'denied'],
   completed: [],
   cancelled: [],
   'no-show': [],

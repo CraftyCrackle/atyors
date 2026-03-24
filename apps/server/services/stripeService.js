@@ -108,7 +108,7 @@ async function createPaymentIntent(user, amount, bookingId) {
     params.payment_method = defaultPm;
   }
 
-  const idempotencyKey = `pi_${bookingId}_${customerId}_${Date.now()}`;
+  const idempotencyKey = `pi_${bookingId}_${customerId}`;
   const intent = await stripe.paymentIntents.create(params, { idempotencyKey });
   return intent;
 }

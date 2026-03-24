@@ -1,12 +1,23 @@
 const Subscription = require('../models/Subscription');
 const Booking = require('../models/Booking');
 const ServiceType = require('../models/ServiceType');
+const Address = require('../models/Address');
 const User = require('../models/User');
 const stripeService = require('./stripeService');
 const config = require('../config');
 const { calculateMonthlyPrice, calculateMonthlyPriceBoth, calculateOneTimePrice, calculateOneTimePriceBothLeg, calculateEntranceCleaningMonthlyPrice, calculateEntranceCleaningPrice } = require('./pricingService');
 
 async function create(userId, data) {
+  if (data.addressId) {
+    const addr = await Address.findOne({ _id: data.addressId, userId });
+    if (!addr) {
+      const err = new Error('Address not found or does not belong to you.');
+      err.status = 403;
+      err.code = 'ADDRESS_FORBIDDEN';
+      throw err;
+    }
+  }
+
   const existing = await Subscription.findOne({
     userId,
     addressId: data.addressId,
@@ -211,6 +222,10 @@ async function generateUpcomingBookings(subscription, weeksAhead = 4) {
       ServiceType.findOne({ slug: 'put-out' }),
       ServiceType.findOne({ slug: 'bring-in' }),
     ]);
+    if (!putOutType || !bringInType) {
+      console.error('[subscriptionService] put-out or bring-in service type missing from DB — skipping isBoth bookings');
+      return bookings;
+    }
   }
 
   for (let i = 0; i < weeksAhead; i++) {
@@ -340,9 +355,14 @@ async function cancel(subscriptionId, userId) {
     }
   }
 
+  const now = new Date();
   await Booking.updateMany(
-    { subscriptionId: sub._id, status: { $in: ['pending', 'active'] }, scheduledDate: { $gte: new Date() } },
-    { status: 'cancelled', cancelledAt: new Date() },
+    { subscriptionId: sub._id, status: { $in: ['pending', 'active'] }, scheduledDate: { $gte: now } },
+    {
+      status: 'cancelled',
+      cancelledAt: now,
+      $push: { statusHistory: { status: 'cancelled', changedAt: now } },
+    },
   );
 
   return sub;

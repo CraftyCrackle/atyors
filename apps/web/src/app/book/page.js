@@ -6,6 +6,8 @@ import AuthGuard from '../../components/AuthGuard';
 import BottomNav from '../../components/BottomNav';
 import QuickAddAddress from '../../components/QuickAddAddress';
 import { api } from '../../services/api';
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
 import PhotoViewer from '../../components/PhotoViewer';
 
 const STEPS = ['service', 'address', 'details', 'confirm'];
@@ -41,6 +43,7 @@ function BookContent() {
 
   const [selected, setSelected] = useState({
     serviceType: null,
+    serviceTypeId: '',
     bookingType: 'one-time',
     barrelCount: 1,
     trashDay: '',
@@ -344,7 +347,7 @@ function BookContent() {
           const token = localStorage.getItem('accessToken');
           const fd = new FormData();
           cleaningPhotos.forEach((f) => fd.append('photos', f));
-          const uploadRes = await fetch('/api/v1/bookings/upload-cleaning-photos', {
+          const uploadRes = await fetch(`${API_BASE}/bookings/upload-cleaning-photos`, {
             method: 'POST',
             headers: { Authorization: `Bearer ${token}` },
             body: fd,
@@ -372,7 +375,7 @@ function BookContent() {
         if (curbItemPhotos.length > 0) {
           const fd = new FormData();
           curbItemPhotos.forEach((f) => fd.append('photos', f));
-          const uploadRes = await fetch('/api/v1/bookings/upload-curb-photos', {
+          const uploadRes = await fetch(`${API_BASE}/bookings/upload-curb-photos`, {
             method: 'POST',
             headers: { Authorization: `Bearer ${token}` },
             body: fd,
@@ -527,7 +530,7 @@ function BookContent() {
                   <p className="mb-2 text-xs font-bold uppercase tracking-wider text-gray-400">{group.category.name}</p>
                   <div className="space-y-3">
                     {group.types.map((svc) => (
-                      <button key={svc._id} disabled={!hasCard} onClick={() => { setSelected({ ...selected, serviceType: svc }); next(); }}
+                      <button key={svc._id} disabled={!hasCard} onClick={() => { setSelected({ ...selected, serviceType: svc, serviceTypeId: svc._id }); next(); }}
                         className={`w-full rounded-xl border-2 p-4 text-left transition active:scale-[0.98] ${selected.serviceType?._id === svc._id ? 'border-brand-600 bg-brand-50' : 'border-gray-100 hover:border-gray-200'}`}>
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0 flex-1">

@@ -194,6 +194,13 @@ async function create(userId, data) {
       ServiceType.findOne({ slug: 'bring-in' }),
     ]);
 
+    if (!putOutType || !bringInType) {
+      const err = new Error('Service configuration error: put-out or bring-in service type not found.');
+      err.status = 500;
+      err.code = 'SERVICE_TYPE_MISSING';
+      throw err;
+    }
+
     const putOutBooking = await Booking.create({
       userId,
       addressId: data.addressId,
@@ -421,6 +428,28 @@ async function reschedule(bookingId, userId, { scheduledDate }) {
     err.status = 400;
     err.code = 'PAST_DATE';
     throw err;
+  }
+
+  // For "both" (put-out + bring-in) pairs, determine which leg this is and
+  // move the other leg's date accordingly: put-out is always the night before.
+  if (booking.linkedBookingId) {
+    const linked = await Booking.findById(booking.linkedBookingId);
+    if (linked && ['pending', 'active'].includes(linked.status)) {
+      const svcType = await ServiceType.findById(booking.serviceTypeId);
+      const isPutOut = svcType?.slug === 'put-out';
+      if (isPutOut) {
+        // put-out moved → bring-in moves to the next day
+        const bringInDate = new Date(newDate);
+        bringInDate.setDate(bringInDate.getDate() + 1);
+        linked.scheduledDate = bringInDate;
+      } else {
+        // bring-in moved → put-out moves to the evening before
+        const putOutDate = new Date(newDate);
+        putOutDate.setDate(putOutDate.getDate() - 1);
+        linked.scheduledDate = putOutDate;
+      }
+      await linked.save();
+    }
   }
 
   booking.scheduledDate = newDate;
