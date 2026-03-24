@@ -4,6 +4,7 @@ jest.mock('../models/Subscription');
 jest.mock('../models/Booking');
 jest.mock('../models/ServiceType');
 jest.mock('../models/User');
+jest.mock('../models/Address');
 jest.mock('../services/stripeService');
 
 const mockConfig = { stripe: { skip: true } };
@@ -11,6 +12,7 @@ jest.mock('../config', () => mockConfig);
 
 const Subscription = require('../models/Subscription');
 const Booking = require('../models/Booking');
+const Address = require('../models/Address');
 const stripeService = require('../services/stripeService');
 const { toggleAutoRenew, cancel, create } = require('../services/subscriptionService');
 
@@ -96,6 +98,7 @@ describe('create — duplicate subscription check', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    Address.findOne.mockResolvedValue({ _id: addressId, userId });
     Subscription.create.mockImplementation((data) => Promise.resolve({ ...data, _id: new mongoose.Types.ObjectId(), save: jest.fn() }));
     Booking.create.mockResolvedValue({ _id: new mongoose.Types.ObjectId() });
     Booking.findOne.mockResolvedValue(null);
@@ -136,6 +139,7 @@ describe('create — entrance cleaning subscription', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    Address.findOne.mockResolvedValue({ _id: new mongoose.Types.ObjectId(), userId });
     Subscription.findOne.mockResolvedValue(null);
     Subscription.create.mockImplementation((data) => Promise.resolve({ ...data, _id: new mongoose.Types.ObjectId(), save: jest.fn() }));
     Booking.create.mockResolvedValue({ _id: new mongoose.Types.ObjectId() });
