@@ -57,7 +57,7 @@ router.patch('/bookings/:id/status', async (req, res, next) => {
 router.get('/customers', async (req, res, next) => {
   try {
     const { search, page = 1, limit = 50 } = req.query;
-    const query = { role: 'customer', email: { $ne: 'atyors.support@gmail.com' } };
+    const query = { role: 'customer' };
     if (search) {
       query.$or = [
         { firstName: { $regex: search, $options: 'i' } },
@@ -105,7 +105,7 @@ router.delete('/zones/:id', async (req, res, next) => {
 router.get('/users', async (req, res, next) => {
   try {
     const { search, role, page = 1, limit = 50 } = req.query;
-    const query = { email: { $ne: 'atyors.support@gmail.com' } };
+    const query = {};
     if (role) query.role = role;
     if (search) {
       query.$or = [
