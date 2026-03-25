@@ -13,24 +13,72 @@ import { useInstall } from '../components/InstallContext';
 const SERVICES = [
   {
     icon: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16',
-    title: 'Trash Barrel Service',
-    desc: 'We roll your trash barrels to the curb before pickup and bring them back in when it is done. One time or every week.',
+    title: 'Trash and Recycling',
+    desc: 'We roll your barrels to the curb before pickup and bring them back in when done. Book once or every week.',
     color: 'bg-brand-100 text-brand-600',
     from: 'From $2.50/barrel',
+    live: true,
   },
   {
     icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4',
     title: 'Curb Item Pickup',
-    desc: 'Need to put out boxes, bags, or bulky items? We carry them from storage to the curb so you do not have to lift a thing.',
+    desc: 'Boxes, bags, or bulky items that need to go out? We carry them from storage to the curb so you do not have to lift a thing.',
     color: 'bg-accent-100 text-accent-600',
     from: 'From $2.00/item',
+    live: true,
   },
   {
     icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6',
     title: 'Building Entrance Cleaning',
-    desc: 'We vacuum and mop shared hallways, stairways, and entrances in apartment buildings and multi-family homes. Monday to Saturday, 10 AM to 4 PM.',
+    desc: 'We vacuum and mop shared hallways and stairways in apartment buildings and multi-family homes. Available Monday through Saturday.',
     color: 'bg-green-100 text-green-600',
     from: 'From $15/floor',
+    live: true,
+  },
+  {
+    icon: 'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z',
+    title: 'Lawn and Exterior',
+    desc: 'Mowing, leaf cleanup, and exterior upkeep to keep your property looking sharp all season long.',
+    color: 'bg-lime-100 text-lime-600',
+    from: 'Coming Soon',
+    live: false,
+  },
+  {
+    icon: 'M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z',
+    title: 'Snow Removal',
+    desc: 'Shoveling, salting, and de-icing for driveways, walkways, and building entrances after every storm.',
+    color: 'bg-blue-100 text-blue-600',
+    from: 'Coming Soon',
+    live: false,
+  },
+  {
+    icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 3h6m-6 4h6m-2 4h2',
+    title: 'Property Inspections',
+    desc: 'Routine walkthroughs and photo reports so you always know the condition of your property even from a distance.',
+    color: 'bg-purple-100 text-purple-600',
+    from: 'Coming Soon',
+    live: false,
+  },
+];
+
+const PERSONAS = [
+  {
+    icon: 'M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z',
+    title: 'Landlords',
+    desc: 'You own rental units and do not have time to manage every small task. We become your on-call property crew so your tenants stay happy.',
+    color: 'bg-brand-100 text-brand-600',
+  },
+  {
+    icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4',
+    title: 'HOAs',
+    desc: 'Keep shared spaces clean and residents happy without hiring full-time staff or chasing down volunteers.',
+    color: 'bg-accent-100 text-accent-600',
+  },
+  {
+    icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6',
+    title: 'Homeowners',
+    desc: 'You just want the trash out on time and your home looking great. We take care of it so you get your weekends back.',
+    color: 'bg-green-100 text-green-600',
   },
 ];
 
@@ -72,10 +120,10 @@ function NativeAppLanding() {
           <Logo size="lg" variant="wordmark" />
 
           <p className="mt-4 text-center text-lg font-medium text-gray-500">
-            Property services on demand
+            On-demand property management
           </p>
           <p className="mt-2 text-center text-sm text-gray-400">
-            Trash barrels, curb items, and building cleaning. We handle the work so you do not have to.
+            Trash barrels, building cleaning, and more. Book once or set it on autopilot. We handle the work so you do not have to.
           </p>
 
           <div className="mt-12 flex w-full flex-col gap-3">
@@ -111,7 +159,7 @@ function NativeAppLanding() {
 }
 
 function WebLanding() {
-  const { isIos, isAndroid, hasAppStore, canInstall, isStandalone, triggerInstall } = useInstall();
+  const { isIos, hasAppStore, canInstall, isStandalone, triggerInstall } = useInstall();
 
   return (
     <main className="min-h-screen-safe bg-white">
@@ -126,30 +174,31 @@ function WebLanding() {
         </div>
       </nav>
 
+      {/* Hero */}
       <section className="relative overflow-hidden px-6 pb-16 pt-12">
         <div className="absolute -right-20 -top-20 h-80 w-80 rounded-full bg-brand-50 blur-3xl" />
         <div className="absolute -left-10 bottom-0 h-60 w-60 rounded-full bg-accent-50 blur-3xl" />
 
         <div className="relative mx-auto max-w-lg text-center">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-accent-50 px-4 py-1.5 text-sm font-medium text-accent-700">
-            <span className="h-1.5 w-1.5 rounded-full bg-accent-500 animate-pulse" />
-            Now taking bookings in your area
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-brand-50 px-4 py-1.5 text-sm font-medium text-brand-700">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+            Trusted by landlords and HOAs in Greater Boston
           </div>
 
           <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-gray-900 sm:text-5xl">
-            Property services<br />that free up<br />
-            <span className="bg-gradient-to-r from-brand-600 to-accent-500 bg-clip-text text-transparent">your time.</span>
+            Your property,<br />
+            <span className="bg-gradient-to-r from-brand-600 to-accent-500 bg-clip-text text-transparent">handled.</span>
           </h1>
 
           <p className="mx-auto mt-4 max-w-md text-lg text-gray-500">
-            We handle the small tasks that pile up around your property. Trash barrels, heavy items to the curb, shared hallway cleaning. Book in minutes and we take care of the rest.
+            We take care of the weekly tasks that eat your weekends. Trash barrels, building cleaning, curb items, and more. Book once or put it on autopilot.
           </p>
 
           <div className="mt-8 flex flex-col items-center gap-3">
-            <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:justify-center sm:items-center">
+            <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center sm:justify-center">
               <Link href="/signup" className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-8 py-4 font-semibold text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700 active:scale-[0.98] sm:w-auto">
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
-                Get Started Free
+                Build Your Property Care Plan
               </Link>
               <Link href="/login" className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 px-8 py-4 font-semibold text-gray-700 transition hover:bg-gray-50 active:scale-[0.98] sm:w-auto">
                 I already have an account
@@ -177,26 +226,24 @@ function WebLanding() {
 
       <LandingCarousel />
 
-      <section className="bg-gray-50 px-6 py-16">
+      {/* Who It's For */}
+      <section className="px-6 py-16">
         <div className="mx-auto max-w-lg">
-          <h2 className="text-center text-sm font-semibold uppercase tracking-widest text-brand-600">What We Do</h2>
-          <p className="mt-2 text-center text-2xl font-bold text-gray-900">Services for your property</p>
-          <p className="mt-2 text-center text-sm text-gray-500">Pick one service or several. All bookings include live tracking and a photo when the job is done.</p>
+          <h2 className="text-center text-sm font-semibold uppercase tracking-widest text-brand-600">Who It Is For</h2>
+          <p className="mt-2 text-center text-2xl font-bold text-gray-900">Built for people who own property</p>
+          <p className="mt-2 text-center text-sm text-gray-500">No matter what kind of property you manage, atyors fits right in.</p>
 
           <div className="mt-8 space-y-3">
-            {SERVICES.map((s, i) => (
-              <div key={i} className="flex items-start gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${s.color}`}>
+            {PERSONAS.map((p, i) => (
+              <div key={i} className="flex items-start gap-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${p.color}`}>
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d={s.icon} />
+                    <path strokeLinecap="round" strokeLinejoin="round" d={p.icon} />
                   </svg>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <h3 className="font-semibold text-gray-900">{s.title}</h3>
-                    <span className="shrink-0 text-sm font-bold text-brand-600">{s.from}</span>
-                  </div>
-                  <p className="mt-1 text-sm leading-relaxed text-gray-500">{s.desc}</p>
+                <div>
+                  <h3 className="font-semibold text-gray-900">{p.title}</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-gray-500">{p.desc}</p>
                 </div>
               </div>
             ))}
@@ -204,6 +251,36 @@ function WebLanding() {
         </div>
       </section>
 
+      {/* What We Handle */}
+      <section className="bg-gray-50 px-6 py-16">
+        <div className="mx-auto max-w-lg">
+          <h2 className="text-center text-sm font-semibold uppercase tracking-widest text-brand-600">What We Handle</h2>
+          <p className="mt-2 text-center text-2xl font-bold text-gray-900">One platform for your whole property</p>
+          <p className="mt-2 text-center text-sm text-gray-500">Start with one service and add more whenever you are ready. Live tracking and job photos included on every booking.</p>
+
+          <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {SERVICES.map((s, i) => (
+              <div key={i} className={`flex items-start gap-3 rounded-2xl border p-4 ${s.live ? 'border-gray-200 bg-white shadow-sm' : 'border-dashed border-gray-200 bg-gray-50'}`}>
+                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${s.live ? s.color : 'bg-gray-100 text-gray-400'}`}>
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d={s.icon} />
+                  </svg>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className={`font-semibold ${s.live ? 'text-gray-900' : 'text-gray-400'}`}>{s.title}</h3>
+                    {!s.live && <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-semibold text-gray-500">Coming Soon</span>}
+                  </div>
+                  <p className={`mt-0.5 text-sm leading-relaxed ${s.live ? 'text-gray-500' : 'text-gray-400'}`}>{s.desc}</p>
+                  {s.live && <p className="mt-1 text-xs font-semibold text-brand-600">{s.from}</p>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works */}
       <section className="px-6 py-16">
         <div className="mx-auto max-w-lg">
           <h2 className="text-center text-sm font-semibold uppercase tracking-widest text-brand-600">How It Works</h2>
@@ -225,6 +302,7 @@ function WebLanding() {
         </div>
       </section>
 
+      {/* Why Us */}
       <section className="bg-gray-50 px-6 py-16">
         <div className="mx-auto max-w-lg">
           <h2 className="text-center text-sm font-semibold uppercase tracking-widest text-accent-600">Why People Use Us</h2>
@@ -250,13 +328,14 @@ function WebLanding() {
 
       <LandingPricingSection id="pricing" />
 
+      {/* Bottom CTA */}
       <section className="bg-brand-600 px-6 py-16">
         <div className="mx-auto max-w-lg text-center">
-          <h2 className="text-2xl font-bold text-white">Let us handle the hard part.</h2>
-          <p className="mt-2 text-brand-100">Sign up free and book your first service in minutes. You only pay when the work is done.</p>
+          <h2 className="text-2xl font-bold text-white">Ready to get your property handled?</h2>
+          <p className="mt-2 text-brand-100">Sign up for free. Tell us about your property and we will build a care plan that fits. You only pay when the work is done.</p>
           <div className="mt-6 flex flex-col items-center gap-4">
             <Link href="/signup" className="inline-flex items-center gap-2 rounded-xl bg-white px-8 py-4 font-semibold text-brand-600 shadow-lg transition hover:bg-brand-50 active:scale-[0.98]">
-              Get Started Free
+              Build Your Property Care Plan
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
             </Link>
             {!isStandalone && isIos && hasAppStore && (
@@ -268,7 +347,7 @@ function WebLanding() {
             {!isStandalone && !isIos && canInstall && (
               <div className="flex flex-col items-center gap-2">
                 <p className="text-sm text-brand-200">or get the app</p>
-                <button onClick={triggerInstall} className="inline-flex items-center gap-2 rounded-lg bg-white/10 border border-white/20 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-white/20 active:scale-[0.97]">
+                <button onClick={triggerInstall} className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-white/20 active:scale-[0.97]">
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                   Install App
                 </button>
@@ -288,7 +367,7 @@ function WebLanding() {
             <Link href="/support" className="hover:text-gray-600">Support</Link>
           </div>
           <p className="text-center text-xs text-gray-400">
-            &copy; {new Date().getFullYear()} atyors.com &middot; At Your Service
+            &copy; {new Date().getFullYear()} atyors.com &middot; Property management, on your terms.
           </p>
         </div>
       </footer>
