@@ -26,8 +26,8 @@ export default function Support() {
               <div>
                 <h2 className="font-semibold text-gray-900">Email</h2>
                 <p className="mt-1 text-sm text-gray-500">Send us an email and we'll get back to you within 24 hours.</p>
-                <a href="mailto:support@atyors.com" className="mt-2 inline-block text-sm font-medium text-brand-600 hover:underline">
-                  support@atyors.com
+                <a href="mailto:atyors.support@gmail.com" className="mt-2 inline-block text-sm font-medium text-brand-600 hover:underline">
+                  atyors.support@gmail.com
                 </a>
               </div>
             </div>

@@ -109,7 +109,7 @@ export default function PrivacyPolicy() {
             <h2 className="text-lg font-bold text-gray-900">10. Contact Us</h2>
             <p className="mt-2">
               If you have questions about this privacy policy or your data, contact us at{' '}
-              <a href="mailto:support@atyors.com" className="text-brand-600 hover:underline">support@atyors.com</a>.
+              <a href="mailto:atyors.support@gmail.com" className="text-brand-600 hover:underline">atyors.support@gmail.com</a>.
             </p>
           </section>
         </div>

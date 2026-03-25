@@ -120,7 +120,7 @@ export default function TermsOfService() {
             <h2 className="text-lg font-bold text-gray-900">12. Contact</h2>
             <p className="mt-2">
               Questions about these terms? Contact us at{' '}
-              <a href="mailto:support@atyors.com" className="text-brand-600 hover:underline">support@atyors.com</a>.
+              <a href="mailto:atyors.support@gmail.com" className="text-brand-600 hover:underline">atyors.support@gmail.com</a>.
             </p>
           </section>
         </div>
