@@ -1,58 +1,5 @@
 import Link from 'next/link';
 
-const PLANS = [
-  {
-    name: 'Homeowner',
-    tagline: 'Great for a single home',
-    price: 'From $30',
-    period: '/mo',
-    color: 'border-gray-200',
-    badge: null,
-    items: [
-      'Weekly trash barrel valet (up to 3 barrels)',
-      'One-time curb item pickup',
-      'Live tracking on every visit',
-      'Cancel anytime',
-    ],
-    cta: 'Get Started',
-    href: '/signup',
-    highlight: false,
-  },
-  {
-    name: 'Landlord',
-    tagline: 'For rentals and multi-unit properties',
-    price: 'From $45',
-    period: '/mo',
-    color: 'border-brand-400',
-    badge: 'Most Popular',
-    items: [
-      'Everything in Homeowner',
-      'Building entrance cleaning',
-      'Schedule for multiple addresses',
-      'Priority booking slots',
-    ],
-    cta: 'Get Started',
-    href: '/signup',
-    highlight: true,
-  },
-  {
-    name: 'HOA / Property Manager',
-    tagline: 'For associations and large portfolios',
-    price: 'Custom',
-    period: '',
-    color: 'border-gray-200',
-    badge: null,
-    items: [
-      'Everything in Landlord',
-      'Volume pricing across all units',
-      'Dedicated support contact',
-      'Monthly reporting',
-    ],
-    cta: 'Contact Us',
-    href: '/support',
-    highlight: false,
-  },
-];
 
 export default function LandingPricingSection({ id = 'pricing', className = '' }) {
   return (
@@ -66,40 +13,57 @@ export default function LandingPricingSection({ id = 'pricing', className = '' }
         <h2 className="text-center text-2xl font-bold text-gray-900">Pick the plan that fits your property</h2>
         <p className="mt-2 text-center text-gray-500">No hidden fees. You see the exact price before you confirm anything. Cancel anytime.</p>
 
-        {/* Plan cards */}
-        <div className="mt-8 space-y-4">
-          {PLANS.map((plan) => (
-            <div key={plan.name} className={`rounded-2xl border-2 bg-white p-5 shadow-sm ${plan.highlight ? 'border-brand-400' : 'border-gray-200'}`}>
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-gray-900">{plan.name}</h3>
-                    {plan.badge && (
-                      <span className="rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-semibold text-brand-700">{plan.badge}</span>
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-500">{plan.tagline}</p>
-                </div>
-                <div className="shrink-0 text-right">
-                  <span className="text-2xl font-extrabold text-brand-600">{plan.price}</span>
-                  {plan.period && <span className="text-sm text-gray-400">{plan.period}</span>}
-                </div>
-              </div>
-              <ul className="mt-4 space-y-2">
-                {plan.items.map((item) => (
-                  <li key={item} className="flex items-start gap-2 text-sm text-gray-600">
-                    <svg className="mt-0.5 h-4 w-4 shrink-0 text-accent-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <Link href={plan.href} className={`mt-4 flex w-full items-center justify-center rounded-xl py-3 text-sm font-semibold transition active:scale-[0.98] ${plan.highlight ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/25 hover:bg-brand-700' : 'border border-gray-200 text-gray-700 hover:bg-gray-50'}`}>
-                {plan.cta}
-              </Link>
+        {/* Build your plan card */}
+        <div className="mt-8 rounded-2xl border-2 border-brand-400 bg-white p-5 shadow-sm">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="font-bold text-gray-900">Build Your Property Care Plan</h3>
+              <p className="text-sm text-gray-500">For homeowners, landlords, and anyone who owns a property</p>
             </div>
-          ))}
+            <div className="shrink-0 text-right">
+              <span className="text-2xl font-extrabold text-brand-600">From $2.50</span>
+            </div>
+          </div>
+          <ul className="mt-4 space-y-2">
+            {[
+              'Pick only the services you need — no bundles, no guessing',
+              'Book once or set it to repeat every week automatically',
+              'Add multiple properties to one account',
+              'Live tracking and a photo when every job is done',
+              'Cancel anytime with no long-term commitment',
+            ].map((item) => (
+              <li key={item} className="flex items-start gap-2 text-sm text-gray-600">
+                <svg className="mt-0.5 h-4 w-4 shrink-0 text-accent-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                {item}
+              </li>
+            ))}
+          </ul>
+          <Link href="/signup" className="mt-4 flex w-full items-center justify-center rounded-xl bg-brand-600 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700 active:scale-[0.98]">
+            Get Started Free
+          </Link>
+        </div>
+
+        {/* HOA / Property Manager contact card */}
+        <div className="mt-4 rounded-2xl border border-gray-200 bg-gray-50 p-5">
+          <div className="flex items-start gap-4">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-100">
+              <svg className="h-5 w-5 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+            </div>
+            <div className="min-w-0 flex-1">
+              <h3 className="font-bold text-gray-900">HOA or Property Manager?</h3>
+              <p className="mt-1 text-sm text-gray-500">Managing a large building or multiple properties? Reach out and we will put together something that works for your situation.</p>
+              <a href="mailto:atyors.support@gmail.com" className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-600 hover:underline">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                atyors.support@gmail.com
+              </a>
+            </div>
+          </div>
         </div>
 
         {/* Detailed price breakdown */}
