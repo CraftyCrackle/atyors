@@ -1521,16 +1521,7 @@ function BookContent() {
               )}
 
               {selected.bookingType === 'subscription' ? (
-                <div className="mt-4 space-y-2">
-                  <div className="rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-800">
-                    <strong>Monthly Subscription — 4 Services</strong>
-                    <p className="mt-1 text-xs text-green-700">
-                      Your subscription includes 4 weekly services starting{' '}
-                      {selected.date && new Date(selected.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}.
-                      All 4 appointments are automatically scheduled and cannot be individually cancelled.
-                      {isBoth() && ' Each week creates 2 jobs, one for put out and one for bring in.'}
-                    </p>
-                  </div>
+                <div className="mt-4">
                   {selected.date && (
                     <ScheduledServicesPreview startDate={selected.date} />
                   )}
@@ -1891,21 +1882,19 @@ function CascadingDatePicker({ trashDay: initialTrashDay, selectedDate, onChange
 
 function ScheduledServicesPreview({ startDate }) {
   if (!startDate) return null;
+  const d = new Date(startDate + 'T12:00:00');
+  const dayOfWeek = d.toLocaleDateString('en-US', { weekday: 'long' });
+  const startFormatted = d.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-3">
-      <p className="text-xs font-semibold text-gray-500 uppercase">Scheduled Services</p>
-      <div className="mt-2 space-y-1.5">
-        {[0, 1, 2, 3].map((i) => {
-          const d = new Date(startDate + 'T12:00:00');
-          d.setDate(d.getDate() + i * 7);
-          return (
-            <div key={i} className="flex items-center gap-2 text-sm">
-              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-100 text-[10px] font-bold text-brand-600">{i + 1}</div>
-              <span className="text-gray-700">{d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</span>
-              {i === 0 && <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[10px] font-semibold text-brand-600">Starts</span>}
-            </div>
-          );
-        })}
+    <div className="flex items-start gap-3 rounded-xl border border-brand-100 bg-brand-50 p-3.5">
+      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-100">
+        <svg className="h-4 w-4 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+      </div>
+      <div>
+        <p className="text-sm font-semibold text-brand-700">Every {dayOfWeek} starting {startFormatted}</p>
+        <p className="mt-0.5 text-xs leading-relaxed text-brand-600">4 visits per month, included in your plan. If you need to cancel, all 4 visits cancel together.</p>
       </div>
     </div>
   );
