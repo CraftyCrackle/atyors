@@ -1,10 +1,12 @@
 import './globals.css';
+import Script from 'next/script';
 import { GoogleAnalytics } from '@next/third-parties/google';
 import NotificationProvider from '../components/NotificationProvider';
 import GpsBroadcaster from '../components/GpsBroadcaster';
 import InstallProvider from '../components/InstallContext';
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+const ADS_TAG = process.env.NEXT_PUBLIC_GOOGLE_ADS_TAG;
 
 export const metadata = {
   title: 'atyors — At Your Service',
@@ -48,6 +50,17 @@ export default function RootLayout({ children }) {
         </InstallProvider>
       </body>
       {GA_ID && <GoogleAnalytics gaId={GA_ID} />}
+      {ADS_TAG && (
+        <>
+          <Script src={`https://www.googletagmanager.com/gtag/js?id=${ADS_TAG}`} strategy="afterInteractive" />
+          <Script id="google-ads-tag" strategy="afterInteractive">{`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${ADS_TAG}');
+          `}</Script>
+        </>
+      )}
     </html>
   );
 }
