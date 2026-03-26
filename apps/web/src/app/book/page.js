@@ -445,6 +445,13 @@ function BookContent() {
         }
       }
 
+      if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+        window.gtag('event', 'manual_event_PURCHASE', {
+          currency: 'USD',
+          value: currentPrice(),
+          transaction_id: `booking_${Date.now()}`,
+        });
+      }
       setBookingConfirmed(true);
       setTimeout(() => router.push('/dashboard'), 2000);
     } catch (err) {
