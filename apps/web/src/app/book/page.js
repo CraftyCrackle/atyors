@@ -132,6 +132,8 @@ function BookContent() {
 
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [cleanoutBedrooms, setCleanoutBedrooms] = useState(1);
+  const [lotSize, setLotSize] = useState(null);
+  const [outdoorNotes, setOutdoorNotes] = useState('');
 
   const perBarrel = pricing?.perBarrel ?? 2.5;
   const perBarrelBoth = pricing?.perBarrelBoth ?? 4.0;
@@ -177,8 +179,26 @@ function BookContent() {
     return isEntranceCleaningSvc(selected.serviceType);
   }
 
+  const OUTDOOR_SLUGS = ['lawn-care', 'leaf-cleanup', 'snow-shoveling'];
+  function isOutdoorService(svc) {
+    return OUTDOOR_SLUGS.includes((svc ?? selected.serviceType)?.slug);
+  }
+
+  function outdoorTiers(svc) {
+    const slug = (svc ?? selected.serviceType)?.slug;
+    if (slug === 'lawn-care')    return { small: outdoorLawn.small,   medium: outdoorLawn.medium,   large: outdoorLawn.large };
+    if (slug === 'leaf-cleanup') return { small: outdoorLeaves.small, medium: outdoorLeaves.medium, large: outdoorLeaves.large };
+    if (slug === 'snow-shoveling') return { small: outdoorShovel.small, medium: outdoorShovel.medium, large: outdoorShovel.large };
+    return { small: 35, medium: 55, large: 85 };
+  }
+
+  function outdoorTotal() {
+    const tiers = outdoorTiers();
+    return tiers[lotSize] ?? tiers.small;
+  }
+
   // Services that require a quote rather than instant online booking
-  const QUOTE_ONLY_SLUGS = ['lawn-care', 'leaf-cleanup', 'snow-shoveling', 'staircase-cleaning'];
+  const QUOTE_ONLY_SLUGS = ['staircase-cleaning'];
   function isQuoteOnly(svc) {
     return QUOTE_ONLY_SLUGS.includes(svc?.slug);
   }
@@ -202,9 +222,9 @@ function BookContent() {
       case 'entrance-cleaning': return { price: `From $${ecPerFloor}/floor`, sub: 'custom pricing' };
       case 'staircase-cleaning': return { price: `From $${ecPerStair}/staircase`, sub: 'get a quote' };
       case 'property-cleanout':  return { price: `From $${cleanoutBase}`, sub: 'studio / 1BR' };
-      case 'lawn-care':      return { price: `$${outdoorLawn.small}–$${outdoorLawn.large}`, sub: 'by lot size' };
-      case 'leaf-cleanup':   return { price: `$${outdoorLeaves.small}–$${outdoorLeaves.large}`, sub: 'by lot size' };
-      case 'snow-shoveling': return { price: `$${outdoorShovel.small}–$${outdoorShovel.large}`, sub: 'by lot size' };
+      case 'lawn-care':      return { price: `$${outdoorLawn.small}–$${outdoorLawn.large}`, sub: 'small to large lot' };
+      case 'leaf-cleanup':   return { price: `$${outdoorLeaves.small}–$${outdoorLeaves.large}`, sub: 'small to large lot' };
+      case 'snow-shoveling': return { price: `$${outdoorShovel.small}–$${outdoorShovel.large}`, sub: 'small to large lot' };
       default:               return { price: `$${perBarrel.toFixed(2)}/barrel`, sub: 'per service' };
     }
   }
@@ -273,6 +293,7 @@ function BookContent() {
   function currentPrice() {
     if (isEntranceCleaning()) return entranceCleaningTotal();
     if (isPropertyCleanout()) return cleanoutTotal();
+    if (isOutdoorService()) return outdoorTotal();
     return selected.bookingType === 'subscription' ? monthlyPrice() : oneTimePrice();
   }
 
@@ -461,6 +482,17 @@ function BookContent() {
           scheduledDate: selected.date,
           itemCount: cleanoutBedrooms,
           amount: cleanoutTotal(),
+        });
+      } else if (isOutdoorService()) {
+        await api.post('/bookings', {
+          addressId: selected.addressId,
+          serviceTypeId: selected.serviceType._id,
+          scheduledDate: selected.date,
+          curbItemNotes: [
+            `Lot size: ${lotSize}`,
+            outdoorNotes,
+          ].filter(Boolean).join(' | '),
+          amount: outdoorTotal(),
         });
       } else if (selected.bookingType === 'subscription') {
         const dayOfWeek = new Date(selected.date + 'T12:00:00').getDay();
@@ -792,7 +824,7 @@ function BookContent() {
                 </div>
               )}
 
-              {selected.addressId && !anyZipNotServed && !isEntranceCleaning() && (
+              {selected.addressId && !anyZipNotServed && !isEntranceCleaning() && !isPropertyCleanout() && !isOutdoorService() && (
                 <CascadingDatePicker
                   key={selected.addressId}
                   trashDay={selected.trashDay}
@@ -801,7 +833,7 @@ function BookContent() {
                 />
               )}
 
-              {selected.addressId && !anyZipNotServed && (isEntranceCleaning() || isPropertyCleanout()) && (
+              {selected.addressId && !anyZipNotServed && (isEntranceCleaning() || isPropertyCleanout() || isOutdoorService()) && (
                 <div className="mt-4">
                   <label className="text-sm font-semibold text-gray-700">What date would you like service?</label>
                   <input
@@ -1036,6 +1068,84 @@ function BookContent() {
             </div>
           )}
 
+          {/* Step 3: Outdoor Service Details */}
+          {step === 2 && isOutdoorService() && (
+            <div>
+              <h2 className="text-lg font-bold">Property Details</h2>
+              <p className="mt-1 text-sm text-gray-500">Select your lot size so we can confirm your price.</p>
+
+              {selectedAddr && (
+                <div className="mt-3 rounded-xl bg-gray-50 p-3">
+                  <div className="flex items-center gap-2">
+                    <svg className="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    </svg>
+                    <p className="text-sm text-gray-600">{selectedAddr.street}{selectedAddr.unit ? `, ${selectedAddr.unit}` : ''}, {selectedAddr.city}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-5">
+                <label className="text-sm font-semibold text-gray-700">Lot size</label>
+                <p className="mt-0.5 text-xs text-gray-400">Choose the option that best describes your property.</p>
+                <div className="mt-3 space-y-2.5">
+                  {[
+                    { value: 'small',  label: 'Small',  sub: 'Up to 2,000 sq ft', price: outdoorTiers().small },
+                    { value: 'medium', label: 'Medium', sub: '2,000 – 5,000 sq ft', price: outdoorTiers().medium },
+                    { value: 'large',  label: 'Large',  sub: '5,000+ sq ft', price: outdoorTiers().large },
+                  ].map((tier) => (
+                    <button key={tier.value} onClick={() => setLotSize(tier.value)}
+                      className={`flex w-full items-center justify-between rounded-xl border-2 px-4 py-3.5 text-left transition active:scale-[0.99] ${lotSize === tier.value ? 'border-brand-600 bg-brand-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                      <div className="flex items-center gap-3">
+                        <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition ${lotSize === tier.value ? 'border-brand-600 bg-brand-600' : 'border-gray-300'}`}>
+                          {lotSize === tier.value && <svg className="h-2.5 w-2.5 text-white" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-900">{tier.label}</p>
+                          <p className="text-xs text-gray-500">{tier.sub}</p>
+                        </div>
+                      </div>
+                      <span className="text-lg font-bold text-brand-600">${tier.price}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-5">
+                <label className="text-sm font-semibold text-gray-700">Notes for your servicer <span className="font-normal text-gray-400">(optional)</span></label>
+                <textarea
+                  placeholder="Gate code, specific areas to focus on, access instructions..."
+                  value={outdoorNotes}
+                  onChange={(e) => setOutdoorNotes(e.target.value)}
+                  rows={3}
+                  className="mt-2 w-full rounded-xl border-2 border-gray-200 px-3 py-2.5 text-base focus:border-brand-600 focus:outline-none resize-none"
+                />
+              </div>
+
+              {lotSize && (
+                <div className="mt-4 rounded-xl bg-brand-50 p-4 flex justify-between items-center">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-brand-700">Your Price</p>
+                    <p className="mt-1 text-sm text-gray-600">{selected.serviceType?.name} · {lotSize.charAt(0).toUpperCase() + lotSize.slice(1)} lot</p>
+                  </div>
+                  <span className="text-2xl font-bold text-brand-600">${outdoorTotal()}</span>
+                </div>
+              )}
+
+              <div className="mt-3 flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2.5">
+                <svg className="h-4 w-4 shrink-0 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-xs text-blue-700">Your servicer will arrive between <strong>8 AM and 5 PM</strong>. You won&apos;t be charged until the job is complete.</p>
+              </div>
+
+              <button onClick={next} disabled={!lotSize}
+                className="mt-5 w-full rounded-xl bg-brand-600 py-3.5 font-semibold text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700 active:scale-[0.98] disabled:opacity-40">
+                Review &amp; Confirm
+              </button>
+            </div>
+          )}
+
           {/* Step 3: Property Cleanout Details */}
           {step === 2 && isPropertyCleanout() && (
             <div>
@@ -1242,7 +1352,7 @@ function BookContent() {
             </div>
           )}
 
-          {step === 2 && !isCurbItems() && !isEntranceCleaning() && !isPropertyCleanout() && (
+          {step === 2 && !isCurbItems() && !isEntranceCleaning() && !isPropertyCleanout() && !isOutdoorService() && (
             <div>
               <h2 className="text-lg font-bold">Service Details</h2>
               <p className="mt-1 text-sm text-gray-500">Review and adjust your barrel details</p>
@@ -1705,6 +1815,62 @@ function BookContent() {
             </div>
           )}
 
+          {step === 3 && isOutdoorService() && (
+            <div>
+              <h2 className="text-lg font-bold">Confirm Booking</h2>
+              <p className="mt-1 text-sm text-gray-500">Review your outdoor service details.</p>
+
+              <div className="mt-5 space-y-3">
+                <div className="rounded-xl border border-gray-200 bg-white p-4">
+                  <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Service</p>
+                  <p className="font-semibold text-gray-900">{selected.serviceType?.name}</p>
+                  {lotSize && <p className="mt-0.5 text-sm text-gray-500">{lotSize.charAt(0).toUpperCase() + lotSize.slice(1)} lot</p>}
+                </div>
+
+                {selectedAddr && (
+                  <div className="rounded-xl border border-gray-200 bg-white p-4">
+                    <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Address</p>
+                    <p className="font-semibold text-gray-900">{selectedAddr.street}{selectedAddr.unit ? `, ${selectedAddr.unit}` : ''}</p>
+                    <p className="text-sm text-gray-500">{selectedAddr.city}, {selectedAddr.state} {selectedAddr.zip}</p>
+                  </div>
+                )}
+
+                {selected.date && (
+                  <div className="rounded-xl border border-gray-200 bg-white p-4">
+                    <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Date</p>
+                    <p className="font-semibold text-gray-900">
+                      {new Date(selected.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                    </p>
+                    <p className="mt-0.5 text-xs text-gray-500">Service window: 8 AM – 5 PM</p>
+                  </div>
+                )}
+
+                {outdoorNotes && (
+                  <div className="rounded-xl border border-gray-200 bg-white p-4">
+                    <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Notes</p>
+                    <p className="text-sm text-gray-700">{outdoorNotes}</p>
+                  </div>
+                )}
+
+                <div className="rounded-xl bg-brand-50 p-4 flex justify-between items-center">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-brand-700">Total due after service</p>
+                    {lotSize && (
+                      <p className="mt-0.5 text-sm text-gray-600">{lotSize.charAt(0).toUpperCase() + lotSize.slice(1)} lot pricing</p>
+                    )}
+                  </div>
+                  <span className="text-2xl font-bold text-brand-600">${outdoorTotal()}</span>
+                </div>
+              </div>
+
+              <button onClick={handleConfirm} disabled={submitting}
+                className="mt-6 w-full rounded-xl bg-brand-600 py-3.5 font-semibold text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700 active:scale-[0.98] disabled:opacity-60">
+                {submitting ? 'Booking...' : 'Confirm Booking'}
+              </button>
+              <p className="mt-2 text-center text-xs text-gray-400">Your card is charged only after the job is complete.</p>
+            </div>
+          )}
+
           {step === 3 && isPropertyCleanout() && (
             <div>
               <h2 className="text-lg font-bold">Confirm Booking</h2>
@@ -1762,7 +1928,7 @@ function BookContent() {
             </div>
           )}
 
-          {step === 3 && !isCurbItems() && !isEntranceCleaning() && !isPropertyCleanout() && (
+          {step === 3 && !isCurbItems() && !isEntranceCleaning() && !isPropertyCleanout() && !isOutdoorService() && (
             <div>
               <h2 className="text-lg font-bold">Confirm Booking</h2>
               <p className="mt-1 text-sm text-gray-500">Review your service details</p>
