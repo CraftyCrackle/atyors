@@ -124,7 +124,13 @@ function BookContent() {
   }, [selected.serviceType]);
 
   function next() { setStep((s) => Math.min(s + 1, STEPS.length - 1)); }
-  function back() { step === 0 ? router.back() : setStep((s) => s - 1); }
+  function back() {
+    if (step === 0 && selectedCategory) { setSelectedCategory(null); return; }
+    if (step === 0) { router.back(); return; }
+    setStep((s) => s - 1);
+  }
+
+  const [selectedCategory, setSelectedCategory] = useState(null);
 
   const perBarrel = pricing?.perBarrel ?? 2.5;
   const perBarrelBoth = pricing?.perBarrelBoth ?? 4.0;
@@ -134,12 +140,17 @@ function BookContent() {
   const monthlyIncluded = pricing?.monthlyIncludedBarrels ?? 3;
   const extraBarrelMonthly = pricing?.extraBarrelMonthly ?? 3;
   const curbItemPrice = pricing?.curbItemPrice ?? 2.0;
+  const barrelCleaningPrice = pricing?.barrelCleaningPrice ?? 10;
+  const cleanoutBase = pricing?.cleanoutBase ?? 250;
   const ecPerFloor = pricing?.entranceCleaningPerFloor ?? 15;
   const ecPerStair = pricing?.entranceCleaningPerStaircase ?? 8;
   const ecEntranceFee = pricing?.entranceCleaningEntranceFee ?? 15;
   const ecMonthlyPerFloor = pricing?.ecMonthlyPerFloor ?? 12;
   const ecMonthlyPerStair = pricing?.ecMonthlyPerStaircase ?? 6;
   const ecMonthlyEntranceFee = pricing?.ecMonthlyEntranceFee ?? 12;
+  const outdoorLawn = pricing?.outdoorLawn ?? { small: 35, medium: 55, large: 85 };
+  const outdoorLeaves = pricing?.outdoorLeaves ?? { small: 45, medium: 65, large: 95 };
+  const outdoorShovel = pricing?.outdoorShovel ?? { small: 40, medium: 60, large: 90 };
 
   function isBothSvc(svc) {
     return svc?.slug === 'both';
@@ -164,6 +175,40 @@ function BookContent() {
   function isEntranceCleaning() {
     return isEntranceCleaningSvc(selected.serviceType);
   }
+
+  // Services that require a quote rather than instant online booking
+  const QUOTE_ONLY_SLUGS = ['property-cleanout', 'lawn-care', 'leaf-cleanup', 'snow-shoveling', 'staircase-cleaning'];
+  function isQuoteOnly(svc) {
+    return QUOTE_ONLY_SLUGS.includes(svc?.slug);
+  }
+
+  function servicePriceLabel(svc) {
+    switch (svc?.slug) {
+      case 'both':           return { price: `$${perBarrelBoth.toFixed(2)}/barrel`, sub: '2 jobs created' };
+      case 'put-out':        return { price: `$${perBarrel.toFixed(2)}/barrel`, sub: 'per service' };
+      case 'bring-in':       return { price: `$${perBarrel.toFixed(2)}/barrel`, sub: 'per service' };
+      case 'curb-items':     return { price: `$${curbItemPrice.toFixed(2)}/item`, sub: 'up to 25 lbs each' };
+      case 'barrel-cleaning':return { price: `$${barrelCleaningPrice}/barrel`, sub: 'one-time' };
+      case 'entrance-cleaning': return { price: `From $${ecPerFloor}/floor`, sub: 'custom pricing' };
+      case 'staircase-cleaning': return { price: `From $${ecPerStair}/staircase`, sub: 'get a quote' };
+      case 'property-cleanout':  return { price: `From $${cleanoutBase}`, sub: 'studio / 1BR' };
+      case 'lawn-care':      return { price: `$${outdoorLawn.small}–$${outdoorLawn.large}`, sub: 'by lot size' };
+      case 'leaf-cleanup':   return { price: `$${outdoorLeaves.small}–$${outdoorLeaves.large}`, sub: 'by lot size' };
+      case 'snow-shoveling': return { price: `$${outdoorShovel.small}–$${outdoorShovel.large}`, sub: 'by lot size' };
+      default:               return { price: `$${perBarrel.toFixed(2)}/barrel`, sub: 'per service' };
+    }
+  }
+
+  const CATEGORY_ICONS = {
+    'trash-recycling': 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16',
+    cleaning: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6',
+    outdoors: 'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z',
+  };
+  const CATEGORY_COLORS = {
+    'trash-recycling': 'bg-brand-100 text-brand-600',
+    cleaning: 'bg-green-100 text-green-600',
+    outdoors: 'bg-lime-100 text-lime-600',
+  };
 
   function entranceCleaningTotal() {
     const isMonthly = selected.bookingType === 'subscription';
@@ -530,44 +575,94 @@ function BookContent() {
           {/* Step 1: Service Selection */}
           {step === 0 && (
             <div>
-              <h2 className="text-lg font-bold">Choose a Service</h2>
-              <p className="mt-1 text-sm text-gray-500">What do you need help with?</p>
-              {serviceGroups.map((group) => (
-                <div key={group.category._id} className="mt-5">
-                  <p className="mb-2 text-xs font-bold uppercase tracking-wider text-gray-400">{group.category.name}</p>
-                  <div className="space-y-3">
-                    {group.types.map((svc) => (
-                      <button key={svc._id} disabled={!hasCard} onClick={() => { setSelected({ ...selected, serviceType: svc, serviceTypeId: svc._id }); next(); }}
-                        className={`w-full rounded-xl border-2 p-4 text-left transition active:scale-[0.98] ${selected.serviceType?._id === svc._id ? 'border-brand-600 bg-brand-50' : 'border-gray-100 hover:border-gray-200'}`}>
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0 flex-1">
-                            <p className="font-semibold">{svc.name}</p>
-                            <p className="mt-0.5 text-sm text-gray-500">{svc.description}</p>
+              {!selectedCategory ? (
+                <>
+                  <h2 className="text-lg font-bold">What do you need?</h2>
+                  <p className="mt-1 text-sm text-gray-500">Pick a category to see available services.</p>
+                  <div className="mt-5 space-y-3">
+                    {serviceGroups.map((group) => {
+                      const iconPath = CATEGORY_ICONS[group.category.slug] || CATEGORY_ICONS.outdoors;
+                      const colorClass = CATEGORY_COLORS[group.category.slug] || 'bg-gray-100 text-gray-600';
+                      const activeCount = group.types.length;
+                      return (
+                        <button key={group.category._id} onClick={() => setSelectedCategory(group)}
+                          className="w-full rounded-2xl border-2 border-gray-100 bg-white p-4 text-left shadow-sm transition hover:border-brand-200 hover:shadow-md active:scale-[0.98]">
+                          <div className="flex items-center gap-4">
+                            <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${colorClass}`}>
+                              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d={iconPath} />
+                              </svg>
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-bold text-gray-900">{group.category.name}</p>
+                              <p className="mt-0.5 text-sm text-gray-500">{group.category.description}</p>
+                              <p className="mt-1 text-xs font-medium text-brand-600">{activeCount} service{activeCount !== 1 ? 's' : ''} available</p>
+                            </div>
+                            <svg className="h-5 w-5 shrink-0 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                            </svg>
                           </div>
-                          <div className="shrink-0 text-right">
-                            {isCurbItemsSvc(svc) ? (
-                              <>
-                                <p className="font-bold text-brand-600">${curbItemPrice.toFixed(2)}</p>
-                                <p className="text-xs text-gray-400">per item (≤25 lbs)</p>
-                              </>
-                            ) : isEntranceCleaningSvc(svc) ? (
-                              <>
-                                <p className="font-bold text-brand-600">From ${ecPerFloor}</p>
-                                <p className="text-xs text-gray-400">custom pricing</p>
-                              </>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <button onClick={() => setSelectedCategory(null)} className="mb-4 flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:text-brand-800">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                    </svg>
+                    All categories
+                  </button>
+                  <h2 className="text-lg font-bold">{selectedCategory.category.name}</h2>
+                  <p className="mt-1 text-sm text-gray-500">Choose the service you need.</p>
+
+                  {!hasCard && (
+                    <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                      Add a payment method in Profile before booking.
+                    </div>
+                  )}
+
+                  <div className="mt-4 space-y-3">
+                    {selectedCategory.types.map((svc) => {
+                      const label = servicePriceLabel(svc);
+                      const quoteOnly = isQuoteOnly(svc);
+                      return (
+                        <div key={svc._id} className="rounded-2xl border-2 border-gray-100 bg-white p-4 shadow-sm">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              <p className="font-semibold text-gray-900">{svc.name}</p>
+                              <p className="mt-0.5 text-sm leading-relaxed text-gray-500">{svc.description}</p>
+                            </div>
+                            <div className="shrink-0 text-right">
+                              <p className="font-bold text-brand-600">{label.price}</p>
+                              <p className="text-xs text-gray-400">{label.sub}</p>
+                            </div>
+                          </div>
+                          <div className="mt-3">
+                            {quoteOnly ? (
+                              <a href="mailto:atyors.support@gmail.com"
+                                className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-brand-200 py-2.5 text-sm font-semibold text-brand-600 transition hover:bg-brand-50 active:scale-[0.98]">
+                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                                Get a Quote
+                              </a>
                             ) : (
-                              <>
-                                <p className="font-bold text-brand-600">${isBothSvc(svc) ? perBarrelBoth.toFixed(2) : perBarrel.toFixed(2)}/barrel</p>
-                                <p className="text-xs text-gray-400">{isBothSvc(svc) ? '2 jobs created' : 'per service'}</p>
-                              </>
+                              <button disabled={!hasCard}
+                                onClick={() => { setSelected({ ...selected, serviceType: svc, serviceTypeId: svc._id }); next(); }}
+                                className="w-full rounded-xl bg-brand-600 py-2.5 text-sm font-semibold text-white shadow-sm shadow-brand-600/25 transition hover:bg-brand-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50">
+                                Book This Service
+                              </button>
                             )}
                           </div>
                         </div>
-                      </button>
-                    ))}
+                      );
+                    })}
                   </div>
-                </div>
-              ))}
+                </>
+              )}
             </div>
           )}
 
