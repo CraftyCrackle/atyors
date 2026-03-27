@@ -135,8 +135,8 @@ export default function LandingPricingSection({ id = 'pricing', className = '' }
           <div className="rounded-xl border border-gray-200 bg-white px-5 py-4">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="font-semibold text-gray-900">Property cleanout</p>
-                <p className="text-sm text-gray-500">Full cleanout for vacant apartments and homes. 4+ bedrooms get a custom quote.</p>
+              <p className="font-semibold text-gray-900">Property cleanout</p>
+              <p className="text-sm text-gray-500">Full cleanout for vacant apartments and homes. Base price includes 1 bedroom, common area, kitchen, bath, and vacuuming. Add $50 per additional bedroom.</p>
               </div>
               <div className="shrink-0 text-right">
                 <p className="text-xl font-bold text-brand-600">From $250</p>

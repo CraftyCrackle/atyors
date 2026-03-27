@@ -131,6 +131,7 @@ function BookContent() {
   }
 
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [cleanoutBedrooms, setCleanoutBedrooms] = useState(1);
 
   const perBarrel = pricing?.perBarrel ?? 2.5;
   const perBarrelBoth = pricing?.perBarrelBoth ?? 4.0;
@@ -177,9 +178,18 @@ function BookContent() {
   }
 
   // Services that require a quote rather than instant online booking
-  const QUOTE_ONLY_SLUGS = ['property-cleanout', 'lawn-care', 'leaf-cleanup', 'snow-shoveling', 'staircase-cleaning'];
+  const QUOTE_ONLY_SLUGS = ['lawn-care', 'leaf-cleanup', 'snow-shoveling', 'staircase-cleaning'];
   function isQuoteOnly(svc) {
     return QUOTE_ONLY_SLUGS.includes(svc?.slug);
+  }
+
+  function isPropertyCleanout(svc) {
+    return (svc ?? selected.serviceType)?.slug === 'property-cleanout';
+  }
+
+  function cleanoutTotal() {
+    const extra = Math.max(0, cleanoutBedrooms - 1);
+    return cleanoutBase + extra * (pricing?.cleanoutPerBedroom ?? 50);
   }
 
   function servicePriceLabel(svc) {
@@ -262,6 +272,7 @@ function BookContent() {
 
   function currentPrice() {
     if (isEntranceCleaning()) return entranceCleaningTotal();
+    if (isPropertyCleanout()) return cleanoutTotal();
     return selected.bookingType === 'subscription' ? monthlyPrice() : oneTimePrice();
   }
 
@@ -443,6 +454,14 @@ function BookContent() {
             curbItemPhotos: photoUrls,
           });
         }
+      } else if (isPropertyCleanout()) {
+        await api.post('/bookings', {
+          addressId: selected.addressId,
+          serviceTypeId: selected.serviceType._id,
+          scheduledDate: selected.date,
+          itemCount: cleanoutBedrooms,
+          amount: cleanoutTotal(),
+        });
       } else if (selected.bookingType === 'subscription') {
         const dayOfWeek = new Date(selected.date + 'T12:00:00').getDay();
         const subRes = await api.post('/subscriptions', {
@@ -782,7 +801,7 @@ function BookContent() {
                 />
               )}
 
-              {selected.addressId && !anyZipNotServed && isEntranceCleaning() && (
+              {selected.addressId && !anyZipNotServed && (isEntranceCleaning() || isPropertyCleanout()) && (
                 <div className="mt-4">
                   <label className="text-sm font-semibold text-gray-700">What date would you like service?</label>
                   <input
@@ -792,7 +811,7 @@ function BookContent() {
                     onChange={(e) => {
                       const d = new Date(e.target.value + 'T12:00:00');
                       if (d.getDay() === 0) {
-                        setError('Entrance cleaning is available Monday through Saturday only. Sundays are not available.');
+                        setError('This service is available Monday through Saturday only. Sundays are not available.');
                         setSelected((prev) => ({ ...prev, date: '' }));
                       } else {
                         setError('');
@@ -1017,6 +1036,96 @@ function BookContent() {
             </div>
           )}
 
+          {/* Step 3: Property Cleanout Details */}
+          {step === 2 && isPropertyCleanout() && (
+            <div>
+              <h2 className="text-lg font-bold">Cleanout Details</h2>
+              <p className="mt-1 text-sm text-gray-500">Tell us about the unit so we can confirm your price.</p>
+
+              {selectedAddr && (
+                <div className="mt-3 rounded-xl bg-gray-50 p-3">
+                  <div className="flex items-center gap-2">
+                    <svg className="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    </svg>
+                    <p className="text-sm text-gray-600">{selectedAddr.street}{selectedAddr.unit ? `, ${selectedAddr.unit}` : ''}, {selectedAddr.city}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-5">
+                <label className="text-sm font-semibold text-gray-700">Number of bedrooms</label>
+                <p className="mt-0.5 text-xs text-gray-400">
+                  Base price (${cleanoutBase}) covers 1 bedroom, common area, kitchen, bath, and vacuuming throughout.
+                  Each additional bedroom adds ${pricing?.cleanoutPerBedroom ?? 50}.
+                </p>
+                <div className="mt-3 flex items-center gap-4">
+                  <button
+                    onClick={() => setCleanoutBedrooms((n) => Math.max(1, n - 1))}
+                    disabled={cleanoutBedrooms <= 1}
+                    className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-gray-200 text-xl font-bold text-gray-600 transition hover:border-brand-400 active:scale-95 disabled:opacity-30"
+                  >−</button>
+                  <span className="min-w-[3rem] text-center text-2xl font-bold">{cleanoutBedrooms}</span>
+                  <button
+                    onClick={() => setCleanoutBedrooms((n) => n + 1)}
+                    className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-gray-200 text-xl font-bold text-gray-600 transition hover:border-brand-400 active:scale-95"
+                  >+</button>
+                </div>
+              </div>
+
+              {/* What's included */}
+              <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50 p-4">
+                <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3">What's Included</p>
+                <ul className="space-y-2">
+                  {[
+                    `${cleanoutBedrooms} bedroom${cleanoutBedrooms > 1 ? 's' : ''} cleaned`,
+                    'Common area (living room / den)',
+                    'Kitchen',
+                    'Bathroom(s)',
+                    'Vacuuming throughout',
+                  ].map((item) => (
+                    <li key={item} className="flex items-center gap-2 text-sm text-gray-700">
+                      <svg className="h-4 w-4 shrink-0 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Price breakdown */}
+              <div className="mt-4 rounded-xl bg-brand-50 p-4 space-y-1.5">
+                <p className="text-xs font-bold uppercase tracking-wider text-brand-700 mb-2">Price Breakdown</p>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Base (1BR + common area + kitchen + bath + vacuuming)</span>
+                  <span className="font-semibold">${cleanoutBase}</span>
+                </div>
+                {cleanoutBedrooms > 1 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">{cleanoutBedrooms - 1} additional bedroom{cleanoutBedrooms - 1 > 1 ? 's' : ''} × ${pricing?.cleanoutPerBedroom ?? 50}</span>
+                    <span className="font-semibold">${(cleanoutBedrooms - 1) * (pricing?.cleanoutPerBedroom ?? 50)}</span>
+                  </div>
+                )}
+                <div className="mt-2 border-t border-brand-200 pt-2 flex justify-between">
+                  <span className="font-bold text-gray-900">Total</span>
+                  <span className="text-xl font-bold text-brand-600">${cleanoutTotal()}</span>
+                </div>
+              </div>
+
+              <div className="mt-3 flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2.5">
+                <svg className="h-4 w-4 shrink-0 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-xs text-blue-700">Your servicer will arrive between <strong>10 AM and 4 PM</strong>. You won&apos;t be charged until the job is complete.</p>
+              </div>
+
+              <button onClick={next} className="mt-5 w-full rounded-xl bg-brand-600 py-3.5 font-semibold text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700 active:scale-[0.98]">
+                Review &amp; Confirm
+              </button>
+            </div>
+          )}
+
           {/* Step 3: Service Details (pre-filled from address) */}
           {step === 2 && isCurbItems() && (
             <div>
@@ -1133,7 +1242,7 @@ function BookContent() {
             </div>
           )}
 
-          {step === 2 && !isCurbItems() && !isEntranceCleaning() && (
+          {step === 2 && !isCurbItems() && !isEntranceCleaning() && !isPropertyCleanout() && (
             <div>
               <h2 className="text-lg font-bold">Service Details</h2>
               <p className="mt-1 text-sm text-gray-500">Review and adjust your barrel details</p>
@@ -1596,7 +1705,64 @@ function BookContent() {
             </div>
           )}
 
-          {step === 3 && !isCurbItems() && !isEntranceCleaning() && (
+          {step === 3 && isPropertyCleanout() && (
+            <div>
+              <h2 className="text-lg font-bold">Confirm Booking</h2>
+              <p className="mt-1 text-sm text-gray-500">Review your property cleanout details.</p>
+
+              <div className="mt-5 space-y-3">
+                <div className="rounded-xl border border-gray-200 bg-white p-4">
+                  <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Service</p>
+                  <p className="font-semibold text-gray-900">Property Cleanout</p>
+                  <p className="mt-0.5 text-sm text-gray-500">{cleanoutBedrooms} bedroom{cleanoutBedrooms > 1 ? 's' : ''} · includes common area, kitchen, bath, and vacuuming</p>
+                </div>
+
+                {selectedAddr && (
+                  <div className="rounded-xl border border-gray-200 bg-white p-4">
+                    <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Address</p>
+                    <p className="font-semibold text-gray-900">{selectedAddr.street}{selectedAddr.unit ? `, ${selectedAddr.unit}` : ''}</p>
+                    <p className="text-sm text-gray-500">{selectedAddr.city}, {selectedAddr.state} {selectedAddr.zip}</p>
+                  </div>
+                )}
+
+                {selected.date && (
+                  <div className="rounded-xl border border-gray-200 bg-white p-4">
+                    <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Date</p>
+                    <p className="font-semibold text-gray-900">
+                      {new Date(selected.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                    </p>
+                    <p className="mt-0.5 text-xs text-gray-500">Service window: 10 AM – 4 PM</p>
+                  </div>
+                )}
+
+                <div className="rounded-xl bg-brand-50 p-4 space-y-1.5">
+                  <p className="text-xs font-bold uppercase tracking-wider text-brand-700 mb-2">Price</p>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Base (1BR + common area + kitchen + bath + vacuuming)</span>
+                    <span className="font-semibold">${cleanoutBase}</span>
+                  </div>
+                  {cleanoutBedrooms > 1 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">{cleanoutBedrooms - 1} additional bedroom{cleanoutBedrooms - 1 > 1 ? 's' : ''} × ${pricing?.cleanoutPerBedroom ?? 50}</span>
+                      <span className="font-semibold">${(cleanoutBedrooms - 1) * (pricing?.cleanoutPerBedroom ?? 50)}</span>
+                    </div>
+                  )}
+                  <div className="mt-2 border-t border-brand-200 pt-2 flex justify-between">
+                    <span className="font-bold text-gray-900">Total due after service</span>
+                    <span className="text-xl font-bold text-brand-600">${cleanoutTotal()}</span>
+                  </div>
+                </div>
+              </div>
+
+              <button onClick={handleConfirm} disabled={submitting}
+                className="mt-6 w-full rounded-xl bg-brand-600 py-3.5 font-semibold text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700 active:scale-[0.98] disabled:opacity-60">
+                {submitting ? 'Booking...' : 'Confirm Cleanout'}
+              </button>
+              <p className="mt-2 text-center text-xs text-gray-400">Your card is charged only after the job is complete.</p>
+            </div>
+          )}
+
+          {step === 3 && !isCurbItems() && !isEntranceCleaning() && !isPropertyCleanout() && (
             <div>
               <h2 className="text-lg font-bold">Confirm Booking</h2>
               <p className="mt-1 text-sm text-gray-500">Review your service details</p>

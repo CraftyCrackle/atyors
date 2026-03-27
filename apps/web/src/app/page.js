@@ -30,9 +30,8 @@ const CATEGORIES = [
     desc: 'Shared hallways, staircases, and full property cleanouts for landlords and property managers.',
     color: 'bg-green-100 text-green-600',
     services: [
-      { name: 'Entrance & Hallway Cleaning', price: 'From $15/floor', desc: 'Vacuum and mop shared hallways and stairways in apartment buildings and multi-family homes. Available Monday through Saturday.', bookHref: '/book' },
-      { name: 'Public Staircase Cleaning', price: 'From $8/staircase', desc: 'Standalone staircase cleaning for buildings that only need stairwells serviced.', comingSoon: true },
-      { name: 'Property Cleanout', price: 'From $250', desc: 'Full cleanout for vacant apartments and homes. Studio and 1BR start at $250. Add $50 for each additional bedroom. 4+ bedrooms get a custom quote.', quoteOnly: true },
+      { name: 'Entrance & Hallway Cleaning', price: 'From $15/floor', desc: 'Vacuum and mop shared hallways, staircases, and entrances in apartment buildings and multi-family homes. Available Monday through Saturday.', bookHref: '/book' },
+      { name: 'Property Cleanout', price: 'From $250', desc: 'Full cleanout for vacant apartments and homes. Base price includes 1 bedroom, common area, kitchen, bath, and vacuuming. Add $50 per additional bedroom.', bookHref: '/book' },
     ],
   },
   {

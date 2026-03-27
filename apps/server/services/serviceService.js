@@ -97,17 +97,8 @@ async function seed() {
     await ServiceType.updateOne({ slug: 'entrance-cleaning' }, { $set: { name: 'Entrance & Hallway Cleaning', description: entranceDesc, categoryId: cleaningCat._id } });
   }
 
-  const staircaseExists = await ServiceType.findOne({ slug: 'staircase-cleaning' });
-  if (!staircaseExists) {
-    await ServiceType.create({
-      categoryId: cleaningCat._id,
-      name: 'Public Staircase Cleaning',
-      slug: 'staircase-cleaning',
-      description: 'Standalone vacuum and mop service for shared staircases in multi-family buildings.',
-      basePrice: 8,
-      sortOrder: 1,
-    });
-  }
+  // Staircase cleaning is a configurable option inside Entrance & Hallway Cleaning, not a standalone service
+  await ServiceType.updateOne({ slug: 'staircase-cleaning' }, { $set: { isActive: false } });
 
   const cleanoutExists = await ServiceType.findOne({ slug: 'property-cleanout' });
   if (!cleanoutExists) {
