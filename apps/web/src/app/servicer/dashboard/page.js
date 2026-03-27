@@ -569,7 +569,7 @@ export default function ServicerDashboard() {
 
   if (authLoading || !user) {
     return (
-      <div className="flex min-h-[100dvh] min-h-[100vh] items-center justify-center bg-gray-900">
+      <div className="flex min-h-[100dvh] min-h-[100vh] w-full items-center justify-center bg-gray-900">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
       </div>
     );
@@ -617,8 +617,8 @@ export default function ServicerDashboard() {
   }
 
   return (
-    <div className="flex min-h-[100dvh] min-h-[100vh] flex-col bg-gray-900 pb-6">
-      <header className="sticky top-0 z-10 bg-gradient-to-b from-gray-800 to-gray-900 px-5 pb-5 pt-header-safe">
+    <div className="flex min-h-[100dvh] min-h-[100vh] w-full flex-col overflow-x-hidden bg-gray-900 pb-6">
+      <header className="sticky top-0 z-10 bg-gradient-to-b from-gray-800 to-gray-900 px-4 pb-3 pt-header-safe">
         <div className="flex items-center justify-between">
           <Logo size="sm" variant="wordmark" dark />
           <div className="flex items-center gap-1.5">
@@ -640,18 +640,18 @@ export default function ServicerDashboard() {
           </div>
         </div>
 
-        <div className="mt-4 flex items-center gap-3">
+        <div className="mt-3 flex items-center gap-2.5">
           {user.profilePhotoUrl ? (
-            <img src={user.profilePhotoUrl} alt="" className="h-12 w-12 rounded-full object-cover ring-2 ring-brand-500/30" />
+            <img src={user.profilePhotoUrl} alt="" className="h-9 w-9 rounded-full object-cover ring-2 ring-brand-500/30" />
           ) : (
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-600/20 text-sm font-bold text-brand-400 ring-2 ring-brand-500/20">{user.firstName?.[0]}{user.lastName?.[0]}</div>
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-600/20 text-xs font-bold text-brand-400 ring-2 ring-brand-500/20">{user.firstName?.[0]}{user.lastName?.[0]}</div>
           )}
-          <div className="flex-1">
-            <h1 className="text-lg font-bold text-white">{user.firstName} {user.lastName}</h1>
-            <div className="mt-0.5 flex items-center gap-2">
-              <span className="text-xs font-medium text-gray-400">Servicer</span>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-sm font-bold text-white truncate">{user.firstName} {user.lastName}</h1>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-gray-400">Servicer</span>
               <span className="text-gray-600">&middot;</span>
-              <span className={`inline-flex items-center gap-1 text-xs font-semibold ${user.averageRating > 0 ? 'text-yellow-400' : 'text-gray-500'}`}>
+              <span className={`inline-flex items-center gap-0.5 text-xs font-semibold ${user.averageRating > 0 ? 'text-yellow-400' : 'text-gray-500'}`}>
                 <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor"><path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" /></svg>
                 {user.averageRating > 0 ? `${user.averageRating} (${user.totalReviews})` : 'New'}
               </span>
@@ -660,7 +660,7 @@ export default function ServicerDashboard() {
         </div>
       </header>
 
-      <div className="space-y-3 px-4 mt-4">
+      <div className="space-y-2 px-4 mt-3">
         {activeJobs.length > 0 && (
           <Link href="/servicer/route" className={`flex items-center justify-center gap-2 rounded-xl py-3.5 font-semibold text-white shadow-lg transition active:scale-[0.98] ${hasActiveRoute ? 'bg-gradient-to-r from-green-500 to-green-600 shadow-green-600/25 hover:from-green-600 hover:to-green-700' : 'bg-gradient-to-r from-accent-500 to-accent-600 shadow-accent-600/25 hover:from-accent-600 hover:to-accent-700'}`}>
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>

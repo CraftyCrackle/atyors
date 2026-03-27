@@ -34,7 +34,7 @@ export default function ServicerLoginPage() {
   }
 
   return (
-    <main className="flex min-h-[100dvh] min-h-[100vh] flex-col items-center justify-center bg-gray-900 px-6 pt-safe pb-safe">
+    <main className="flex min-h-[100dvh] min-h-[100vh] w-full flex-col items-center justify-center overflow-x-hidden bg-gray-900 px-6 pt-safe pb-safe">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-brand-600">
