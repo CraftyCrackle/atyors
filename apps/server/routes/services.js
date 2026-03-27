@@ -39,6 +39,12 @@ router.get('/pricing', (req, res) => {
       ecMonthlyPerFloor: pricingService.EC_MONTHLY_PER_FLOOR,
       ecMonthlyPerStaircase: pricingService.EC_MONTHLY_PER_STAIRCASE,
       ecMonthlyEntranceFee: pricingService.EC_MONTHLY_ENTRANCE_FEE,
+      barrelCleaningPrice: pricingService.BARREL_CLEANING_PRICE,
+      cleanoutBase: pricingService.CLEANOUT_BASE_PRICE,
+      cleanoutPerBedroom: pricingService.CLEANOUT_PER_EXTRA_BEDROOM,
+      outdoorLawn: pricingService.OUTDOOR_LAWN,
+      outdoorLeaves: pricingService.OUTDOOR_LEAVES,
+      outdoorShovel: pricingService.OUTDOOR_SHOVEL,
     },
   });
 });

@@ -331,4 +331,28 @@ router.delete('/zipcodes/:zipcode', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── Services management ────────────────────────────────────────────────────
+router.get('/services', async (req, res, next) => {
+  try {
+    const ServiceCategory = require('../models/ServiceCategory');
+    const categories = await ServiceCategory.find().sort({ sortOrder: 1 });
+    const groups = [];
+    for (const cat of categories) {
+      const types = await ServiceType.find({ categoryId: cat._id }).sort({ sortOrder: 1 });
+      groups.push({ category: cat, types });
+    }
+    res.json({ success: true, data: { groups } });
+  } catch (err) { next(err); }
+});
+
+router.patch('/services/:id/toggle', async (req, res, next) => {
+  try {
+    const type = await ServiceType.findById(req.params.id);
+    if (!type) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Service type not found' } });
+    type.isActive = !type.isActive;
+    await type.save();
+    res.json({ success: true, data: { serviceType: type } });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;

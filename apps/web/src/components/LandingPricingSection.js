@@ -99,7 +99,7 @@ export default function LandingPricingSection({ id = 'pricing', className = '' }
           </div>
         </div>
 
-        <p className="mt-6 text-xs font-bold uppercase tracking-wider text-gray-400">Other Property Services</p>
+        <p className="mt-6 text-xs font-bold uppercase tracking-wider text-gray-400">Cleaning Services</p>
         <div className="mt-2 space-y-3">
           <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-5 py-4">
             <div>
@@ -108,10 +108,17 @@ export default function LandingPricingSection({ id = 'pricing', className = '' }
             </div>
             <p className="text-xl font-bold text-brand-600">$2.00<span className="text-sm font-normal text-gray-400">/item</span></p>
           </div>
+          <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-5 py-4">
+            <div>
+              <p className="font-semibold text-gray-900">Barrel cleaning</p>
+              <p className="text-sm text-gray-500">Deep clean of your trash and recycling barrels, inside and out. Eliminates odors and buildup.</p>
+            </div>
+            <p className="text-xl font-bold text-brand-600">$10<span className="text-sm font-normal text-gray-400">/barrel</span></p>
+          </div>
           <div className="rounded-xl border border-gray-200 bg-white px-5 py-4">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="font-semibold text-gray-900">Building entrance cleaning</p>
+                <p className="font-semibold text-gray-900">Entrance and hallway cleaning</p>
                 <p className="text-sm text-gray-500">We vacuum and mop shared hallways and stairways. Available Monday through Saturday, 10 AM to 4 PM.</p>
               </div>
               <div className="shrink-0 text-right">
@@ -125,6 +132,56 @@ export default function LandingPricingSection({ id = 'pricing', className = '' }
               <span className="rounded-full bg-gray-100 px-2.5 py-1">+$15 back entrance</span>
             </div>
           </div>
+          <div className="rounded-xl border border-gray-200 bg-white px-5 py-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="font-semibold text-gray-900">Property cleanout</p>
+                <p className="text-sm text-gray-500">Full cleanout for vacant apartments and homes. 4+ bedrooms get a custom quote.</p>
+              </div>
+              <div className="shrink-0 text-right">
+                <p className="text-xl font-bold text-brand-600">From $250</p>
+              </div>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-500">
+              <span className="rounded-full bg-gray-100 px-2.5 py-1">Studio / 1BR $250</span>
+              <span className="rounded-full bg-gray-100 px-2.5 py-1">2BR $300</span>
+              <span className="rounded-full bg-gray-100 px-2.5 py-1">3BR $350</span>
+              <span className="rounded-full bg-gray-100 px-2.5 py-1">4BR+ custom quote</span>
+            </div>
+          </div>
+        </div>
+
+        <p className="mt-6 text-xs font-bold uppercase tracking-wider text-gray-400">Outdoor Services</p>
+        <div className="mt-2 rounded-xl border border-gray-200 bg-white px-5 py-4">
+          <p className="text-sm font-semibold text-gray-700">Priced by lot size</p>
+          <p className="mt-0.5 text-xs text-gray-500">Small up to 2,000 sq ft · Medium up to 5,000 sq ft · Large 5,000+ sq ft</p>
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <th className="pb-2 pr-4 text-left text-xs font-semibold text-gray-500">Service</th>
+                  <th className="pb-2 px-3 text-center text-xs font-semibold text-gray-500">Small</th>
+                  <th className="pb-2 px-3 text-center text-xs font-semibold text-gray-500">Medium</th>
+                  <th className="pb-2 pl-3 text-center text-xs font-semibold text-gray-500">Large</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {[
+                  { name: 'Lawn Care', small: '$35', medium: '$55', large: '$85' },
+                  { name: 'Leaf Cleanup', small: '$45', medium: '$65', large: '$95' },
+                  { name: 'Snow Shoveling', small: '$40', medium: '$60', large: '$90' },
+                ].map((row) => (
+                  <tr key={row.name}>
+                    <td className="py-2.5 pr-4 font-medium text-gray-900">{row.name}</td>
+                    <td className="py-2.5 px-3 text-center font-bold text-brand-600">{row.small}</td>
+                    <td className="py-2.5 px-3 text-center font-bold text-brand-600">{row.medium}</td>
+                    <td className="py-2.5 pl-3 text-center font-bold text-brand-600">{row.large}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-3 text-xs text-gray-400">Outdoor services are contact-based for now. <a href="mailto:atyors.support@gmail.com" className="font-semibold text-brand-600 hover:underline">Get a quote</a></p>
         </div>
 
         <div className="mt-8 text-center">

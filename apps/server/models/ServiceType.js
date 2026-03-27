@@ -9,6 +9,7 @@ const serviceTypeSchema = new mongoose.Schema({
   recurringPrice: { type: Number },
   isDefault: { type: Boolean, default: false },
   isActive: { type: Boolean, default: true },
+  seasonal: { type: Boolean, default: false },
   sortOrder: { type: Number, default: 0 },
 }, {
   timestamps: true,

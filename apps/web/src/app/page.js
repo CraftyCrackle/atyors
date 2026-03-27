@@ -10,56 +10,117 @@ import LandingCarousel from '../components/LandingCarousel';
 import AppStoreBadge from '../components/AppStoreBadge';
 import { useInstall } from '../components/InstallContext';
 
-const SERVICES = [
+const CATEGORIES = [
   {
+    slug: 'trash-recycling',
     icon: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16',
-    title: 'Trash and Recycling',
-    desc: 'We roll your barrels to the curb before pickup and bring them back in when done. Book once or every week.',
+    title: 'Trash & Recycling',
+    desc: 'Barrel valet, curb items, and barrel cleaning so you never drag bins to the curb again.',
     color: 'bg-brand-100 text-brand-600',
-    from: 'From $2.50/barrel',
-    live: true,
+    services: [
+      { name: 'Barrel Valet (Put Out / Bring In)', price: 'From $2.50/barrel', desc: 'We roll your barrels to the curb before pickup and bring them back in. Book once or set up a weekly plan.', bookHref: '/book' },
+      { name: 'Curb Items', price: 'From $2.00/item', desc: 'Boxes, bags, or bulky items carried from storage to the curb so you do not have to lift a thing.', bookHref: '/book' },
+      { name: 'Barrel Cleaning', price: '$10/barrel', desc: 'Deep clean of your trash and recycling barrels. Eliminates odors and buildup inside and out.', comingSoon: true },
+    ],
   },
   {
-    icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4',
-    title: 'Curb Item Pickup',
-    desc: 'Boxes, bags, or bulky items that need to go out? We carry them from storage to the curb so you do not have to lift a thing.',
-    color: 'bg-accent-100 text-accent-600',
-    from: 'From $2.00/item',
-    live: true,
-  },
-  {
+    slug: 'cleaning',
     icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6',
-    title: 'Building Entrance Cleaning',
-    desc: 'We vacuum and mop shared hallways and stairways in apartment buildings and multi-family homes. Available Monday through Saturday.',
+    title: 'Cleaning',
+    desc: 'Shared hallways, staircases, and full property cleanouts for landlords and property managers.',
     color: 'bg-green-100 text-green-600',
-    from: 'From $15/floor',
-    live: true,
+    services: [
+      { name: 'Entrance & Hallway Cleaning', price: 'From $15/floor', desc: 'Vacuum and mop shared hallways and stairways in apartment buildings and multi-family homes. Available Monday through Saturday.', bookHref: '/book' },
+      { name: 'Public Staircase Cleaning', price: 'From $8/staircase', desc: 'Standalone staircase cleaning for buildings that only need stairwells serviced.', comingSoon: true },
+      { name: 'Property Cleanout', price: 'From $250', desc: 'Full cleanout for vacant apartments and homes. Studio and 1BR start at $250. Add $50 for each additional bedroom. 4+ bedrooms get a custom quote.', quoteOnly: true },
+    ],
   },
   {
+    slug: 'outdoors',
     icon: 'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z',
-    title: 'Lawn and Exterior',
-    desc: 'Mowing, leaf cleanup, and exterior upkeep to keep your property looking sharp all season long.',
+    title: 'Outdoors',
+    desc: 'Lawn care, leaf cleanup, and snow removal sized to your lot. Priced by small, medium, and large properties.',
     color: 'bg-lime-100 text-lime-600',
-    from: 'Coming Soon',
-    live: false,
-  },
-  {
-    icon: 'M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z',
-    title: 'Snow Removal',
-    desc: 'Shoveling, salting, and de-icing for driveways, walkways, and building entrances after every storm.',
-    color: 'bg-blue-100 text-blue-600',
-    from: 'Coming Soon',
-    live: false,
-  },
-  {
-    icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 3h6m-6 4h6m-2 4h2',
-    title: 'Property Inspections',
-    desc: 'Routine walkthroughs and photo reports so you always know the condition of your property even from a distance.',
-    color: 'bg-purple-100 text-purple-600',
-    from: 'Coming Soon',
-    live: false,
+    services: [
+      { name: 'Lawn Care', price: '$35 – $85', desc: 'Mowing and basic lawn maintenance. Small lot (up to 2,000 sq ft) $35 · Medium (up to 5,000 sq ft) $55 · Large (5,000+ sq ft) $85.', quoteOnly: true },
+      { name: 'Leaf Cleanup', price: '$45 – $95', desc: 'Seasonal leaf blowing and bagging. Small $45 · Medium $65 · Large $95.', quoteOnly: true },
+      { name: 'Snow Shoveling', price: '$40 – $90', desc: 'Shoveling and de-icing for driveways, walkways, and building entrances after every storm. Small $40 · Medium $60 · Large $90.', quoteOnly: true },
+    ],
   },
 ];
+
+function ServicesAccordion() {
+  const [open, setOpen] = useState('trash-recycling');
+
+  return (
+    <div className="mt-8 space-y-3">
+      {CATEGORIES.map((cat) => {
+        const isOpen = open === cat.slug;
+        return (
+          <div key={cat.slug} className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+            <button
+              onClick={() => setOpen(isOpen ? null : cat.slug)}
+              aria-expanded={isOpen}
+              className="flex w-full items-center gap-4 px-5 py-4 text-left transition hover:bg-gray-50 active:bg-gray-100"
+            >
+              <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${cat.color}`}>
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d={cat.icon} />
+                </svg>
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-gray-900">{cat.title}</p>
+                <p className="mt-0.5 text-xs leading-relaxed text-gray-500">{cat.desc}</p>
+              </div>
+              <svg
+                className={`h-5 w-5 shrink-0 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {isOpen && (
+              <div className="border-t border-gray-100 divide-y divide-gray-100">
+                {cat.services.map((svc) => (
+                  <div key={svc.name} className="flex items-start gap-3 px-5 py-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm font-semibold text-gray-900">{svc.name}</span>
+                        {svc.comingSoon && (
+                          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-500">Coming Soon</span>
+                        )}
+                      </div>
+                      <p className="mt-0.5 text-xs leading-relaxed text-gray-500">{svc.desc}</p>
+                      <p className="mt-1 text-xs font-semibold text-brand-600">{svc.price}</p>
+                    </div>
+                    <div className="shrink-0 pt-0.5">
+                      {svc.bookHref ? (
+                        <Link
+                          href={svc.bookHref}
+                          className="inline-flex items-center rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-700 active:scale-[0.97]"
+                        >
+                          Book
+                        </Link>
+                      ) : svc.quoteOnly ? (
+                        <a
+                          href="mailto:atyors.support@gmail.com"
+                          className="inline-flex items-center rounded-lg border border-brand-200 px-3 py-1.5 text-xs font-semibold text-brand-600 transition hover:bg-brand-50 active:scale-[0.97]"
+                        >
+                          Get a Quote
+                        </a>
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 const PERSONAS = [
   {
@@ -257,26 +318,7 @@ function WebLanding() {
           <h2 className="text-center text-sm font-semibold uppercase tracking-widest text-brand-600">What We Handle</h2>
           <p className="mt-2 text-center text-2xl font-bold text-gray-900">One platform for your whole property</p>
           <p className="mt-2 text-center text-sm text-gray-500">Start with one service and add more whenever you are ready. Live tracking and job photos included on every booking.</p>
-
-          <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {SERVICES.map((s, i) => (
-              <div key={i} className={`flex items-start gap-3 rounded-2xl border p-4 ${s.live ? 'border-gray-200 bg-white shadow-sm' : 'border-dashed border-gray-200 bg-gray-50'}`}>
-                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${s.live ? s.color : 'bg-gray-100 text-gray-400'}`}>
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d={s.icon} />
-                  </svg>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className={`font-semibold ${s.live ? 'text-gray-900' : 'text-gray-400'}`}>{s.title}</h3>
-                    {!s.live && <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-semibold text-gray-500">Coming Soon</span>}
-                  </div>
-                  <p className={`mt-0.5 text-sm leading-relaxed ${s.live ? 'text-gray-500' : 'text-gray-400'}`}>{s.desc}</p>
-                  {s.live && <p className="mt-1 text-xs font-semibold text-brand-600">{s.from}</p>}
-                </div>
-              </div>
-            ))}
-          </div>
+          <ServicesAccordion />
         </div>
       </section>
 
