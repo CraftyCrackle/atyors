@@ -118,57 +118,70 @@ export default function AdminServicesPage() {
                   </div>
 
                   <div className="space-y-2">
-                    {g.types.map((type) => (
-                      <div
-                        key={type._id}
-                        className={`flex items-center justify-between rounded-xl border px-4 py-3.5 transition ${
-                          type.isActive ? 'border-gray-700 bg-gray-800' : 'border-gray-800 bg-gray-900 opacity-60'
-                        }`}
-                      >
-                        <div className="min-w-0 flex-1 pr-4">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className={`text-sm font-semibold ${type.isActive ? 'text-white' : 'text-gray-500'}`}>
-                              {type.name}
-                            </span>
-                            {type.seasonal && (
-                              <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-semibold text-amber-400">
-                                Seasonal
+                    {g.types.map((type) => {
+                      const isStaircaseOnly = type.slug === 'staircase-cleaning';
+                      return (
+                        <div
+                          key={type._id}
+                          className={`flex items-center justify-between rounded-xl border px-4 py-3.5 transition ${
+                            isStaircaseOnly ? 'border-gray-800 bg-gray-900/50' : type.isActive ? 'border-gray-700 bg-gray-800' : 'border-gray-800 bg-gray-900 opacity-60'
+                          }`}
+                        >
+                          <div className="min-w-0 flex-1 pr-4">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className={`text-sm font-semibold ${isStaircaseOnly ? 'text-gray-500' : type.isActive ? 'text-white' : 'text-gray-500'}`}>
+                                {type.name}
                               </span>
+                              {isStaircaseOnly && (
+                                <span className="rounded-full bg-blue-500/20 px-2 py-0.5 text-[10px] font-semibold text-blue-400">
+                                  Built into Entrance &amp; Hallway Cleaning
+                                </span>
+                              )}
+                              {!isStaircaseOnly && type.seasonal && (
+                                <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-semibold text-amber-400">
+                                  Seasonal
+                                </span>
+                              )}
+                              {!isStaircaseOnly && !type.isActive && (
+                                <span className="rounded-full bg-gray-700 px-2 py-0.5 text-[10px] font-semibold text-gray-500">
+                                  Inactive
+                                </span>
+                              )}
+                            </div>
+                            {!isStaircaseOnly && type.basePrice > 0 && (
+                              <p className="mt-0.5 text-xs text-gray-500">From ${type.basePrice}</p>
                             )}
-                            {!type.isActive && (
-                              <span className="rounded-full bg-gray-700 px-2 py-0.5 text-[10px] font-semibold text-gray-500">
-                                Inactive
-                              </span>
+                            {isStaircaseOnly && (
+                              <p className="mt-0.5 text-xs text-gray-600">Customers configure staircase count during the Entrance &amp; Hallway Cleaning booking.</p>
                             )}
                           </div>
-                          {type.basePrice > 0 && (
-                            <p className="mt-0.5 text-xs text-gray-500">From ${type.basePrice}</p>
-                          )}
-                        </div>
 
-                        <div className="flex shrink-0 items-center gap-3">
-                          {feedback[type._id] && (
-                            <span className={`text-xs ${feedback[type._id] === 'Failed' ? 'text-red-400' : type.isActive ? 'text-green-400' : 'text-amber-400'}`}>
-                              {feedback[type._id]}
-                            </span>
+                          {!isStaircaseOnly && (
+                            <div className="flex shrink-0 items-center gap-3">
+                              {feedback[type._id] && (
+                                <span className={`text-xs ${feedback[type._id] === 'Failed' ? 'text-red-400' : type.isActive ? 'text-green-400' : 'text-amber-400'}`}>
+                                  {feedback[type._id]}
+                                </span>
+                              )}
+                              <button
+                                onClick={() => toggle(type._id, type.isActive)}
+                                disabled={!!toggling[type._id]}
+                                aria-label={type.isActive ? `Deactivate ${type.name}` : `Activate ${type.name}`}
+                                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:cursor-not-allowed disabled:opacity-50 ${
+                                  type.isActive ? 'bg-brand-600' : 'bg-gray-700'
+                                }`}
+                              >
+                                <span
+                                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition duration-200 ${
+                                    type.isActive ? 'translate-x-5' : 'translate-x-0'
+                                  }`}
+                                />
+                              </button>
+                            </div>
                           )}
-                          <button
-                            onClick={() => toggle(type._id, type.isActive)}
-                            disabled={!!toggling[type._id]}
-                            aria-label={type.isActive ? `Deactivate ${type.name}` : `Activate ${type.name}`}
-                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:cursor-not-allowed disabled:opacity-50 ${
-                              type.isActive ? 'bg-brand-600' : 'bg-gray-700'
-                            }`}
-                          >
-                            <span
-                              className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition duration-200 ${
-                                type.isActive ? 'translate-x-5' : 'translate-x-0'
-                              }`}
-                            />
-                          </button>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               ))}

@@ -676,7 +676,7 @@ function BookContent() {
                   )}
 
                   <div className="mt-4 space-y-3">
-                    {selectedCategory.types.map((svc) => {
+                    {selectedCategory.types.filter((svc) => svc.slug !== 'staircase-cleaning').map((svc) => {
                       const label = servicePriceLabel(svc);
                       const quoteOnly = isQuoteOnly(svc);
                       return (
