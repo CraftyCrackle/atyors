@@ -36,6 +36,11 @@
     background-color: rgba(27, 112, 245, 0.15);
     color: #1749b6;
   }
+
+  /* Prevent iOS WKWebView from auto-zooming on input focus */
+  input, textarea, select {
+    font-size: 16px;
+  }
 }
 
 @layer utilities {
