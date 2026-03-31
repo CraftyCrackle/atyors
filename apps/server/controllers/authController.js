@@ -32,8 +32,19 @@ async function refresh(req, res, next) {
   }
 }
 
+const PROMO_CREDIT_EXPIRY = new Date('2026-04-30T23:59:59.000-04:00');
+
 async function me(req, res) {
-  res.json({ success: true, data: { user: req.user } });
+  let user = req.user;
+  if (user.role === 'customer' && (!user.promoCredit || user.promoCredit.balance == null)) {
+    const User = require('../models/User');
+    user = await User.findByIdAndUpdate(
+      user._id,
+      { $set: { promoCredit: { balance: 15, expiresAt: PROMO_CREDIT_EXPIRY } } },
+      { new: true }
+    );
+  }
+  res.json({ success: true, data: { user } });
 }
 
 async function forgotPassword(req, res, next) {

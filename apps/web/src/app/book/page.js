@@ -6,6 +6,7 @@ import AuthGuard from '../../components/AuthGuard';
 import BottomNav from '../../components/BottomNav';
 import QuickAddAddress from '../../components/QuickAddAddress';
 import { api } from '../../services/api';
+import { useAuthStore } from '../../stores/authStore';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
 import PhotoViewer from '../../components/PhotoViewer';
@@ -154,6 +155,21 @@ function BookContent() {
   const outdoorLawn = pricing?.outdoorLawn ?? { small: 35, medium: 55, large: 85 };
   const outdoorLeaves = pricing?.outdoorLeaves ?? { small: 45, medium: 65, large: 95 };
   const outdoorShovel = pricing?.outdoorShovel ?? { small: 40, medium: 60, large: 90 };
+
+  const authUser = useAuthStore((s) => s.user);
+  const PROMO_EXPIRY = new Date('2026-04-30T23:59:59.000-04:00');
+  const creditBalance = authUser?.promoCredit?.balance ?? 15;
+  const creditExpiry = authUser?.promoCredit?.expiresAt ? new Date(authUser.promoCredit.expiresAt) : PROMO_EXPIRY;
+  const creditValid = creditBalance > 0 && new Date() <= creditExpiry;
+
+  function creditToApply(serviceTotal) {
+    if (!creditValid || selected.bookingType === 'subscription') return 0;
+    return Math.min(creditBalance, serviceTotal);
+  }
+
+  function netPrice(serviceTotal) {
+    return Math.max(0, serviceTotal - creditToApply(serviceTotal));
+  }
 
   function isBothSvc(svc) {
     return svc?.slug === 'both';
@@ -434,6 +450,8 @@ function BookContent() {
           cleaningPhotoUrls = uploadData.data.photos;
         }
 
+        const ecTotal = entranceCleaningTotal();
+        const ecCredit = creditToApply(ecTotal);
         await api.post('/bookings', {
           addressId: selected.addressId,
           serviceTypeId: selected.serviceType._id,
@@ -443,7 +461,8 @@ function BookContent() {
           frontEntrance: selected.frontEntrance,
           backEntrance: selected.backEntrance,
           cleaningAreaPhotos: cleaningPhotoUrls,
-          amount: entranceCleaningTotal(),
+          amount: ecTotal,
+          promoCreditApplied: ecCredit,
         });
       } else if (isCurbItems()) {
         const token = localStorage.getItem('accessToken');
@@ -476,14 +495,19 @@ function BookContent() {
           });
         }
       } else if (isPropertyCleanout()) {
+        const coTotal = cleanoutTotal();
+        const coCredit = creditToApply(coTotal);
         await api.post('/bookings', {
           addressId: selected.addressId,
           serviceTypeId: selected.serviceType._id,
           scheduledDate: selected.date,
           itemCount: cleanoutBedrooms,
-          amount: cleanoutTotal(),
+          amount: coTotal,
+          promoCreditApplied: coCredit,
         });
       } else if (isOutdoorService()) {
+        const outTotal = outdoorTotal();
+        const outCredit = creditToApply(outTotal);
         await api.post('/bookings', {
           addressId: selected.addressId,
           serviceTypeId: selected.serviceType._id,
@@ -492,7 +516,8 @@ function BookContent() {
             `Lot size: ${lotSize}`,
             outdoorNotes,
           ].filter(Boolean).join(' | '),
-          amount: outdoorTotal(),
+          amount: outTotal,
+          promoCreditApplied: outCredit,
         });
       } else if (selected.bookingType === 'subscription') {
         const dayOfWeek = new Date(selected.date + 'T12:00:00').getDay();
@@ -516,6 +541,8 @@ function BookContent() {
         }
       } else {
         const isBatch = selectedAddresses.length > 1;
+        const barrelTotal = oneTimePrice();
+        const barrelCredit = creditToApply(barrelTotal);
         if (isBatch) {
           const barrelCounts = {};
           selectedAddresses.forEach((a) => { barrelCounts[a._id] = a.barrelCount || selected.barrelCount; });
@@ -527,6 +554,8 @@ function BookContent() {
             barrelCounts,
             putOutTime: selected.putOutTime,
             bringInTime: selected.bringInTime,
+            amount: barrelTotal,
+            promoCreditApplied: barrelCredit,
           });
         } else {
           await api.post('/bookings', {
@@ -536,7 +565,8 @@ function BookContent() {
             barrelCount: selected.barrelCount,
             putOutTime: selected.putOutTime,
             bringInTime: selected.bringInTime,
-            amount: oneTimePrice(),
+            amount: barrelTotal,
+            promoCreditApplied: barrelCredit,
           });
         }
       }
@@ -604,24 +634,61 @@ function BookContent() {
 
         <div className="mt-6 px-4">
 
-          {!hasCard && (
-            <div className="mb-6 rounded-xl border-2 border-amber-200 bg-amber-50 p-5">
-              <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100">
-                  <svg className="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
-                  </svg>
+          {(() => {
+            const serviceCost = currentPrice();
+            const applied = creditToApply(serviceCost);
+            const creditCoversFull = applied >= serviceCost && serviceCost > 0;
+            const isSubMode = selected.bookingType === 'subscription';
+            if (!hasCard && !creditCoversFull && !isSubMode) {
+              return (
+                <div className="mb-6 rounded-xl border-2 border-amber-200 bg-amber-50 p-5">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100">
+                      <svg className="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-amber-900">Add a payment method first</h3>
+                      <p className="mt-1 text-sm text-amber-700">
+                        {applied > 0
+                          ? `Your $${applied.toFixed(2)} credit covers part of the cost. Add a card for the remaining $${(serviceCost - applied).toFixed(2)}.`
+                          : "You need a credit or debit card on file before you can book. You won't be charged until the job is done."}
+                      </p>
+                      <button onClick={() => router.push('/profile?section=payments')} className="mt-3 rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-700 active:scale-[0.98]">
+                        Go to Profile to Add Card
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-amber-900">Add a payment method first</h3>
-                  <p className="mt-1 text-sm text-amber-700">You need a credit or debit card on file before you can book a service. You won't be charged until the job is done.</p>
-                  <button onClick={() => router.push('/profile?section=payments')} className="mt-3 rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-700 active:scale-[0.98]">
-                    Go to Profile to Add Card
-                  </button>
+              );
+            }
+            if (creditValid && applied > 0 && !isSubMode) {
+              return (
+                <div className="mb-6 rounded-xl border-2 border-brand-200 bg-brand-50 p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-100">
+                      <svg className="h-4 w-4 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-brand-800">
+                        ${applied.toFixed(2)} credit applied
+                        {creditCoversFull ? ' — no card needed!' : ''}
+                      </p>
+                      <p className="text-xs text-brand-600">
+                        {creditCoversFull
+                          ? `This service is fully covered by your welcome credit. $${(creditBalance - applied).toFixed(2)} will remain after booking.`
+                          : `Remaining balance after credit: $${(serviceCost - applied).toFixed(2)}`}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          )}
+              );
+            }
+            return null;
+          })()}
 
           {/* Step 1: Service Selection */}
           {step === 0 && (
@@ -669,9 +736,9 @@ function BookContent() {
                   <h2 className="text-lg font-bold">{selectedCategory.category.name}</h2>
                   <p className="mt-1 text-sm text-gray-500">Choose the service you need.</p>
 
-                  {!hasCard && (
-                    <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                      Add a payment method in Profile before booking.
+                  {creditValid && creditBalance > 0 && (
+                    <div className="mt-3 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-800">
+                      <span className="font-semibold">${creditBalance.toFixed(2)} credit</span> will be applied at checkout. Services up to ${creditBalance.toFixed(2)} require no credit card.
                     </div>
                   )}
 
@@ -701,7 +768,8 @@ function BookContent() {
                                 Get a Quote
                               </a>
                             ) : (
-                              <button disabled={!hasCard}
+                              <button
+                                disabled={!hasCard && !creditValid}
                                 onClick={() => { setSelected({ ...selected, serviceType: svc, serviceTypeId: svc._id }); next(); }}
                                 className="w-full rounded-xl bg-brand-600 py-2.5 text-sm font-semibold text-white shadow-sm shadow-brand-600/25 transition hover:bg-brand-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50">
                                 Book This Service
@@ -1852,14 +1920,22 @@ function BookContent() {
                   </div>
                 )}
 
-                <div className="rounded-xl bg-brand-50 p-4 flex justify-between items-center">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-brand-700">Total due after service</p>
-                    {lotSize && (
-                      <p className="mt-0.5 text-sm text-gray-600">{lotSize.charAt(0).toUpperCase() + lotSize.slice(1)} lot pricing</p>
-                    )}
+                <div className="rounded-xl bg-brand-50 p-4 space-y-1.5">
+                  <p className="text-xs font-bold uppercase tracking-wider text-brand-700 mb-2">Price</p>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">{lotSize ? `${lotSize.charAt(0).toUpperCase() + lotSize.slice(1)} lot` : 'Service'}</span>
+                    <span className="font-semibold">${outdoorTotal()}</span>
                   </div>
-                  <span className="text-2xl font-bold text-brand-600">${outdoorTotal()}</span>
+                  {creditToApply(outdoorTotal()) > 0 && (
+                    <div className="flex justify-between text-sm text-brand-700">
+                      <span>Welcome credit applied</span>
+                      <span className="font-semibold">-${creditToApply(outdoorTotal()).toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="mt-2 border-t border-brand-200 pt-2 flex justify-between">
+                    <span className="font-bold text-gray-900">{netPrice(outdoorTotal()) === 0 ? 'Fully covered by credit' : 'Total due after service'}</span>
+                    <span className="text-2xl font-bold text-brand-600">${netPrice(outdoorTotal()).toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
 
@@ -1867,7 +1943,9 @@ function BookContent() {
                 className="mt-6 w-full rounded-xl bg-brand-600 py-3.5 font-semibold text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700 active:scale-[0.98] disabled:opacity-60">
                 {submitting ? 'Booking...' : 'Confirm Booking'}
               </button>
-              <p className="mt-2 text-center text-xs text-gray-400">Your card is charged only after the job is complete.</p>
+              <p className="mt-2 text-center text-xs text-gray-400">
+                {netPrice(outdoorTotal()) === 0 ? 'Your welcome credit covers this service. No card needed.' : 'Your card is charged only after the job is complete.'}
+              </p>
             </div>
           )}
 
@@ -1913,9 +1991,15 @@ function BookContent() {
                       <span className="font-semibold">${(cleanoutBedrooms - 1) * (pricing?.cleanoutPerBedroom ?? 50)}</span>
                     </div>
                   )}
+                  {creditToApply(cleanoutTotal()) > 0 && (
+                    <div className="flex justify-between text-sm text-brand-700">
+                      <span>Welcome credit applied</span>
+                      <span className="font-semibold">-${creditToApply(cleanoutTotal()).toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="mt-2 border-t border-brand-200 pt-2 flex justify-between">
-                    <span className="font-bold text-gray-900">Total due after service</span>
-                    <span className="text-xl font-bold text-brand-600">${cleanoutTotal()}</span>
+                    <span className="font-bold text-gray-900">{netPrice(cleanoutTotal()) === 0 ? 'Fully covered by credit' : 'Total due after service'}</span>
+                    <span className="text-xl font-bold text-brand-600">${netPrice(cleanoutTotal()).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -1924,7 +2008,9 @@ function BookContent() {
                 className="mt-6 w-full rounded-xl bg-brand-600 py-3.5 font-semibold text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700 active:scale-[0.98] disabled:opacity-60">
                 {submitting ? 'Booking...' : 'Confirm Cleanout'}
               </button>
-              <p className="mt-2 text-center text-xs text-gray-400">Your card is charged only after the job is complete.</p>
+              <p className="mt-2 text-center text-xs text-gray-400">
+                {netPrice(cleanoutTotal()) === 0 ? 'Your welcome credit covers this service. No card needed.' : 'Your card is charged only after the job is complete.'}
+              </p>
             </div>
           )}
 
@@ -2018,10 +2104,16 @@ function BookContent() {
                     </div>
                   )}
                   <hr className="border-gray-200" />
+                  {selected.bookingType !== 'subscription' && creditToApply(currentPrice()) > 0 && (
+                    <div className="flex justify-between text-brand-700">
+                      <span className="text-sm">Welcome credit</span>
+                      <span className="text-sm font-semibold">-${creditToApply(currentPrice()).toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
-                    <span className="font-semibold">Total</span>
+                    <span className="font-semibold">{selected.bookingType === 'subscription' ? 'Monthly Total' : (netPrice(currentPrice()) === 0 ? 'Fully covered by credit' : 'Total due after service')}</span>
                     <span className="font-bold text-brand-600">
-                      ${currentPrice().toFixed(2)}{selected.bookingType === 'subscription' ? '/mo' : ''}
+                      ${selected.bookingType === 'subscription' ? currentPrice().toFixed(2) : netPrice(currentPrice()).toFixed(2)}{selected.bookingType === 'subscription' ? '/mo' : ''}
                     </span>
                   </div>
                 </div>
@@ -2062,7 +2154,9 @@ function BookContent() {
                 </svg>
                 {selected.bookingType === 'subscription'
                   ? <span>You will be charged <strong>${currentPrice().toFixed(2)}/month</strong> today and on the same date each month. Cancel anytime.</span>
-                  : <span>Your card on file will be charged <strong>${isBatchMode ? (oneTimePrice() * selectedAddresses.length).toFixed(2) : currentPrice().toFixed(2)}</strong> after service completion.</span>
+                  : netPrice(currentPrice()) === 0
+                    ? <span>This service is <strong>fully covered by your $15 welcome credit</strong>. No charge after service.</span>
+                    : <span>Your card on file will be charged <strong>${isBatchMode ? (oneTimePrice() * selectedAddresses.length).toFixed(2) : netPrice(currentPrice()).toFixed(2)}</strong> after service completion.</span>
                 }
               </div>
 

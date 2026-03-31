@@ -6,10 +6,21 @@ const Booking = require('../models/Booking');
 
 const GRACE_PERIOD_MS = 2 * 60 * 1000;
 
+function isCreditFullyCovering(user, requestedCredit) {
+  if (!requestedCredit || requestedCredit <= 0) return false;
+  const credit = user.promoCredit;
+  const balance = credit?.balance ?? 15;
+  const expiry = credit?.expiresAt ?? new Date('2026-04-30T23:59:59.000-04:00');
+  if (new Date() > new Date(expiry)) return false;
+  return balance >= requestedCredit;
+}
+
 async function create(req, res, next) {
   try {
     const isSubscription = !!req.body.subscriptionId;
-    if (!isSubscription && !config.stripe.skip) {
+    const promoCreditApplied = parseFloat(req.body.promoCreditApplied) || 0;
+    const creditCoversAll = isCreditFullyCovering(req.user, promoCreditApplied) && promoCreditApplied >= (parseFloat(req.body.amount) || 0);
+    if (!isSubscription && !config.stripe.skip && !creditCoversAll) {
       const hasCard = await stripeService.hasDefaultPaymentMethod(req.user);
       if (!hasCard) {
         const err = new Error('Please add a payment method in your Profile before booking.');
@@ -220,7 +231,9 @@ async function checkEntranceCleaningCapacity(req, res, next) {
 async function createBatch(req, res, next) {
   try {
     const isSubscription = !!req.body.subscriptionId;
-    if (!isSubscription && !config.stripe.skip) {
+    const promoCreditApplied = parseFloat(req.body.promoCreditApplied) || 0;
+    const creditCoversAll = isCreditFullyCovering(req.user, promoCreditApplied) && promoCreditApplied >= (parseFloat(req.body.amount) || 0);
+    if (!isSubscription && !config.stripe.skip && !creditCoversAll) {
       const hasCard = await stripeService.hasDefaultPaymentMethod(req.user);
       if (!hasCard) {
         const err = new Error('Please add a payment method in your Profile before booking.');

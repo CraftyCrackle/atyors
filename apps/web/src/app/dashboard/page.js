@@ -79,6 +79,36 @@ const LIVE_COLORS = {
   'in-progress': 'bg-orange-500',
 };
 
+const PROMO_EXPIRY = new Date('2026-04-30T23:59:59.000-04:00');
+
+function PromoCreditBanner({ user }) {
+  if (!user) return null;
+  const credit = user.promoCredit;
+  const balance = credit?.balance ?? 15;
+  const expiry = credit?.expiresAt ? new Date(credit.expiresAt) : PROMO_EXPIRY;
+  const isExpired = new Date() > expiry;
+  const isExhausted = balance <= 0;
+  if (isExpired || isExhausted) return null;
+
+  return (
+    <div className="mx-4 mt-4 overflow-hidden rounded-2xl bg-gradient-to-r from-brand-600 to-accent-500 p-4 shadow-md">
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/20">
+          <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+          </svg>
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold text-white">${balance.toFixed(2)} credit available</p>
+          <p className="mt-0.5 text-xs text-white/80">
+            Applied automatically at checkout. No credit card needed for services up to ${balance.toFixed(2)}. Expires April 30, 2026.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LiveTrackingCard({ booking, onStatusChange }) {
   const status = booking.status;
   const svc = booking.serviceTypeId;
@@ -654,6 +684,8 @@ export default function DashboardPage() {
             ))}
           </div>
         )}
+
+        <PromoCreditBanner user={user} />
 
         <div className="mt-4 px-4">
           <Link href="/book" className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-accent-500 py-4 text-sm font-semibold text-white shadow-md shadow-brand-600/20 transition hover:shadow-lg active:scale-[0.98]">

@@ -2,7 +2,17 @@ const Booking = require('../models/Booking');
 const Address = require('../models/Address');
 const ServiceType = require('../models/ServiceType');
 const AppSettings = require('../models/AppSettings');
-const { calculateOneTimePrice, calculateOneTimePriceBothLeg, calculateCurbItemPrice, calculateEntranceCleaningPrice } = require('./pricingService');
+const {
+  calculateOneTimePrice,
+  calculateOneTimePriceBothLeg,
+  calculateCurbItemPrice,
+  calculateEntranceCleaningPrice,
+  calculateBarrelCleaningPrice,
+  calculateCleanoutPrice,
+  OUTDOOR_LAWN,
+  OUTDOOR_LEAVES,
+  OUTDOOR_SHOVEL,
+} = require('./pricingService');
 const stripeService = require('./stripeService');
 const config = require('../config');
 const MAX_BARRELS = 50;
@@ -12,6 +22,40 @@ const CANCELLATION_FEE = 1.00;
 function todayInEastern() {
   const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' });
   return fmt.format(new Date());
+}
+
+const PROMO_CREDIT_EXPIRY = new Date('2026-04-30T23:59:59.000-04:00');
+const PROMO_CREDIT_INITIAL = 15;
+
+async function resolvePromoCredit(userId, requestedCredit) {
+  if (!requestedCredit || requestedCredit <= 0) return 0;
+  const User = require('../models/User');
+
+  const user = await User.findById(userId).select('promoCredit');
+  if (!user) return 0;
+
+  let balance, expiry;
+  if (!user.promoCredit || user.promoCredit.balance == null) {
+    await User.findByIdAndUpdate(userId, {
+      $set: { promoCredit: { balance: PROMO_CREDIT_INITIAL, expiresAt: PROMO_CREDIT_EXPIRY } },
+    });
+    balance = PROMO_CREDIT_INITIAL;
+    expiry = PROMO_CREDIT_EXPIRY;
+  } else {
+    balance = user.promoCredit.balance;
+    expiry = user.promoCredit.expiresAt;
+  }
+
+  if (new Date() > new Date(expiry)) return 0;
+  if (balance <= 0) return 0;
+
+  const creditToApply = Math.min(parseFloat(requestedCredit), balance);
+
+  await User.findByIdAndUpdate(userId, {
+    $inc: { 'promoCredit.balance': -creditToApply },
+  });
+
+  return creditToApply;
 }
 
 async function create(userId, data) {
@@ -50,6 +94,9 @@ async function create(userId, data) {
       throw err;
     }
   }
+
+  const isSubscriptionBooking = !!data.subscriptionId;
+  const creditResolved = !isSubscriptionBooking ? await resolvePromoCredit(userId, parseFloat(data.promoCreditApplied) || 0) : 0;
 
   const svcType = await ServiceType.findById(data.serviceTypeId);
   const isCurbItems = svcType && svcType.slug === 'curb-items';
@@ -103,6 +150,8 @@ async function create(userId, data) {
     if (backEntrance) taskKeys.push('back-entrance');
 
     const cleaningAreaPhotos = Array.isArray(data.cleaningAreaPhotos) ? data.cleaningAreaPhotos : [];
+    const ecCredit = Math.min(creditResolved, amount);
+    const ecNetAmount = Math.max(0, amount - ecCredit);
 
     const booking = await Booking.create({
       userId,
@@ -115,9 +164,10 @@ async function create(userId, data) {
       backEntrance,
       taskProgress: [],
       cleaningAreaPhotos,
-      amount,
+      amount: ecNetAmount,
       serviceValue: amount,
-      paymentStatus: 'pending_payment',
+      promoCreditApplied: ecCredit,
+      paymentStatus: ecNetAmount === 0 ? 'paid' : 'pending_payment',
       statusHistory: [{ status: 'pending', changedAt: new Date() }],
     });
     return booking.populate(['addressId', 'serviceTypeId']);
@@ -146,6 +196,10 @@ async function create(userId, data) {
       throw err;
     }
 
+    const curbGross = calculateCurbItemPrice(itemCount);
+    const curbCredit = Math.min(creditResolved, curbGross);
+    const curbNetAmount = Math.max(0, curbGross - curbCredit);
+
     const booking = await Booking.create({
       userId,
       addressId: data.addressId,
@@ -154,9 +208,80 @@ async function create(userId, data) {
       itemCount,
       curbItemPhotos: data.curbItemPhotos,
       curbItemNotes: data.curbItemNotes || '',
-      amount: calculateCurbItemPrice(itemCount),
-      serviceValue: calculateCurbItemPrice(itemCount),
-      paymentStatus: 'pending_payment',
+      amount: curbNetAmount,
+      serviceValue: curbGross,
+      promoCreditApplied: curbCredit,
+      paymentStatus: curbNetAmount === 0 ? 'paid' : 'pending_payment',
+      statusHistory: [{ status: 'pending', changedAt: new Date() }],
+    });
+    return booking.populate(['addressId', 'serviceTypeId']);
+  }
+
+  const isBarrelCleaning = svcType && svcType.slug === 'barrel-cleaning';
+  const isPropertyCleanout = svcType && svcType.slug === 'property-cleanout';
+  const isOutdoorService = svcType && ['lawn-care', 'leaf-cleanup', 'snow-shoveling'].includes(svcType.slug);
+
+  if (isBarrelCleaning) {
+    const count = Math.max(1, parseInt(data.itemCount) || 1);
+    const bcGross = calculateBarrelCleaningPrice(count);
+    const bcCredit = Math.min(creditResolved, bcGross);
+    const bcNet = Math.max(0, bcGross - bcCredit);
+    const booking = await Booking.create({
+      userId,
+      addressId: data.addressId,
+      serviceTypeId: data.serviceTypeId,
+      scheduledDate,
+      itemCount: count,
+      curbItemNotes: data.curbItemNotes || '',
+      amount: bcNet,
+      serviceValue: bcGross,
+      promoCreditApplied: bcCredit,
+      paymentStatus: bcNet === 0 ? 'paid' : 'pending_payment',
+      statusHistory: [{ status: 'pending', changedAt: new Date() }],
+    });
+    return booking.populate(['addressId', 'serviceTypeId']);
+  }
+
+  if (isPropertyCleanout) {
+    const bedrooms = Math.max(1, parseInt(data.itemCount) || 1);
+    const coGross = calculateCleanoutPrice(bedrooms);
+    const coCredit = Math.min(creditResolved, coGross);
+    const coNet = Math.max(0, coGross - coCredit);
+    const booking = await Booking.create({
+      userId,
+      addressId: data.addressId,
+      serviceTypeId: data.serviceTypeId,
+      scheduledDate,
+      itemCount: bedrooms,
+      curbItemNotes: data.curbItemNotes || '',
+      amount: coNet,
+      serviceValue: coGross,
+      promoCreditApplied: coCredit,
+      paymentStatus: coNet === 0 ? 'paid' : 'pending_payment',
+      statusHistory: [{ status: 'pending', changedAt: new Date() }],
+    });
+    return booking.populate(['addressId', 'serviceTypeId']);
+  }
+
+  if (isOutdoorService) {
+    const notesStr = (data.curbItemNotes || '').toLowerCase();
+    const lotSize = notesStr.includes('medium') ? 'medium' : notesStr.includes('large') ? 'large' : 'small';
+    const tiers = svcType.slug === 'lawn-care' ? OUTDOOR_LAWN
+      : svcType.slug === 'leaf-cleanup' ? OUTDOOR_LEAVES
+      : OUTDOOR_SHOVEL;
+    const outGross = tiers[lotSize] ?? tiers.small;
+    const outCredit = Math.min(creditResolved, outGross);
+    const outNet = Math.max(0, outGross - outCredit);
+    const booking = await Booking.create({
+      userId,
+      addressId: data.addressId,
+      serviceTypeId: data.serviceTypeId,
+      scheduledDate,
+      curbItemNotes: data.curbItemNotes || '',
+      amount: outNet,
+      serviceValue: outGross,
+      promoCreditApplied: outCredit,
+      paymentStatus: outNet === 0 ? 'paid' : 'pending_payment',
       statusHistory: [{ status: 'pending', changedAt: new Date() }],
     });
     return booking.populate(['addressId', 'serviceTypeId']);
@@ -201,6 +326,10 @@ async function create(userId, data) {
       throw err;
     }
 
+    const bothCredit = Math.min(creditResolved, clientAmount);
+    const bothNetAmount = Math.max(0, clientAmount - bothCredit);
+    const bothPaymentStatus = isSubscriptionBooking ? paymentStatus : (bothNetAmount === 0 ? 'paid' : 'pending_payment');
+
     const putOutBooking = await Booking.create({
       userId,
       addressId: data.addressId,
@@ -208,9 +337,10 @@ async function create(userId, data) {
       scheduledDate: putOutDate,
       barrelCount,
       putOutTime: data.putOutTime,
-      amount: clientAmount,
+      amount: bothNetAmount,
       serviceValue: perBarrelAmount,
-      paymentStatus,
+      promoCreditApplied: bothCredit,
+      paymentStatus: bothPaymentStatus,
       subscriptionId: data.subscriptionId,
       batchId: data.batchId,
       isGuaranteed,
@@ -224,9 +354,9 @@ async function create(userId, data) {
       scheduledDate,
       barrelCount,
       bringInTime: data.bringInTime,
-      amount: clientAmount,
+      amount: bothNetAmount,
       serviceValue: perBarrelAmount,
-      paymentStatus,
+      paymentStatus: bothPaymentStatus,
       linkedBookingId: putOutBooking._id,
       subscriptionId: data.subscriptionId,
       batchId: data.batchId,
@@ -242,6 +372,10 @@ async function create(userId, data) {
     return [putOutBooking, bringInBooking];
   }
 
+  const barrelCredit = Math.min(creditResolved, clientAmount);
+  const barrelNetAmount = Math.max(0, clientAmount - barrelCredit);
+  const barrelPaymentStatus = isSubscriptionBooking ? paymentStatus : (barrelNetAmount === 0 ? 'paid' : 'pending_payment');
+
   const booking = await Booking.create({
     userId,
     addressId: data.addressId,
@@ -250,9 +384,10 @@ async function create(userId, data) {
     barrelCount,
     putOutTime: data.putOutTime,
     bringInTime: data.bringInTime,
-    amount: clientAmount,
+    amount: barrelNetAmount,
     serviceValue: perBarrelAmount,
-    paymentStatus,
+    promoCreditApplied: barrelCredit,
+    paymentStatus: barrelPaymentStatus,
     subscriptionId: data.subscriptionId,
     batchId: data.batchId,
     isGuaranteed,

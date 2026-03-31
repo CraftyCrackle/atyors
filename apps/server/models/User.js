@@ -40,6 +40,10 @@ const userSchema = new mongoose.Schema({
   verificationAttemptsResetAt: { type: Date, select: false },
   isActive: { type: Boolean, default: true },
   lastLoginAt: { type: Date },
+  promoCredit: {
+    balance: { type: Number, default: 15 },
+    expiresAt: { type: Date, default: () => new Date('2026-04-30T23:59:59.000-04:00') },
+  },
 }, {
   timestamps: true,
   toJSON: { virtuals: true },

@@ -64,6 +64,7 @@ const bookingSchema = new mongoose.Schema({
   cancellationFee: { type: Number, default: 0 },
   cancellationReason: { type: String, trim: true },
   denialReason: { type: String, trim: true },
+  promoCreditApplied: { type: Number, default: 0 },
 }, {
   timestamps: true,
 });

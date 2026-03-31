@@ -234,6 +234,17 @@ function WebLanding() {
         </div>
       </nav>
 
+      {/* Promo Banner */}
+      <div className="flex items-center justify-center gap-3 bg-gradient-to-r from-brand-600 to-accent-500 px-4 py-3 text-center text-sm font-medium text-white">
+        <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" /></svg>
+        <span>
+          <strong>Limited offer:</strong> New customers get a <strong>$15 credit</strong> to try any service — no credit card needed. Expires April 30, 2026.
+        </span>
+        <Link href="/signup" className="shrink-0 rounded-full bg-white/20 px-3 py-0.5 text-xs font-semibold text-white transition hover:bg-white/30">
+          Claim yours →
+        </Link>
+      </div>
+
       {/* Hero */}
       <section className="relative overflow-hidden px-6 pb-16 pt-12">
         <div className="absolute -right-20 -top-20 h-80 w-80 rounded-full bg-brand-50 blur-3xl" />

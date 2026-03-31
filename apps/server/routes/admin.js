@@ -355,4 +355,28 @@ router.patch('/services/:id/toggle', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+const PROMO_CREDIT_EXPIRY = new Date('2026-04-30T23:59:59.000-04:00');
+const PROMO_CREDIT_AMOUNT = 15;
+
+router.post('/promo/grant-all', async (req, res, next) => {
+  try {
+    const result = await User.updateMany(
+      { role: 'customer', $or: [{ promoCredit: { $exists: false } }, { 'promoCredit.balance': { $exists: false } }] },
+      { $set: { promoCredit: { balance: PROMO_CREDIT_AMOUNT, expiresAt: PROMO_CREDIT_EXPIRY } } }
+    );
+    res.json({ success: true, data: { matched: result.matchedCount, modified: result.modifiedCount } });
+  } catch (err) { next(err); }
+});
+
+router.get('/promo/stats', async (req, res, next) => {
+  try {
+    const [withCredit, exhausted, expired] = await Promise.all([
+      User.countDocuments({ 'promoCredit.balance': { $gt: 0 }, 'promoCredit.expiresAt': { $gte: new Date() } }),
+      User.countDocuments({ 'promoCredit.balance': 0 }),
+      User.countDocuments({ 'promoCredit.expiresAt': { $lt: new Date() } }),
+    ]);
+    res.json({ success: true, data: { withActiveCredit: withCredit, exhausted, expired } });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
